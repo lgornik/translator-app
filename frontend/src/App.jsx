@@ -1,8 +1,16 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from './hooks/useTranslation';
+import QuizSetup from './components/QuizSetup';
+import QuizFinished from './components/QuizFinished';
 
 function App() {
   const {
+    gameState,
+    quizMode,
+    wordsCompleted,
+    timeRemaining,
+    formatTime,
+    getWordLimit,
     mode,
     currentWord,
     result,
@@ -10,64 +18,108 @@ function App() {
     stats,
     loading,
     setUserInput,
+    startQuiz,
     getNewWord,
     submitTranslation,
     toggleMode,
+    resetQuiz,
   } = useTranslation();
 
   const inputRef = useRef(null);
 
-  // Globalny listener na Enter dla "Następne słowo"
+  // Globalny listener na Enter
   useEffect(() => {
     const handleGlobalKeyDown = (e) => {
-      if (e.key === 'Enter' && result && !loading) {
+      if (e.key === 'Enter' && result && !loading && gameState === 'playing') {
         getNewWord();
       }
     };
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [result, loading, getNewWord]);
+  }, [result, loading, getNewWord, gameState]);
 
-  // Ustaw focus na inpucie po pojawieniu się nowego słowa
+  // Focus na input po nowym słowie
   useEffect(() => {
     if (currentWord && !result && inputRef.current) {
       inputRef.current.focus();
     }
   }, [currentWord, result]);
 
-  // Tekst zależny od trybu
-  const modeLabel = mode === 'EN_TO_PL' ? 'EN → PL' : 'PL → EN';
-  const sourceLanguage = mode === 'EN_TO_PL' ? 'angielski' : 'polski';
-  const targetLanguage = mode === 'EN_TO_PL' ? 'polski' : 'angielski';
-
-  // Obsługa klawisza Enter
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      if (result) {
-        getNewWord();
-      } else if (currentWord && userInput.trim()) {
-        submitTranslation();
-      }
+    if (e.key === 'Enter' && currentWord && userInput.trim() && !result) {
+      submitTranslation();
     }
   };
 
-  // Klasa inputu zależna od wyniku
   const getInputClass = () => {
     if (!result) return 'input-group__input';
     return `input-group__input ${result.isCorrect ? 'input-group__input--correct' : 'input-group__input--incorrect'}`;
   };
 
+  const modeLabel = mode === 'EN_TO_PL' ? 'EN → PL' : 'PL → EN';
+  const sourceLanguage = mode === 'EN_TO_PL' ? 'angielski' : 'polski';
+  const targetLanguage = mode === 'EN_TO_PL' ? 'polski' : 'angielski';
+
+  // Ekran wyboru trybu
+  if (gameState === 'setup') {
+    return (
+      <div className="app">
+        <header className="header">
+          <h1 className="header__title">Translator</h1>
+          <p className="header__subtitle">Ucz się słówek przez tłumaczenie</p>
+        </header>
+        <main className="card">
+          <QuizSetup onStart={startQuiz} mode={mode} onToggleMode={toggleMode} />
+        </main>
+      </div>
+    );
+  }
+
+  // Ekran zakończenia quizu
+  if (gameState === 'finished') {
+    return (
+      <div className="app">
+        <header className="header">
+          <h1 className="header__title">Translator</h1>
+          <p className="header__subtitle">Quiz zakończony!</p>
+        </header>
+        <main className="card">
+          <QuizFinished 
+            stats={stats} 
+            wordsCompleted={wordsCompleted} 
+            onRestart={resetQuiz} 
+          />
+        </main>
+      </div>
+    );
+  }
+
+  // Ekran gry
   return (
     <div className="app">
-      {/* Header */}
       <header className="header">
         <h1 className="header__title">Translator</h1>
         <p className="header__subtitle">Ucz się słówek przez tłumaczenie</p>
       </header>
 
-      {/* Main Card */}
       <main className="card">
+        {/* Progress bar */}
+        <div className="quiz-progress">
+          {quizMode === 'timed' ? (
+            <div className="quiz-progress__timer">
+              ⏱️ {formatTime(timeRemaining)}
+            </div>
+          ) : (
+            <div className="quiz-progress__counter">
+              {wordsCompleted} / {quizMode === 'all' ? '∞' : getWordLimit()}
+            </div>
+          )}
+          <button className="btn btn--text" onClick={resetQuiz}>
+            ✕ Zakończ
+          </button>
+        </div>
+
         {/* Word Display */}
         <div className="word-display">
           <div className="word-display__label">
@@ -82,9 +134,7 @@ function App() {
             ) : currentWord ? (
               currentWord.wordToTranslate
             ) : (
-              <span className="word-display__placeholder">
-                Kliknij "Nowe słowo" aby zacząć
-              </span>
+              <span className="word-display__placeholder">Ładowanie...</span>
             )}
           </div>
           {currentWord?.category && (
@@ -108,7 +158,6 @@ function App() {
             onKeyDown={handleKeyDown}
             disabled={!currentWord || loading}
             autoComplete="off"
-            autoFocus
           />
         </div>
 
@@ -135,7 +184,7 @@ function App() {
                 onClick={getNewWord}
                 disabled={loading}
               >
-                {currentWord ? 'Pomiń' : 'Nowe słowo'}
+                Pomiń
               </button>
               <button
                 className="btn btn--primary"
@@ -177,13 +226,9 @@ function App() {
         </div>
       </main>
 
-      {/* Mode Toggle - Bottom Right Corner */}
       <button className="mode-toggle" onClick={toggleMode} title="Zmień kierunek tłumaczenia">
         <span className="mode-toggle__label">Tryb:</span>
         <span className="mode-toggle__value">{modeLabel}</span>
-        <svg className="mode-toggle__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" />
-        </svg>
       </button>
     </div>
   );
