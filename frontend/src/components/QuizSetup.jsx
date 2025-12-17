@@ -1,14 +1,62 @@
 import { useState } from 'react';
 
-function QuizSetup({ onStart, mode, onToggleMode }) {
+function QuizSetup({ 
+  onStart, 
+  mode, 
+  onToggleMode,
+  categories,
+  selectedCategory,
+  setSelectedCategory,
+  selectedDifficulty,
+  setSelectedDifficulty
+}) {
   const [customWords, setCustomWords] = useState(10);
   const [customTime, setCustomTime] = useState(5);
 
   const modeLabel = mode === 'EN_TO_PL' ? 'EN → PL' : 'PL → EN';
 
+  const difficulties = [
+    { value: null, label: 'Wszystkie poziomy' },
+    { value: 1, label: '⭐ Łatwy' },
+    { value: 2, label: '⭐⭐ Średni' },
+    { value: 3, label: '⭐⭐⭐ Trudny' },
+  ];
+
   return (
     <div className="quiz-setup">
       <h2 className="quiz-setup__title">Wybierz tryb quizu</h2>
+
+      {/* Filtry */}
+      <div className="quiz-filters">
+        <div className="quiz-filter">
+          <label className="quiz-filter__label">Kategoria:</label>
+          <select 
+            className="quiz-filter__select"
+            value={selectedCategory || ''}
+            onChange={(e) => setSelectedCategory(e.target.value || null)}
+          >
+            <option value="">Wszystkie kategorie</option>
+            {categories.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="quiz-filter">
+          <label className="quiz-filter__label">Poziom trudności:</label>
+          <select 
+            className="quiz-filter__select"
+            value={selectedDifficulty || ''}
+            onChange={(e) => setSelectedDifficulty(e.target.value ? Number(e.target.value) : null)}
+          >
+            {difficulties.map(diff => (
+              <option key={diff.value || 'all'} value={diff.value || ''}>
+                {diff.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
       
       <div className="quiz-setup__options">
         {/* Szybki quiz */}
@@ -24,22 +72,22 @@ function QuizSetup({ onStart, mode, onToggleMode }) {
         {/* Standardowy quiz */}
         <button 
           className="quiz-option"
-          onClick={() => onStart('limit', { wordLimit: 30 })}
+          onClick={() => onStart('limit', { wordLimit: 20 })}
         >
           <span className="quiz-option__icon">📝</span>
           <span className="quiz-option__title">Standardowy</span>
-          <span className="quiz-option__desc">30 słów</span>
+          <span className="quiz-option__desc">20 słów</span>
         </button>
 
         {/* Wszystkie słowa */}
-        {/* <button 
+        <button 
           className="quiz-option"
           onClick={() => onStart('all')}
         >
           <span className="quiz-option__icon">📚</span>
           <span className="quiz-option__title">Wszystkie słowa</span>
           <span className="quiz-option__desc">Cała baza</span>
-        </button> */}
+        </button>
 
         {/* Tryb czasowy */}
         <div className="quiz-option quiz-option--custom">

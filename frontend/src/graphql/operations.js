@@ -1,15 +1,22 @@
 import { gql } from '@apollo/client';
 
-// Pobierz losowe słowo
+// Pobierz losowe słowo (z opcjonalnymi filtrami)
 export const GET_RANDOM_WORD = gql`
-  query GetRandomWord($mode: TranslationMode!) {
-    getRandomWord(mode: $mode) {
+  query GetRandomWord($mode: TranslationMode!, $category: String, $difficulty: Int) {
+    getRandomWord(mode: $mode, category: $category, difficulty: $difficulty) {
       id
       wordToTranslate
       mode
       category
       difficulty
     }
+  }
+`;
+
+// Pobierz dostępne kategorie
+export const GET_CATEGORIES = gql`
+  query GetCategories {
+    getCategories
   }
 `;
 

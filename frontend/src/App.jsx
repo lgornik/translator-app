@@ -23,6 +23,11 @@ function App() {
     submitTranslation,
     toggleMode,
     resetQuiz,
+    categories,
+    selectedCategory,
+    setSelectedCategory,
+    selectedDifficulty,
+    setSelectedDifficulty,
   } = useTranslation();
 
   const inputRef = useRef(null);
@@ -70,7 +75,16 @@ function App() {
           <p className="header__subtitle">Ucz się słówek przez tłumaczenie</p>
         </header>
         <main className="card">
-          <QuizSetup onStart={startQuiz} mode={mode} onToggleMode={toggleMode} />
+          <QuizSetup 
+            onStart={startQuiz} 
+            mode={mode} 
+            onToggleMode={toggleMode}
+            categories={categories}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            selectedDifficulty={selectedDifficulty}
+            setSelectedDifficulty={setSelectedDifficulty}
+          />
         </main>
       </div>
     );

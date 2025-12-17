@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useLazyQuery, useMutation } from '@apollo/client';
-import { GET_RANDOM_WORD, CHECK_TRANSLATION } from '../graphql/operations';
+import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
+import { GET_RANDOM_WORD, CHECK_TRANSLATION, GET_CATEGORIES } from '../graphql/operations';
 
 export function useTranslation() {
   // Stan gry
@@ -11,6 +11,10 @@ export function useTranslation() {
     timeLimit: 300,
     customLimit: 10,
   });
+
+  // Filtry
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedDifficulty, setSelectedDifficulty] = useState(null);
 
   // Stan tłumaczenia
   const [mode, setMode] = useState('EN_TO_PL');
@@ -24,6 +28,10 @@ export function useTranslation() {
   const [usedWordIds, setUsedWordIds] = useState(new Set());
   const [timeRemaining, setTimeRemaining] = useState(0);
   const timerRef = useRef(null);
+
+  // Pobierz kategorie
+  const { data: categoriesData } = useQuery(GET_CATEGORIES);
+  const categories = categoriesData?.getCategories || [];
 
   // GraphQL operations
   const [fetchWord, { loading: loadingWord }] = useLazyQuery(GET_RANDOM_WORD, {
@@ -106,6 +114,17 @@ export function useTranslation() {
     }
   }, []);
 
+  // Funkcja do pobierania słowa z filtrami
+  const fetchWordWithFilters = useCallback(() => {
+    fetchWord({ 
+      variables: { 
+        mode,
+        category: selectedCategory,
+        difficulty: selectedDifficulty
+      } 
+    });
+  }, [fetchWord, mode, selectedCategory, selectedDifficulty]);
+
   const startQuiz = useCallback((selectedMode, settings = {}) => {
     setQuizMode(selectedMode);
     setQuizSettings(prev => ({ ...prev, ...settings }));
@@ -121,8 +140,14 @@ export function useTranslation() {
       setTimeRemaining(settings.timeLimit || quizSettings.timeLimit);
     }
     
-    fetchWord({ variables: { mode } });
-  }, [fetchWord, mode, quizSettings.timeLimit]);
+    fetchWord({ 
+      variables: { 
+        mode,
+        category: selectedCategory,
+        difficulty: selectedDifficulty
+      } 
+    });
+  }, [fetchWord, mode, selectedCategory, selectedDifficulty, quizSettings.timeLimit]);
 
   const getNewWord = useCallback(() => {
     if ((quizMode === 'limit' || quizMode === 'custom') && 
@@ -131,8 +156,14 @@ export function useTranslation() {
       return;
     }
     
-    fetchWord({ variables: { mode } });
-  }, [fetchWord, mode, quizMode, wordsCompleted, getWordLimit, endQuiz]);
+    fetchWord({ 
+      variables: { 
+        mode,
+        category: selectedCategory,
+        difficulty: selectedDifficulty
+      } 
+    });
+  }, [fetchWord, mode, selectedCategory, selectedDifficulty, quizMode, wordsCompleted, getWordLimit, endQuiz]);
 
   const submitTranslation = useCallback(() => {
     if (!currentWord || !userInput.trim()) return;
@@ -184,6 +215,15 @@ export function useTranslation() {
     userInput,
     stats,
     loading: loadingWord || checkingTranslation,
+    
+    // Filtry
+    categories,
+    selectedCategory,
+    setSelectedCategory,
+    selectedDifficulty,
+    setSelectedDifficulty,
+    
+    // Akcje
     setUserInput,
     startQuiz,
     getNewWord,

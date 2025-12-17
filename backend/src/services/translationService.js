@@ -1,30 +1,54 @@
 // Translation Service - logika biznesowa
-// W przyszłości łatwo rozbudować o: historię, statystyki, algorytm powtórek (spaced repetition)
 
 import { dictionary } from '../data/dictionary.js';
 
 class TranslationService {
   constructor() {
-    this.usedWordIds = new Set(); // Śledzenie użytych słów w sesji
+    this.usedWordIds = new Set();
   }
 
-  // Pobierz losowe słowo do tłumaczenia
-  getRandomWord(mode = 'en-to-pl') {
-    // Reset jeśli wszystkie słowa użyte
-    if (this.usedWordIds.size >= dictionary.length) {
-      this.usedWordIds.clear();
+  // Pobierz losowe słowo do tłumaczenia (z opcjonalnymi filtrami)
+  getRandomWord(mode = 'en-to-pl', filters = {}) {
+    const { category, difficulty } = filters;
+
+    // Filtruj słowa według kategorii i trudności
+    let availableWords = dictionary;
+
+    if (category) {
+      availableWords = availableWords.filter(w => w.category === category);
+    }
+
+    if (difficulty) {
+      availableWords = availableWords.filter(w => w.difficulty === difficulty);
+    }
+
+    // Jeśli brak słów po filtrowaniu
+    if (availableWords.length === 0) {
+      throw new Error('Brak słów dla wybranych filtrów');
+    }
+
+    // Reset jeśli wszystkie przefiltrowane słowa użyte
+    const usedInFilter = availableWords.filter(w => this.usedWordIds.has(w.id));
+    if (usedInFilter.length >= availableWords.length) {
+      // Wyczyść tylko słowa z bieżącego filtra
+      availableWords.forEach(w => this.usedWordIds.delete(w.id));
     }
 
     // Znajdź nieużyte słowo
     let word;
-    do {
-      const randomIndex = Math.floor(Math.random() * dictionary.length);
-      word = dictionary[randomIndex];
-    } while (this.usedWordIds.has(word.id));
+    const unusedWords = availableWords.filter(w => !this.usedWordIds.has(w.id));
+    
+    if (unusedWords.length > 0) {
+      const randomIndex = Math.floor(Math.random() * unusedWords.length);
+      word = unusedWords[randomIndex];
+    } else {
+      // Fallback - losowe z dostępnych
+      const randomIndex = Math.floor(Math.random() * availableWords.length);
+      word = availableWords[randomIndex];
+    }
 
     this.usedWordIds.add(word.id);
 
-    // Zwróć słowo w odpowiednim formacie zależnie od trybu
     return {
       id: word.id,
       wordToTranslate: mode === 'en-to-pl' ? word.english : word.polish,
@@ -57,12 +81,10 @@ class TranslationService {
       isCorrect,
       correctTranslation: correctAnswer,
       userTranslation,
-      // Przygotowanie pod przyszłe funkcje
-      // similarity: this.calculateSimilarity(normalizedUserAnswer, normalizedCorrectAnswer),
     };
   }
 
-  // Normalizacja odpowiedzi (małe litery, trim, usunięcie zbędnych spacji)
+  // Normalizacja odpowiedzi
   normalizeAnswer(answer) {
     return answer
       .toLowerCase()
@@ -70,7 +92,7 @@ class TranslationService {
       .replace(/\s+/g, ' ');
   }
 
-  // Pobierz wszystkie słowa (do przyszłego panelu admina)
+  // Pobierz wszystkie słowa
   getAllWords() {
     return dictionary;
   }
@@ -82,7 +104,12 @@ class TranslationService {
 
   // Pobierz dostępne kategorie
   getCategories() {
-    return [...new Set(dictionary.map(w => w.category))];
+    return [...new Set(dictionary.map(w => w.category))].sort();
+  }
+
+  // Pobierz dostępne poziomy trudności
+  getDifficulties() {
+    return [...new Set(dictionary.map(w => w.difficulty))].sort((a, b) => a - b);
   }
 
   // Reset sesji
@@ -92,5 +119,4 @@ class TranslationService {
   }
 }
 
-// Singleton - jedna instancja serwisu
 export const translationService = new TranslationService();

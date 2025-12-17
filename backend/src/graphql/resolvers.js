@@ -13,10 +13,10 @@ const reverseModeMap = {
 
 export const resolvers = {
   Query: {
-    // Pobierz losowe słowo
-    getRandomWord: (_, { mode }) => {
+    // Pobierz losowe słowo (z opcjonalnymi filtrami)
+    getRandomWord: (_, { mode, category, difficulty }) => {
       const internalMode = modeMap[mode];
-      const word = translationService.getRandomWord(internalMode);
+      const word = translationService.getRandomWord(internalMode, { category, difficulty });
       
       return {
         ...word,
@@ -32,6 +32,11 @@ export const resolvers = {
     // Pobierz kategorie
     getCategories: () => {
       return translationService.getCategories();
+    },
+
+    // Pobierz poziomy trudności
+    getDifficulties: () => {
+      return translationService.getDifficulties();
     },
   },
 
