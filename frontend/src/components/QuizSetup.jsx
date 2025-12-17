@@ -24,22 +24,22 @@ function QuizSetup({ onStart, mode, onToggleMode }) {
         {/* Standardowy quiz */}
         <button 
           className="quiz-option"
-          onClick={() => onStart('limit', { wordLimit: 20 })}
+          onClick={() => onStart('limit', { wordLimit: 30 })}
         >
           <span className="quiz-option__icon">📝</span>
           <span className="quiz-option__title">Standardowy</span>
-          <span className="quiz-option__desc">20 słów</span>
+          <span className="quiz-option__desc">30 słów</span>
         </button>
 
         {/* Wszystkie słowa */}
-        <button 
+        {/* <button 
           className="quiz-option"
           onClick={() => onStart('all')}
         >
           <span className="quiz-option__icon">📚</span>
           <span className="quiz-option__title">Wszystkie słowa</span>
           <span className="quiz-option__desc">Cała baza</span>
-        </button>
+        </button> */}
 
         {/* Tryb czasowy */}
         <div className="quiz-option quiz-option--custom">

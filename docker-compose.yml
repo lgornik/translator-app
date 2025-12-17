@@ -1,52 +1,31 @@
-# Docker Compose - uruchom całą aplikację jedną komendą
-# docker-compose up --build
-
 version: '3.8'
 
 services:
-  # Backend - GraphQL API
   backend:
     build: ./backend
     container_name: translator-backend
     ports:
       - "4000:4000"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - PORT=4000
       - CORS_ORIGIN=http://localhost:3000
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    volumes:
+      - ./backend/src:/app/src
+    command: npm run dev
     restart: unless-stopped
 
-  # Frontend - React App
   frontend:
     build:
       context: ./frontend
-      args:
-        - VITE_GRAPHQL_URL=http://localhost:4000/graphql
+      dockerfile: Dockerfile.dev
     container_name: translator-frontend
     ports:
-      - "3000:80"
+      - "3000:3000"
+    environment:
+      - VITE_GRAPHQL_URL=http://localhost:4000/graphql
+    volumes:
+      - ./frontend/src:/app/src
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     restart: unless-stopped
-
-# Przyszła rozbudowa - odkomentuj gdy dodasz bazę danych
-#  database:
-#    image: postgres:15-alpine
-#    container_name: translator-db
-#    environment:
-#      - POSTGRES_USER=translator
-#      - POSTGRES_PASSWORD=secret
-#      - POSTGRES_DB=translator
-#    volumes:
-#      - db_data:/var/lib/postgresql/data
-#    ports:
-#      - "5432:5432"
-
-#volumes:
-#  db_data:

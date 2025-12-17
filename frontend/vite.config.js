@@ -6,6 +6,9 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
+    watch: {
+      usePolling: true  // ← dla Dockera na Windows
+    },
     proxy: {
       '/graphql': {
         target: 'http://backend:4000',
