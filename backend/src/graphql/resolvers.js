@@ -38,6 +38,11 @@ export const resolvers = {
     getDifficulties: () => {
       return translationService.getDifficulties();
     },
+
+    // Pobierz liczbę dostępnych słów
+    getWordCount: (_, { category, difficulty }) => {
+      return { count: translationService.getWordCount({ category, difficulty }) };
+    },
   },
 
   Mutation: {

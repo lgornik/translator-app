@@ -9,27 +9,48 @@ function QuizSetup({
   selectedCategory,
   setSelectedCategory,
   selectedDifficulty,
-  setSelectedDifficulty
+  setSelectedDifficulty,
+  availableWordCount
 }) {
-  const [customWords, setCustomWords] = useState(10);
+  const [customWords, setCustomWords] = useState(5);
   const [customTime, setCustomTime] = useState(5);
   const [useReinforce, setUseReinforce] = useState(true);
+  const [error, setError] = useState(null);
 
   const modeLabel = mode === 'EN_TO_PL' ? 'EN → PL' : 'PL → EN';
 
   const difficulties = [
-    { value: null, label: 'Wszystkie' },
+    { value: null, label: 'Wszystkie poziomy' },
     { value: 1, label: '⭐ Łatwy' },
     { value: 2, label: '⭐⭐ Średni' },
     { value: 3, label: '⭐⭐⭐ Trudny' },
   ];
 
-  const handleStart = (quizMode, settings) => {
+  const validateAndStart = (quizMode, settings) => {
+    const wordLimit = settings.wordLimit || settings.customLimit || 10;
+    
+    if (wordLimit > availableWordCount) {
+      setError(`Dostępnych jest tylko ${availableWordCount} słów dla wybranych filtrów.`);
+      return;
+    }
+    
+    setError(null);
+    
     if (useReinforce && quizMode !== 'timed') {
       onStartWithReinforce(quizMode, settings);
     } else {
       onStart(quizMode, settings);
     }
+  };
+
+  const handleCustomWordsChange = (value) => {
+    const num = Number(value);
+    if (num > 150) {
+      setCustomWords(150);
+    } else {
+      setCustomWords(num);
+    }
+    setError(null);
   };
 
   return (
@@ -43,9 +64,12 @@ function QuizSetup({
           <select 
             className="quiz-filter__select"
             value={selectedCategory || ''}
-            onChange={(e) => setSelectedCategory(e.target.value || null)}
+            onChange={(e) => {
+              setSelectedCategory(e.target.value || null);
+              setError(null);
+            }}
           >
-            <option value="">Wszystkie</option>
+            <option value="">Wszystkie kategorie</option>
             {categories.map(cat => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
@@ -57,7 +81,10 @@ function QuizSetup({
           <select 
             className="quiz-filter__select"
             value={selectedDifficulty || ''}
-            onChange={(e) => setSelectedDifficulty(e.target.value ? Number(e.target.value) : null)}
+            onChange={(e) => {
+              setSelectedDifficulty(e.target.value ? Number(e.target.value) : null);
+              setError(null);
+            }}
           >
             {difficulties.map(diff => (
               <option key={diff.value || 'all'} value={diff.value || ''}>
@@ -68,40 +95,23 @@ function QuizSetup({
         </div>
       </div>
 
-      {/* Tryb utrwalania */}
-      <div className="quiz-reinforce">
-        <label className="quiz-reinforce__label">
-          <input
-            type="checkbox"
-            checked={useReinforce}
-            onChange={(e) => setUseReinforce(e.target.checked)}
-            className="quiz-reinforce__checkbox"
-          />
-          <span className="quiz-reinforce__text">
-                Tryb utrwalania
-          </span>
-        </label>
-      </div>
+      {/* Błąd */}
+      {error && (
+        <div className="quiz-setup__error">
+          {error}
+        </div>
+      )}
       
       <div className="quiz-setup__options">
-        {/* Szybki quiz */}
-        <button 
-          className="quiz-option"
-          onClick={() => handleStart('limit', { wordLimit: 10 })}
-        >
-          <span className="quiz-option__icon">⚡</span>
-          <span className="quiz-option__title">Szybki quiz</span>
-          <span className="quiz-option__desc">10 słów</span>
-        </button>
 
-        {/* Standardowy quiz */}
+        {/* 50 */}
         <button 
           className="quiz-option"
-          onClick={() => handleStart('limit', { wordLimit: 20 })}
+          onClick={() => validateAndStart('limit', { wordLimit: 50 })}
         >
           <span className="quiz-option__icon">📝</span>
-          <span className="quiz-option__title">Standardowy</span>
-          <span className="quiz-option__desc">20 słów</span>
+          <span className="quiz-option__title">TEST</span>
+          <span className="quiz-option__desc">50 słów</span>
         </button>
 
         {/* Tryb czasowy */}
@@ -121,6 +131,7 @@ function QuizSetup({
             <button 
               className="btn btn--small"
               onClick={() => onStart('timed', { timeLimit: customTime * 60 })}
+              disabled={availableWordCount === 0}
             >
               Start
             </button>
@@ -135,19 +146,35 @@ function QuizSetup({
             <input
               type="number"
               min="1"
-              max="100"
+              max="150"
               value={customWords}
-              onChange={(e) => setCustomWords(Number(e.target.value))}
+              onChange={(e) => handleCustomWordsChange(e.target.value)}
               className="quiz-option__input"
             />
             <span>słów</span>
             <button 
               className="btn btn--small"
-              onClick={() => handleStart('custom', { customLimit: customWords })}
+              onClick={() => validateAndStart('custom', { customLimit: customWords })}
+              disabled={availableWordCount === 0}
             >
               Start
             </button>
           </div>
+        </div>
+
+        {/* Tryb utrwalania */}
+        <div className="quiz-reinforce">
+            <label className="quiz-reinforce__label">
+            <input
+                type="checkbox"
+                checked={useReinforce}
+                onChange={(e) => setUseReinforce(e.target.checked)}
+                className="quiz-reinforce__checkbox"
+            />
+            <span className="quiz-reinforce__text">
+                    Tryb utrwalania
+            </span>
+            </label>
         </div>
       </div>
 

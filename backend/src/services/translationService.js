@@ -132,6 +132,23 @@ checkMultipleAnswers(userAnswer, correctAnswer) {
       this.usedWordIds.clear();
       return { success: true, message: 'Session reset' };
     }
+
+    // Pobierz liczbę dostępnych słów (z opcjonalnymi filtrami)
+    getWordCount(filters = {}) {
+      const { category, difficulty } = filters;
+      
+      let words = dictionary;
+      
+      if (category) {
+        words = words.filter(w => w.category === category);
+      }
+      
+      if (difficulty) {
+        words = words.filter(w => w.difficulty === difficulty);
+      }
+      
+      return words.length;
+    }
   }
 
 export const translationService = new TranslationService();

@@ -33,6 +33,8 @@ function App() {
     wordsToRepeat,
     masteredCount,
     getProgress,
+    availableWordCount,
+    noMoreWords
   } = useTranslation();
 
   const inputRef = useRef(null);
@@ -49,12 +51,12 @@ function App() {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [result, loading, getNewWord, gameState]);
 
-  // Focus na input po nowym słowie
+  // Focus na input po nowym słowie lub po kliknięciu Enter
   useEffect(() => {
-    if (currentWord && !result && inputRef.current) {
+    if (currentWord && !result && inputRef.current && gameState === 'playing') {
       inputRef.current.focus();
     }
-  }, [currentWord, result]);
+  }, [currentWord, result, gameState]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && currentWord && !result) {
@@ -90,6 +92,7 @@ function App() {
             setSelectedCategory={setSelectedCategory}
             selectedDifficulty={selectedDifficulty}
             setSelectedDifficulty={setSelectedDifficulty}
+            availableWordCount={availableWordCount}
           />
         </main>
         <button className="mode-toggle" onClick={toggleMode} title="Zmień kierunek tłumaczenia">
@@ -164,38 +167,44 @@ function App() {
                 <div className="loading__spinner" />
                 <span>Ładowanie...</span>
               </div>
+            ) : noMoreWords ? (
+              <span className="word-display__no-words">
+                Brak więcej słów dla wybranych kryteriów
+              </span>
             ) : currentWord ? (
               currentWord.wordToTranslate
             ) : (
               <span className="word-display__placeholder">Ładowanie...</span>
             )}
           </div>
-          {currentWord?.category && (
+          {currentWord?.category && !noMoreWords && (
             <div className="word-display__category">{currentWord.category}</div>
           )}
         </div>
 
-        {/* Input */}
-        <div className="input-group">
-          <label className="input-group__label" htmlFor="translation">
-            Twoje tłumaczenie
-          </label>
-          <input
-            ref={inputRef}
-            id="translation"
-            type="text"
-            className={getInputClass()}
-            placeholder={`Wpisz tłumaczenie po ${targetLanguage}u...`}
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={!currentWord || loading}
-            autoComplete="off"
-          />
-        </div>
+        {/* Input - ukryj gdy brak słów */}
+        {!noMoreWords && (
+          <div className="input-group">
+            <label className="input-group__label" htmlFor="translation">
+              Twoje tłumaczenie
+            </label>
+            <input
+              ref={inputRef}
+              id="translation"
+              type="text"
+              className={getInputClass()}
+              placeholder={`Wpisz tłumaczenie po ${targetLanguage}u...`}
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={!currentWord || loading}
+              autoComplete="off"
+            />
+          </div>
+        )}
 
         {/* Result */}
-        {result && (
+        {result && !noMoreWords && (
           <div className={`result ${result.isCorrect ? 'result--correct' : 'result--incorrect'}`}>
             <div className="result__message">
               {result.isCorrect ? '✓ Świetnie!' : '✗ Niestety nie...'}
@@ -210,7 +219,14 @@ function App() {
 
         {/* Buttons */}
         <div className="button-group">
-          {!result ? (
+          {noMoreWords ? (
+            <button
+              className="btn btn--primary"
+              onClick={resetQuiz}
+            >
+              Zakończ quiz
+            </button>
+          ) : !result ? (
             <button
               className="btn btn--primary"
               onClick={submitTranslation}

@@ -26,11 +26,16 @@ export const typeDefs = `#graphql
     difficulty: Int!
   }
 
+  type WordCount {
+    count: Int!
+  }
+
   type Query {
     getRandomWord(mode: TranslationMode!, category: String, difficulty: Int): WordChallenge!
     getAllWords: [DictionaryWord!]!
     getCategories: [String!]!
     getDifficulties: [Int!]!
+    getWordCount(category: String, difficulty: Int): WordCount!
   }
 
   type Mutation {

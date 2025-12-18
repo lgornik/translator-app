@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
-import { GET_RANDOM_WORD, CHECK_TRANSLATION, GET_CATEGORIES } from '../graphql/operations';
+import { GET_RANDOM_WORD, CHECK_TRANSLATION, GET_CATEGORIES, GET_WORD_COUNT } from '../graphql/operations';
 
 export function useTranslation() {
   // Stan gry
@@ -35,6 +35,7 @@ export function useTranslation() {
   const [wordsToRepeat, setWordsToRepeat] = useState([]); // Słowa do powtórki
   const [masteredCount, setMasteredCount] = useState(0); // Opanowane słowa
   const [lastWordId, setLastWordId] = useState(null);
+  const [noMoreWords, setNoMoreWords] = useState(false);
 
   // Pobierz kategorie
   const { data: categoriesData } = useQuery(GET_CATEGORIES);
@@ -46,13 +47,27 @@ export function useTranslation() {
     onCompleted: (data) => {
       const word = data.getRandomWord;
       
+      // Sprawdź czy słowo już było użyte (brak nowych słów)
+      if (usedWordIds.has(word.id)) {
+        if (quizMode === 'timed') {
+          setNoMoreWords(true);
+        } else {
+          endQuiz();
+        }
+        return;
+      }
+      
       setCurrentWord(word);
       setUsedWordIds(prev => new Set([...prev, word.id]));
       setResult(null);
       setUserInput('');
+      setNoMoreWords(false);
     },
     onError: (error) => {
       console.error('Error fetching word:', error);
+      if (quizMode === 'timed') {
+        setNoMoreWords(true);
+      }
     },
   });
 
@@ -139,6 +154,17 @@ export function useTranslation() {
     }
   }, []);
 
+  // Pobierz liczbę słów
+  const { data: wordCountData, refetch: refetchWordCount } = useQuery(GET_WORD_COUNT, {
+    variables: { category: selectedCategory, difficulty: selectedDifficulty },
+  });
+  const availableWordCount = wordCountData?.getWordCount?.count || 0;
+
+  // Odśwież liczbę słów gdy zmienią się filtry
+  useEffect(() => {
+    refetchWordCount({ category: selectedCategory, difficulty: selectedDifficulty });
+  }, [selectedCategory, selectedDifficulty, refetchWordCount]);
+
   // Funkcja tasująca tablicę (Fisher-Yates shuffle)
   const shuffleArray = (array) => {
     const shuffled = [...array];
@@ -162,6 +188,7 @@ export function useTranslation() {
     setReinforceMode(false);
     setWordsToRepeat([]);
     setMasteredCount(0);
+    setNoMoreWords(false);  // ← dodaj
     
     if (selectedMode === 'timed') {
       setTimeRemaining(settings.timeLimit || quizSettings.timeLimit);
@@ -176,7 +203,6 @@ export function useTranslation() {
     });
   }, [fetchWord, mode, selectedCategory, selectedDifficulty, quizSettings.timeLimit]);
 
-  // Rozpocznij quiz z trybem utrwalania
   const startQuizWithReinforce = useCallback((selectedMode, settings = {}) => {
     setReinforceMode(true);
     setQuizMode(selectedMode);
@@ -190,6 +216,7 @@ export function useTranslation() {
     setUserInput('');
     setWordsToRepeat([]);
     setMasteredCount(0);
+    setNoMoreWords(false);  // ← dodaj
     
     fetchWord({ 
       variables: { 
@@ -289,6 +316,7 @@ export function useTranslation() {
     setMasteredCount(0);
     setShuffledQueue([]);
     setLastWordId(null);
+    setNoMoreWords(false);
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
@@ -351,5 +379,7 @@ export function useTranslation() {
     submitTranslation,
     toggleMode,
     resetQuiz,
+    availableWordCount,
+    noMoreWords
   };
 }

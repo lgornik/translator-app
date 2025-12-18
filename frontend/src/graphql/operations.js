@@ -20,6 +20,15 @@ export const GET_CATEGORIES = gql`
   }
 `;
 
+// Pobierz liczbę słów
+export const GET_WORD_COUNT = gql`
+  query GetWordCount($category: String, $difficulty: Int) {
+    getWordCount(category: $category, difficulty: $difficulty) {
+      count
+    }
+  }
+`;
+
 // Sprawdź tłumaczenie
 export const CHECK_TRANSLATION = gql`
   mutation CheckTranslation($wordId: ID!, $userTranslation: String!, $mode: TranslationMode!) {
