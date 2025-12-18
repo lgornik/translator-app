@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from './hooks/useTranslation';
 import QuizSetup from './components/QuizSetup';
 import QuizFinished from './components/QuizFinished';
+import RoundEnd from './components/RoundEnd';
 
 function App() {
   const {
@@ -19,6 +20,8 @@ function App() {
     loading,
     setUserInput,
     startQuiz,
+    startQuizWithReinforce,
+    startNextRound,
     getNewWord,
     submitTranslation,
     toggleMode,
@@ -28,6 +31,11 @@ function App() {
     setSelectedCategory,
     selectedDifficulty,
     setSelectedDifficulty,
+    reinforceMode,
+    currentRound,
+    incorrectWords,
+    totalStats,
+    wordsInCurrentRound,
   } = useTranslation();
 
   const inputRef = useRef(null);
@@ -76,7 +84,8 @@ function App() {
         </header>
         <main className="card">
           <QuizSetup 
-            onStart={startQuiz} 
+            onStart={startQuiz}
+            onStartWithReinforce={startQuizWithReinforce}
             mode={mode} 
             onToggleMode={toggleMode}
             categories={categories}
@@ -84,6 +93,27 @@ function App() {
             setSelectedCategory={setSelectedCategory}
             selectedDifficulty={selectedDifficulty}
             setSelectedDifficulty={setSelectedDifficulty}
+          />
+        </main>
+      </div>
+    );
+  }
+
+  // Ekran końca rundy (tryb utrwalania)
+  if (gameState === 'roundEnd') {
+    return (
+      <div className="app">
+        <header className="header">
+          <h1 className="header__title">Translator</h1>
+          <p className="header__subtitle">Tryb utrwalania wiedzy</p>
+        </header>
+        <main className="card">
+          <RoundEnd
+            currentRound={currentRound}
+            stats={stats}
+            incorrectWords={incorrectWords}
+            onNextRound={startNextRound}
+            onQuit={resetQuiz}
           />
         </main>
       </div>
@@ -102,7 +132,10 @@ function App() {
           <QuizFinished 
             stats={stats} 
             wordsCompleted={wordsCompleted} 
-            onRestart={resetQuiz} 
+            onRestart={resetQuiz}
+            reinforceMode={reinforceMode}
+            totalStats={totalStats}
+            currentRound={currentRound}
           />
         </main>
       </div>
@@ -119,20 +152,27 @@ function App() {
 
       <main className="card">
         {/* Progress bar */}
-        <div className="quiz-progress">
-          {quizMode === 'timed' ? (
-            <div className="quiz-progress__timer">
-              ⏱️ {formatTime(timeRemaining)}
-            </div>
-          ) : (
-            <div className="quiz-progress__counter">
-              {wordsCompleted} / {quizMode === 'all' ? '∞' : getWordLimit()}
-            </div>
-          )}
-          <button className="btn btn--text" onClick={resetQuiz}>
-            ✕ Zakończ
-          </button>
-        </div>
+          <div className="quiz-progress">
+            {quizMode === 'timed' ? (
+              <div className="quiz-progress__timer">
+                ⏱️ {formatTime(timeRemaining)}
+              </div>
+            ) : (
+              <div className="quiz-progress__info">
+                <div className="quiz-progress__counter">
+                  {wordsCompleted} / {reinforceMode && currentRound > 1 ? wordsInCurrentRound : getWordLimit()}
+                </div>
+                {reinforceMode && (
+                  <div className="quiz-progress__round">
+                    Runda {currentRound}
+                  </div>
+                )}
+              </div>
+            )}
+            <button className="btn btn--text" onClick={resetQuiz}>
+              ✕ Zakończ
+            </button>
+          </div>
 
         {/* Word Display */}
         <div className="word-display">
@@ -193,13 +233,13 @@ function App() {
         <div className="button-group">
           {!result ? (
             <>
-              <button
+              {/* <button
                 className="btn btn--secondary"
                 onClick={getNewWord}
                 disabled={loading}
               >
                 Pomiń
-              </button>
+              </button> */}
               <button
                 className="btn btn--primary"
                 onClick={submitTranslation}

@@ -713,3 +713,149 @@ body {
     flex-direction: column;
   }
 }
+
+/* ==================== */
+/* Quiz Reinforce Toggle */
+/* ==================== */
+
+.quiz-reinforce {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.quiz-reinforce__label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.quiz-reinforce__checkbox {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+}
+
+.quiz-reinforce__text {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+/* ==================== */
+/* Round End */
+/* ==================== */
+
+.round-end {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.round-end__emoji {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.round-end__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+
+.round-end__stats {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.round-end__stat {
+  text-align: center;
+}
+
+.round-end__stat-value {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.round-end__stat--correct .round-end__stat-value {
+  color: var(--success);
+}
+
+.round-end__stat--incorrect .round-end__stat-value {
+  color: var(--error);
+}
+
+.round-end__stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.round-end__message {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  text-align: left;
+}
+
+.round-end__message p {
+  margin-bottom: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.round-end__words {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.round-end__words li {
+  padding: 0.25rem 0;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+}
+
+.round-end__actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.round-end__actions .btn {
+  flex: 1;
+}
+
+/* ==================== */
+/* Quiz Progress Updates */
+/* ==================== */
+
+.quiz-progress__info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.quiz-progress__round {
+  font-size: 0.875rem;
+  color: var(--accent-primary);
+  padding: 0.25rem 0.75rem;
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 100px;
+}
+
+/* ==================== */
+/* Quiz Finished Updates */
+/* ==================== */
+
+.quiz-finished__rounds {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}

@@ -29,6 +29,14 @@ export function useTranslation() {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const timerRef = useRef(null);
 
+  // Tryb utrwalania wiedzy
+  const [reinforceMode, setReinforceMode] = useState(false);
+  const [currentRound, setCurrentRound] = useState(1);
+  const [incorrectWords, setIncorrectWords] = useState([]);
+  const [roundIncorrectWords, setRoundIncorrectWords] = useState([]);
+  const [wordsInCurrentRound, setWordsInCurrentRound] = useState(0);
+  const [totalStats, setTotalStats] = useState({ correct: 0, incorrect: 0, rounds: 0 });
+
   // Pobierz kategorie
   const { data: categoriesData } = useQuery(GET_CATEGORIES);
   const categories = categoriesData?.getCategories || [];
@@ -38,11 +46,6 @@ export function useTranslation() {
     fetchPolicy: 'network-only',
     onCompleted: (data) => {
       const word = data.getRandomWord;
-      
-      if (quizMode === 'all' && usedWordIds.has(word.id)) {
-        endQuiz();
-        return;
-      }
       
       setCurrentWord(word);
       setUsedWordIds(prev => new Set([...prev, word.id]));
@@ -67,7 +70,19 @@ export function useTranslation() {
         incorrect: prev.incorrect + (translationResult.isCorrect ? 0 : 1),
       }));
 
-      if ((quizMode === 'limit' || quizMode === 'custom') && 
+      // Śledź błędne słowa w trybie utrwalania
+      let updatedIncorrectWords = roundIncorrectWords;
+      if (reinforceMode && !translationResult.isCorrect && currentWord) {
+        updatedIncorrectWords = [...roundIncorrectWords, currentWord];
+        setRoundIncorrectWords(updatedIncorrectWords);
+      }
+
+      // Sprawdź czy runda się skończyła
+      if (reinforceMode) {
+        if (newWordsCompleted >= wordsInCurrentRound) {
+          setTimeout(() => endRound(updatedIncorrectWords), 1500);
+        }
+      } else if ((quizMode === 'limit' || quizMode === 'custom') && 
           newWordsCompleted >= getWordLimit()) {
         setTimeout(() => endQuiz(), 1500);
       }
@@ -103,9 +118,67 @@ export function useTranslation() {
     switch (quizMode) {
       case 'limit': return quizSettings.wordLimit;
       case 'custom': return quizSettings.customLimit;
-      default: return Infinity;
+      default: return quizSettings.wordLimit;
     }
   }, [quizMode, quizSettings]);
+
+  // Zakończ rundę (dla trybu utrwalania)
+  const endRound = useCallback((incorrectList = roundIncorrectWords) => {
+    setTotalStats(prev => ({
+      correct: prev.correct + stats.correct,
+      incorrect: prev.incorrect + stats.incorrect,
+      rounds: prev.rounds + 1,
+    }));
+
+    if (incorrectList.length === 0) {
+      setGameState('finished');
+    } else {
+      setIncorrectWords(incorrectList);
+      setGameState('roundEnd');
+    }
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+  }, [stats, roundIncorrectWords]);
+
+  // Rozpocznij następną rundę z błędnymi słowami
+  const startNextRound = useCallback(() => {
+    setCurrentRound(prev => prev + 1);
+    setWordsInCurrentRound(incorrectWords.length);
+    setRoundIncorrectWords([]);
+    setUsedWordIds(new Set());
+    setWordsCompleted(0);
+    setStats({ correct: 0, incorrect: 0 });
+    setCurrentWord(null);
+    setResult(null);
+    setUserInput('');
+    setGameState('playing');
+
+    if (incorrectWords.length > 0) {
+      const randomIndex = Math.floor(Math.random() * incorrectWords.length);
+      const word = incorrectWords[randomIndex];
+      setCurrentWord(word);
+      setUsedWordIds(new Set([word.id]));
+    }
+  }, [incorrectWords]);
+
+  // Pobierz następne słowo z błędnych
+  const getNextWordFromIncorrect = useCallback(() => {
+    const unusedWords = incorrectWords.filter(w => !usedWordIds.has(w.id));
+    
+    if (unusedWords.length === 0) {
+      endRound();
+      return;
+    }
+
+    const randomIndex = Math.floor(Math.random() * unusedWords.length);
+    const word = unusedWords[randomIndex];
+    setCurrentWord(word);
+    setUsedWordIds(prev => new Set([...prev, word.id]));
+    setResult(null);
+    setUserInput('');
+  }, [incorrectWords, usedWordIds, endRound]);
 
   const endQuiz = useCallback(() => {
     setGameState('finished');
@@ -113,17 +186,6 @@ export function useTranslation() {
       clearInterval(timerRef.current);
     }
   }, []);
-
-  // Funkcja do pobierania słowa z filtrami
-  const fetchWordWithFilters = useCallback(() => {
-    fetchWord({ 
-      variables: { 
-        mode,
-        category: selectedCategory,
-        difficulty: selectedDifficulty
-      } 
-    });
-  }, [fetchWord, mode, selectedCategory, selectedDifficulty]);
 
   const startQuiz = useCallback((selectedMode, settings = {}) => {
     setQuizMode(selectedMode);
@@ -135,6 +197,11 @@ export function useTranslation() {
     setCurrentWord(null);
     setResult(null);
     setUserInput('');
+    setReinforceMode(false);
+    setCurrentRound(1);
+    setIncorrectWords([]);
+    setRoundIncorrectWords([]);
+    setTotalStats({ correct: 0, incorrect: 0, rounds: 0 });
     
     if (selectedMode === 'timed') {
       setTimeRemaining(settings.timeLimit || quizSettings.timeLimit);
@@ -149,10 +216,47 @@ export function useTranslation() {
     });
   }, [fetchWord, mode, selectedCategory, selectedDifficulty, quizSettings.timeLimit]);
 
+  // Rozpocznij quiz z trybem utrwalania
+  const startQuizWithReinforce = useCallback((selectedMode, settings = {}) => {
+    setReinforceMode(true);
+    setQuizMode(selectedMode);
+    setQuizSettings(prev => ({ ...prev, ...settings }));
+    setGameState('playing');
+    setWordsCompleted(0);
+    setUsedWordIds(new Set());
+    setStats({ correct: 0, incorrect: 0 });
+    setCurrentWord(null);
+    setResult(null);
+    setUserInput('');
+    setCurrentRound(1);
+    setIncorrectWords([]);
+    setRoundIncorrectWords([]);
+    setWordsInCurrentRound(settings.wordLimit || settings.customLimit || quizSettings.wordLimit);
+    setTotalStats({ correct: 0, incorrect: 0, rounds: 0 });
+    
+    fetchWord({ 
+      variables: { 
+        mode,
+        category: selectedCategory,
+        difficulty: selectedDifficulty
+      } 
+    });
+  }, [fetchWord, mode, selectedCategory, selectedDifficulty, quizSettings.wordLimit]);
+
   const getNewWord = useCallback(() => {
+    // W trybie utrwalania z błędnymi słowami
+    if (reinforceMode && currentRound > 1) {
+      getNextWordFromIncorrect();
+      return;
+    }
+
     if ((quizMode === 'limit' || quizMode === 'custom') && 
         wordsCompleted >= getWordLimit()) {
-      endQuiz();
+      if (reinforceMode) {
+        endRound();
+      } else {
+        endQuiz();
+      }
       return;
     }
     
@@ -163,7 +267,7 @@ export function useTranslation() {
         difficulty: selectedDifficulty
       } 
     });
-  }, [fetchWord, mode, selectedCategory, selectedDifficulty, quizMode, wordsCompleted, getWordLimit, endQuiz]);
+  }, [fetchWord, mode, selectedCategory, selectedDifficulty, quizMode, wordsCompleted, getWordLimit, endQuiz, reinforceMode, currentRound, getNextWordFromIncorrect, endRound]);
 
   const submitTranslation = useCallback(() => {
     if (!currentWord || !userInput.trim()) return;
@@ -190,6 +294,11 @@ export function useTranslation() {
     setWordsCompleted(0);
     setUsedWordIds(new Set());
     setTimeRemaining(0);
+    setReinforceMode(false);
+    setCurrentRound(1);
+    setIncorrectWords([]);
+    setRoundIncorrectWords([]);
+    setTotalStats({ correct: 0, incorrect: 0, rounds: 0 });
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
@@ -223,9 +332,18 @@ export function useTranslation() {
     selectedDifficulty,
     setSelectedDifficulty,
     
+    // Tryb utrwalania
+    reinforceMode,
+    currentRound,
+    incorrectWords,
+    totalStats,
+    wordsInCurrentRound,
+    
     // Akcje
     setUserInput,
     startQuiz,
+    startQuizWithReinforce,
+    startNextRound,
     getNewWord,
     submitTranslation,
     toggleMode,

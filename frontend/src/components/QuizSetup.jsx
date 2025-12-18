@@ -1,7 +1,8 @@
 import { useState } from 'react';
 
 function QuizSetup({ 
-  onStart, 
+  onStart,
+  onStartWithReinforce,
   mode, 
   onToggleMode,
   categories,
@@ -12,15 +13,24 @@ function QuizSetup({
 }) {
   const [customWords, setCustomWords] = useState(10);
   const [customTime, setCustomTime] = useState(5);
+  const [useReinforce, setUseReinforce] = useState(true);
 
   const modeLabel = mode === 'EN_TO_PL' ? 'EN → PL' : 'PL → EN';
 
   const difficulties = [
-    { value: null, label: 'Wszystkie poziomy' },
+    { value: null, label: 'Wszystkie' },
     { value: 1, label: '⭐ Łatwy' },
     { value: 2, label: '⭐⭐ Średni' },
     { value: 3, label: '⭐⭐⭐ Trudny' },
   ];
+
+  const handleStart = (quizMode, settings) => {
+    if (useReinforce && quizMode !== 'timed') {
+      onStartWithReinforce(quizMode, settings);
+    } else {
+      onStart(quizMode, settings);
+    }
+  };
 
   return (
     <div className="quiz-setup">
@@ -35,7 +45,7 @@ function QuizSetup({
             value={selectedCategory || ''}
             onChange={(e) => setSelectedCategory(e.target.value || null)}
           >
-            <option value="">Wszystkie kategorie</option>
+            <option value="">Wszystkie</option>
             {categories.map(cat => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
@@ -57,12 +67,27 @@ function QuizSetup({
           </select>
         </div>
       </div>
+
+      {/* Tryb utrwalania */}
+      <div className="quiz-reinforce">
+        <label className="quiz-reinforce__label">
+          <input
+            type="checkbox"
+            checked={useReinforce}
+            onChange={(e) => setUseReinforce(e.target.checked)}
+            className="quiz-reinforce__checkbox"
+          />
+          <span className="quiz-reinforce__text">
+                Tryb utrwalania
+          </span>
+        </label>
+      </div>
       
       <div className="quiz-setup__options">
         {/* Szybki quiz */}
         <button 
           className="quiz-option"
-          onClick={() => onStart('limit', { wordLimit: 10 })}
+          onClick={() => handleStart('limit', { wordLimit: 10 })}
         >
           <span className="quiz-option__icon">⚡</span>
           <span className="quiz-option__title">Szybki quiz</span>
@@ -72,21 +97,11 @@ function QuizSetup({
         {/* Standardowy quiz */}
         <button 
           className="quiz-option"
-          onClick={() => onStart('limit', { wordLimit: 20 })}
+          onClick={() => handleStart('limit', { wordLimit: 20 })}
         >
           <span className="quiz-option__icon">📝</span>
           <span className="quiz-option__title">Standardowy</span>
           <span className="quiz-option__desc">20 słów</span>
-        </button>
-
-        {/* Wszystkie słowa */}
-        <button 
-          className="quiz-option"
-          onClick={() => onStart('all')}
-        >
-          <span className="quiz-option__icon">📚</span>
-          <span className="quiz-option__title">Wszystkie słowa</span>
-          <span className="quiz-option__desc">Cała baza</span>
         </button>
 
         {/* Tryb czasowy */}
@@ -128,7 +143,7 @@ function QuizSetup({
             <span>słów</span>
             <button 
               className="btn btn--small"
-              onClick={() => onStart('custom', { customLimit: customWords })}
+              onClick={() => handleStart('custom', { customLimit: customWords })}
             >
               Start
             </button>
