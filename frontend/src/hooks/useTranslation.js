@@ -22,6 +22,7 @@ export function useTranslation() {
   const [result, setResult] = useState(null);
   const [userInput, setUserInput] = useState('');
   const [stats, setStats] = useState({ correct: 0, incorrect: 0 });
+  const [shuffledQueue, setShuffledQueue] = useState([]);
   
   // Stan quizu
   const [wordsCompleted, setWordsCompleted] = useState(0);
@@ -31,11 +32,9 @@ export function useTranslation() {
 
   // Tryb utrwalania wiedzy
   const [reinforceMode, setReinforceMode] = useState(false);
-  const [currentRound, setCurrentRound] = useState(1);
-  const [incorrectWords, setIncorrectWords] = useState([]);
-  const [roundIncorrectWords, setRoundIncorrectWords] = useState([]);
-  const [wordsInCurrentRound, setWordsInCurrentRound] = useState(0);
-  const [totalStats, setTotalStats] = useState({ correct: 0, incorrect: 0, rounds: 0 });
+  const [wordsToRepeat, setWordsToRepeat] = useState([]); // Słowa do powtórki
+  const [masteredCount, setMasteredCount] = useState(0); // Opanowane słowa
+  const [lastWordId, setLastWordId] = useState(null);
 
   // Pobierz kategorie
   const { data: categoriesData } = useQuery(GET_CATEGORIES);
@@ -62,29 +61,40 @@ export function useTranslation() {
       const translationResult = data.checkTranslation;
       setResult(translationResult);
       
-      const newWordsCompleted = wordsCompleted + 1;
-      setWordsCompleted(newWordsCompleted);
-      
       setStats((prev) => ({
         correct: prev.correct + (translationResult.isCorrect ? 1 : 0),
         incorrect: prev.incorrect + (translationResult.isCorrect ? 0 : 1),
       }));
 
-      // Śledź błędne słowa w trybie utrwalania
-      let updatedIncorrectWords = roundIncorrectWords;
-      if (reinforceMode && !translationResult.isCorrect && currentWord) {
-        updatedIncorrectWords = [...roundIncorrectWords, currentWord];
-        setRoundIncorrectWords(updatedIncorrectWords);
-      }
-
-      // Sprawdź czy runda się skończyła
       if (reinforceMode) {
-        if (newWordsCompleted >= wordsInCurrentRound) {
-          setTimeout(() => endRound(updatedIncorrectWords), 1500);
+        if (translationResult.isCorrect) {
+          // Usuń słowo z listy do powtórki (jeśli tam było)
+          setWordsToRepeat(prev => prev.filter(w => w.id !== currentWord.id));
+          // Usuń też z kolejki
+          setShuffledQueue(prev => prev.filter(w => w.id !== currentWord.id));
+          setMasteredCount(prev => prev + 1);
+          
+          // Sprawdź czy to było ostatnie słowo
+          const newWordsToRepeat = wordsToRepeat.filter(w => w.id !== currentWord.id);
+          const wordsLeft = (getWordLimit() - masteredCount - 1) + newWordsToRepeat.length;
+          
+          if (wordsLeft <= 0 && newWordsToRepeat.length === 0) {
+            setTimeout(() => endQuiz(), 1500);
+          }
+        } else {
+          // Dodaj do listy powtórek (jeśli jeszcze nie ma)
+          if (!wordsToRepeat.find(w => w.id === currentWord.id)) {
+            setWordsToRepeat(prev => [...prev, currentWord]);
+          }
         }
-      } else if ((quizMode === 'limit' || quizMode === 'custom') && 
-          newWordsCompleted >= getWordLimit()) {
-        setTimeout(() => endQuiz(), 1500);
+      } else {
+        const newWordsCompleted = wordsCompleted + 1;
+        setWordsCompleted(newWordsCompleted);
+        
+        if ((quizMode === 'limit' || quizMode === 'custom') && 
+            newWordsCompleted >= getWordLimit()) {
+          setTimeout(() => endQuiz(), 1500);
+        }
       }
     },
     onError: (error) => {
@@ -122,70 +132,22 @@ export function useTranslation() {
     }
   }, [quizMode, quizSettings]);
 
-  // Zakończ rundę (dla trybu utrwalania)
-  const endRound = useCallback((incorrectList = roundIncorrectWords) => {
-    setTotalStats(prev => ({
-      correct: prev.correct + stats.correct,
-      incorrect: prev.incorrect + stats.incorrect,
-      rounds: prev.rounds + 1,
-    }));
-
-    if (incorrectList.length === 0) {
-      setGameState('finished');
-    } else {
-      setIncorrectWords(incorrectList);
-      setGameState('roundEnd');
-    }
-
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-  }, [stats, roundIncorrectWords]);
-
-  // Rozpocznij następną rundę z błędnymi słowami
-  const startNextRound = useCallback(() => {
-    setCurrentRound(prev => prev + 1);
-    setWordsInCurrentRound(incorrectWords.length);
-    setRoundIncorrectWords([]);
-    setUsedWordIds(new Set());
-    setWordsCompleted(0);
-    setStats({ correct: 0, incorrect: 0 });
-    setCurrentWord(null);
-    setResult(null);
-    setUserInput('');
-    setGameState('playing');
-
-    if (incorrectWords.length > 0) {
-      const randomIndex = Math.floor(Math.random() * incorrectWords.length);
-      const word = incorrectWords[randomIndex];
-      setCurrentWord(word);
-      setUsedWordIds(new Set([word.id]));
-    }
-  }, [incorrectWords]);
-
-  // Pobierz następne słowo z błędnych
-  const getNextWordFromIncorrect = useCallback(() => {
-    const unusedWords = incorrectWords.filter(w => !usedWordIds.has(w.id));
-    
-    if (unusedWords.length === 0) {
-      endRound();
-      return;
-    }
-
-    const randomIndex = Math.floor(Math.random() * unusedWords.length);
-    const word = unusedWords[randomIndex];
-    setCurrentWord(word);
-    setUsedWordIds(prev => new Set([...prev, word.id]));
-    setResult(null);
-    setUserInput('');
-  }, [incorrectWords, usedWordIds, endRound]);
-
   const endQuiz = useCallback(() => {
     setGameState('finished');
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
   }, []);
+
+  // Funkcja tasująca tablicę (Fisher-Yates shuffle)
+  const shuffleArray = (array) => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
 
   const startQuiz = useCallback((selectedMode, settings = {}) => {
     setQuizMode(selectedMode);
@@ -198,10 +160,8 @@ export function useTranslation() {
     setResult(null);
     setUserInput('');
     setReinforceMode(false);
-    setCurrentRound(1);
-    setIncorrectWords([]);
-    setRoundIncorrectWords([]);
-    setTotalStats({ correct: 0, incorrect: 0, rounds: 0 });
+    setWordsToRepeat([]);
+    setMasteredCount(0);
     
     if (selectedMode === 'timed') {
       setTimeRemaining(settings.timeLimit || quizSettings.timeLimit);
@@ -228,11 +188,8 @@ export function useTranslation() {
     setCurrentWord(null);
     setResult(null);
     setUserInput('');
-    setCurrentRound(1);
-    setIncorrectWords([]);
-    setRoundIncorrectWords([]);
-    setWordsInCurrentRound(settings.wordLimit || settings.customLimit || quizSettings.wordLimit);
-    setTotalStats({ correct: 0, incorrect: 0, rounds: 0 });
+    setWordsToRepeat([]);
+    setMasteredCount(0);
     
     fetchWord({ 
       variables: { 
@@ -241,36 +198,69 @@ export function useTranslation() {
         difficulty: selectedDifficulty
       } 
     });
-  }, [fetchWord, mode, selectedCategory, selectedDifficulty, quizSettings.wordLimit]);
+  }, [fetchWord, mode, selectedCategory, selectedDifficulty]);
 
   const getNewWord = useCallback(() => {
-    // W trybie utrwalania z błędnymi słowami
-    if (reinforceMode && currentRound > 1) {
-      getNextWordFromIncorrect();
-      return;
-    }
+    setResult(null);
+    setUserInput('');
 
-    if ((quizMode === 'limit' || quizMode === 'custom') && 
-        wordsCompleted >= getWordLimit()) {
-      if (reinforceMode) {
-        endRound();
+    if (reinforceMode) {
+      const newWordsRemaining = getWordLimit() - masteredCount - (wordsToRepeat.find(w => w.id === currentWord?.id) ? 0 : 1);
+      
+      if (newWordsRemaining > 0 && usedWordIds.size < getWordLimit()) {
+        setLastWordId(currentWord?.id);
+        fetchWord({ 
+          variables: { 
+            mode,
+            category: selectedCategory,
+            difficulty: selectedDifficulty
+          } 
+        });
+      } else if (wordsToRepeat.length > 0) {
+        // Jeśli kolejka pusta, przetasuj na nowo
+        let queue = shuffledQueue;
+        if (queue.length === 0) {
+          // Użyj aktualnego słowa jako ostatniego
+          const lastId = currentWord?.id;
+          
+          queue = shuffleArray(wordsToRepeat);
+          
+          // Jeśli pierwsze słowo jest takie samo jak ostatnie, przesuń je na koniec
+          if (queue.length > 1 && queue[0].id === lastId) {
+            const firstWord = queue[0];
+            queue = [...queue.slice(1), firstWord];
+          }
+        }
+        
+        // Weź pierwsze słowo z kolejki
+        const word = queue[0];
+        const newQueue = queue.slice(1);
+        
+        setLastWordId(word.id);
+        setShuffledQueue(newQueue);
+        setCurrentWord(word);
       } else {
         endQuiz();
       }
-      return;
+    } else {
+      if ((quizMode === 'limit' || quizMode === 'custom') && 
+          wordsCompleted >= getWordLimit()) {
+        endQuiz();
+        return;
+      }
+      
+      fetchWord({ 
+        variables: { 
+          mode,
+          category: selectedCategory,
+          difficulty: selectedDifficulty
+        } 
+      });
     }
-    
-    fetchWord({ 
-      variables: { 
-        mode,
-        category: selectedCategory,
-        difficulty: selectedDifficulty
-      } 
-    });
-  }, [fetchWord, mode, selectedCategory, selectedDifficulty, quizMode, wordsCompleted, getWordLimit, endQuiz, reinforceMode, currentRound, getNextWordFromIncorrect, endRound]);
+  }, [fetchWord, mode, selectedCategory, selectedDifficulty, quizMode, wordsCompleted, getWordLimit, endQuiz, reinforceMode, wordsToRepeat, masteredCount, usedWordIds, currentWord, shuffledQueue, lastWordId]);
 
   const submitTranslation = useCallback(() => {
-    if (!currentWord || !userInput.trim()) return;
+    if (!currentWord) return;
 
     checkTranslation({
       variables: {
@@ -295,10 +285,10 @@ export function useTranslation() {
     setUsedWordIds(new Set());
     setTimeRemaining(0);
     setReinforceMode(false);
-    setCurrentRound(1);
-    setIncorrectWords([]);
-    setRoundIncorrectWords([]);
-    setTotalStats({ correct: 0, incorrect: 0, rounds: 0 });
+    setWordsToRepeat([]);
+    setMasteredCount(0);
+    setShuffledQueue([]);
+    setLastWordId(null);
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
@@ -309,6 +299,21 @@ export function useTranslation() {
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   }, []);
+
+  // Oblicz postęp dla trybu utrwalania
+  const getProgress = useCallback(() => {
+    if (reinforceMode) {
+      return {
+        mastered: masteredCount,
+        total: getWordLimit(),
+        toRepeat: wordsToRepeat.length
+      };
+    }
+    return {
+      completed: wordsCompleted,
+      total: getWordLimit()
+    };
+  }, [reinforceMode, masteredCount, wordsToRepeat.length, wordsCompleted, getWordLimit]);
 
   return {
     gameState,
@@ -334,16 +339,14 @@ export function useTranslation() {
     
     // Tryb utrwalania
     reinforceMode,
-    currentRound,
-    incorrectWords,
-    totalStats,
-    wordsInCurrentRound,
+    wordsToRepeat,
+    masteredCount,
+    getProgress,
     
     // Akcje
     setUserInput,
     startQuiz,
     startQuizWithReinforce,
-    startNextRound,
     getNewWord,
     submitTranslation,
     toggleMode,

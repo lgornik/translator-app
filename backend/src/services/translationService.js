@@ -60,63 +60,78 @@ class TranslationService {
   }
 
   // Sprawdź tłumaczenie
-  checkTranslation(wordId, userTranslation, mode = 'en-to-pl') {
-    const word = dictionary.find(w => w.id === wordId);
-    
-    if (!word) {
-      return {
-        isCorrect: false,
-        correctTranslation: null,
-        error: 'Word not found',
-      };
-    }
-
-    const correctAnswer = mode === 'en-to-pl' ? word.polish : word.english;
-    const normalizedUserAnswer = this.normalizeAnswer(userTranslation);
-    const normalizedCorrectAnswer = this.normalizeAnswer(correctAnswer);
-
-    const isCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
-
+checkTranslation(wordId, userTranslation, mode = 'en-to-pl') {
+  const word = dictionary.find(w => w.id === wordId);
+  
+  if (!word) {
     return {
-      isCorrect,
-      correctTranslation: correctAnswer,
-      userTranslation,
+      isCorrect: false,
+      correctTranslation: null,
+      error: 'Word not found',
     };
   }
 
-  // Normalizacja odpowiedzi
-  normalizeAnswer(answer) {
-    return answer
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, ' ');
-  }
+  const correctAnswer = mode === 'en-to-pl' ? word.polish : word.english;
+  const normalizedUserAnswer = this.normalizeAnswer(userTranslation);
+  
+  // Sprawdź czy odpowiedź pasuje do którejkolwiek z opcji
+  const isCorrect = this.checkMultipleAnswers(normalizedUserAnswer, correctAnswer);
 
-  // Pobierz wszystkie słowa
-  getAllWords() {
-    return dictionary;
-  }
-
-  // Pobierz słowa według kategorii
-  getWordsByCategory(category) {
-    return dictionary.filter(w => w.category === category);
-  }
-
-  // Pobierz dostępne kategorie
-  getCategories() {
-    return [...new Set(dictionary.map(w => w.category))].sort();
-  }
-
-  // Pobierz dostępne poziomy trudności
-  getDifficulties() {
-    return [...new Set(dictionary.map(w => w.difficulty))].sort((a, b) => a - b);
-  }
-
-  // Reset sesji
-  resetSession() {
-    this.usedWordIds.clear();
-    return { success: true, message: 'Session reset' };
-  }
+  return {
+    isCorrect,
+    correctTranslation: correctAnswer,
+    userTranslation,
+  };
 }
+
+// Sprawdź odpowiedź z wieloma opcjami (oddzielonymi "/")
+checkMultipleAnswers(userAnswer, correctAnswer) {
+  const normalizedCorrect = this.normalizeAnswer(correctAnswer);
+  
+  // Sprawdź dokładne dopasowanie całości
+  if (userAnswer === normalizedCorrect) {
+    return true;
+  }
+  
+  // Rozdziel odpowiedzi po "/" i sprawdź każdą
+  const options = correctAnswer.split('/').map(opt => this.normalizeAnswer(opt));
+  
+  return options.some(option => option === userAnswer);
+  }
+
+    // Normalizacja odpowiedzi
+    normalizeAnswer(answer) {
+      return answer
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, ' ');
+    }
+
+    // Pobierz wszystkie słowa
+    getAllWords() {
+      return dictionary;
+    }
+
+    // Pobierz słowa według kategorii
+    getWordsByCategory(category) {
+      return dictionary.filter(w => w.category === category);
+    }
+
+    // Pobierz dostępne kategorie
+    getCategories() {
+      return [...new Set(dictionary.map(w => w.category))].sort();
+    }
+
+    // Pobierz dostępne poziomy trudności
+    getDifficulties() {
+      return [...new Set(dictionary.map(w => w.difficulty))].sort((a, b) => a - b);
+    }
+
+    // Reset sesji
+    resetSession() {
+      this.usedWordIds.clear();
+      return { success: true, message: 'Session reset' };
+    }
+  }
 
 export const translationService = new TranslationService();

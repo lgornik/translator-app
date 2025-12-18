@@ -859,3 +859,11 @@ body {
   color: var(--text-secondary);
   margin-bottom: 1.5rem;
 }
+
+.quiz-progress__repeat {
+  font-size: 0.875rem;
+  color: var(--error);
+  padding: 0.25rem 0.75rem;
+  background: var(--error-bg);
+  border-radius: 100px;
+}

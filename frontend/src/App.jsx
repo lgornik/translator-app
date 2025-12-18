@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from './hooks/useTranslation';
 import QuizSetup from './components/QuizSetup';
 import QuizFinished from './components/QuizFinished';
-import RoundEnd from './components/RoundEnd';
 
 function App() {
   const {
@@ -21,7 +20,6 @@ function App() {
     setUserInput,
     startQuiz,
     startQuizWithReinforce,
-    startNextRound,
     getNewWord,
     submitTranslation,
     toggleMode,
@@ -32,10 +30,9 @@ function App() {
     selectedDifficulty,
     setSelectedDifficulty,
     reinforceMode,
-    currentRound,
-    incorrectWords,
-    totalStats,
-    wordsInCurrentRound,
+    wordsToRepeat,
+    masteredCount,
+    getProgress,
   } = useTranslation();
 
   const inputRef = useRef(null);
@@ -60,7 +57,7 @@ function App() {
   }, [currentWord, result]);
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && currentWord && userInput.trim() && !result) {
+    if (e.key === 'Enter' && currentWord && !result) {
       submitTranslation();
     }
   };
@@ -95,27 +92,10 @@ function App() {
             setSelectedDifficulty={setSelectedDifficulty}
           />
         </main>
-      </div>
-    );
-  }
-
-  // Ekran końca rundy (tryb utrwalania)
-  if (gameState === 'roundEnd') {
-    return (
-      <div className="app">
-        <header className="header">
-          <h1 className="header__title">Translator</h1>
-          <p className="header__subtitle">Tryb utrwalania wiedzy</p>
-        </header>
-        <main className="card">
-          <RoundEnd
-            currentRound={currentRound}
-            stats={stats}
-            incorrectWords={incorrectWords}
-            onNextRound={startNextRound}
-            onQuit={resetQuiz}
-          />
-        </main>
+        <button className="mode-toggle" onClick={toggleMode} title="Zmień kierunek tłumaczenia">
+          <span className="mode-toggle__label">Tryb:</span>
+          <span className="mode-toggle__value">{modeLabel}</span>
+        </button>
       </div>
     );
   }
@@ -131,11 +111,9 @@ function App() {
         <main className="card">
           <QuizFinished 
             stats={stats} 
-            wordsCompleted={wordsCompleted} 
+            wordsCompleted={reinforceMode ? masteredCount : wordsCompleted} 
             onRestart={resetQuiz}
             reinforceMode={reinforceMode}
-            totalStats={totalStats}
-            currentRound={currentRound}
           />
         </main>
       </div>
@@ -143,6 +121,8 @@ function App() {
   }
 
   // Ekran gry
+  const progress = getProgress();
+
   return (
     <div className="app">
       <header className="header">
@@ -152,27 +132,26 @@ function App() {
 
       <main className="card">
         {/* Progress bar */}
-          <div className="quiz-progress">
-            {quizMode === 'timed' ? (
-              <div className="quiz-progress__timer">
-                ⏱️ {formatTime(timeRemaining)}
+        <div className="quiz-progress">
+          {quizMode === 'timed' ? (
+            <div className="quiz-progress__timer">
+              ⏱️ {formatTime(timeRemaining)}
+            </div>
+          ) : reinforceMode ? (
+            <div className="quiz-progress__info">
+              <div className="quiz-progress__counter">
+                ✓ {progress.mastered} / {progress.total}
               </div>
-            ) : (
-              <div className="quiz-progress__info">
-                <div className="quiz-progress__counter">
-                  {wordsCompleted} / {reinforceMode && currentRound > 1 ? wordsInCurrentRound : getWordLimit()}
-                </div>
-                {reinforceMode && (
-                  <div className="quiz-progress__round">
-                    Runda {currentRound}
-                  </div>
-                )}
-              </div>
-            )}
-            <button className="btn btn--text" onClick={resetQuiz}>
-              ✕ Zakończ
-            </button>
-          </div>
+            </div>
+          ) : (
+            <div className="quiz-progress__counter">
+              {progress.completed} / {progress.total}
+            </div>
+          )}
+          <button className="btn btn--text" onClick={resetQuiz}>
+            ✕ Zakończ
+          </button>
+        </div>
 
         {/* Word Display */}
         <div className="word-display">
@@ -232,22 +211,13 @@ function App() {
         {/* Buttons */}
         <div className="button-group">
           {!result ? (
-            <>
-              {/* <button
-                className="btn btn--secondary"
-                onClick={getNewWord}
-                disabled={loading}
-              >
-                Pomiń
-              </button> */}
-              <button
-                className="btn btn--primary"
-                onClick={submitTranslation}
-                disabled={!currentWord || !userInput.trim() || loading}
-              >
-                Sprawdź
-              </button>
-            </>
+            <button
+              className="btn btn--primary"
+              onClick={submitTranslation}
+              disabled={!currentWord || loading}
+            >
+              Sprawdź
+            </button>
           ) : (
             <button
               className="btn btn--primary"
@@ -279,11 +249,6 @@ function App() {
           </div>
         </div>
       </main>
-
-      <button className="mode-toggle" onClick={toggleMode} title="Zmień kierunek tłumaczenia">
-        <span className="mode-toggle__label">Tryb:</span>
-        <span className="mode-toggle__value">{modeLabel}</span>
-      </button>
     </div>
   );
 }
