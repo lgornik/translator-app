@@ -95,10 +95,6 @@ function App() {
             availableWordCount={availableWordCount}
           />
         </main>
-        <button className="mode-toggle" onClick={toggleMode} title="Zmień kierunek tłumaczenia">
-          <span className="mode-toggle__label">Tryb:</span>
-          <span className="mode-toggle__value">{modeLabel}</span>
-        </button>
       </div>
     );
   }
