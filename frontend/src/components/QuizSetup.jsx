@@ -180,7 +180,6 @@ function QuizSetup({
 
       {/* Wybór kierunku tłumaczenia */}
       <div className="quiz-setup__mode">
-        <span>Kierunek tłumaczenia:</span>
         <button className="mode-toggle-inline" onClick={onToggleMode}>
           {modeLabel}
         </button>

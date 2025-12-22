@@ -7,7 +7,7 @@ export function useTranslation() {
   const [gameState, setGameState] = useState('setup');
   const [quizMode, setQuizMode] = useState(null);
   const [quizSettings, setQuizSettings] = useState({
-    wordLimit: 10,
+    wordLimit: 50,
     timeLimit: 300,
     customLimit: 10,
   });
@@ -36,6 +36,8 @@ export function useTranslation() {
   const [masteredCount, setMasteredCount] = useState(0); // Opanowane słowa
   const [lastWordId, setLastWordId] = useState(null);
   const [noMoreWords, setNoMoreWords] = useState(false);
+
+  const wordLimitRef = useRef(50);
 
   // Pobierz kategorie
   const { data: categoriesData } = useQuery(GET_CATEGORIES);
@@ -140,12 +142,15 @@ export function useTranslation() {
   }, [gameState, quizMode]);
 
   const getWordLimit = useCallback(() => {
-    switch (quizMode) {
-      case 'limit': return quizSettings.wordLimit;
-      case 'custom': return quizSettings.customLimit;
-      default: return quizSettings.wordLimit;
-    }
-  }, [quizMode, quizSettings]);
+    return wordLimitRef.current;
+  }, []);
+  // const getWordLimit = useCallback(() => {
+  //   switch (quizMode) {
+  //     case 'limit': return quizSettings.wordLimit;
+  //     case 'custom': return quizSettings.customLimit;
+  //     default: return quizSettings.wordLimit;
+  //   }
+  // }, [quizMode, quizSettings]);
 
   const endQuiz = useCallback(() => {
     setGameState('finished');
@@ -176,6 +181,9 @@ export function useTranslation() {
   };
 
   const startQuiz = useCallback((selectedMode, settings = {}) => {
+    const limit = settings.wordLimit || settings.customLimit || 50;
+    wordLimitRef.current = limit;
+    
     setQuizMode(selectedMode);
     setQuizSettings(prev => ({ ...prev, ...settings }));
     setGameState('playing');
@@ -188,7 +196,7 @@ export function useTranslation() {
     setReinforceMode(false);
     setWordsToRepeat([]);
     setMasteredCount(0);
-    setNoMoreWords(false);  // ← dodaj
+    setNoMoreWords(false);
     
     if (selectedMode === 'timed') {
       setTimeRemaining(settings.timeLimit || quizSettings.timeLimit);
@@ -204,6 +212,9 @@ export function useTranslation() {
   }, [fetchWord, mode, selectedCategory, selectedDifficulty, quizSettings.timeLimit]);
 
   const startQuizWithReinforce = useCallback((selectedMode, settings = {}) => {
+    const limit = settings.wordLimit || settings.customLimit || 50;
+    wordLimitRef.current = limit;  // ← dodaj
+    
     setReinforceMode(true);
     setQuizMode(selectedMode);
     setQuizSettings(prev => ({ ...prev, ...settings }));
@@ -216,7 +227,7 @@ export function useTranslation() {
     setUserInput('');
     setWordsToRepeat([]);
     setMasteredCount(0);
-    setNoMoreWords(false);  // ← dodaj
+    setNoMoreWords(false);
     
     fetchWord({ 
       variables: { 
