@@ -1,97 +1,203 @@
-# 🌍 Translator - Aplikacja do nauki słówek
+# Translator App
 
-Prosta, ale rozszerzalna aplikacja do nauki tłumaczeń polsko-angielskich.
+A modern, type-safe vocabulary learning application built with React, GraphQL, and XState.
 
-## 🚀 Szybki start
+## 🏗️ Architecture
 
-### Opcja 1: Docker (zalecane)
-
-```bash
-# Uruchom całą aplikację
-docker-compose up --build
-
-# Otwórz w przeglądarce:
-# Frontend: http://localhost:3000
-# GraphQL Playground: http://localhost:4000/graphql
-```
-
-### Opcja 2: Uruchom lokalnie (development)
-
-```bash
-# Terminal 1 - Backend
-cd backend
-npm install
-npm run dev
-
-# Terminal 2 - Frontend
-cd frontend
-npm install
-npm run dev
-```
-
-## 📁 Struktura projektu
+This project follows a **clean architecture** approach with clear separation of concerns:
 
 ```
 translator-app/
-├── backend/                 # Node.js + GraphQL API
-│   ├── src/
-│   │   ├── graphql/        # Schema i Resolvers
-│   │   ├── services/       # Logika biznesowa
-│   │   ├── data/           # Dane słownika (łatwe do zamiany na DB)
-│   │   └── index.js        # Entry point
-│   ├── Dockerfile
-│   └── package.json
+├── backend/                    # Node.js + Apollo Server
+│   └── src/
+│       ├── config/            # Environment & app configuration
+│       ├── domain/            # Business logic (DDD)
+│       │   ├── entities/      # Domain entities with validation
+│       │   ├── repositories/  # Data access interfaces
+│       │   └── services/      # Business logic services
+│       ├── infrastructure/    # External concerns
+│       │   ├── graphql/       # GraphQL schema & resolvers
+│       │   ├── data/          # Data sources
+│       │   └── middleware/    # Express middleware
+│       └── shared/            # Shared utilities
+│           ├── constants/     # Application constants
+│           └── errors/        # Custom error classes
 │
-├── frontend/               # React + Apollo Client
-│   ├── src/
-│   │   ├── components/     # Komponenty React (do rozbudowy)
-│   │   ├── hooks/          # Custom hooks
-│   │   ├── graphql/        # Queries i Mutations
-│   │   ├── styles/         # CSS
-│   │   └── App.jsx         # Główny komponent
-│   ├── Dockerfile
-│   └── package.json
+├── frontend/                   # React + Vite
+│   └── src/
+│       ├── app/               # App setup & routing
+│       │   ├── providers/     # Context providers
+│       │   └── Router.tsx     # Application routing
+│       ├── features/          # Feature-based modules
+│       │   └── quiz/          # Quiz feature
+│       │       ├── components/
+│       │       ├── hooks/
+│       │       ├── machines/  # XState machines
+│       │       └── pages/
+│       ├── shared/            # Shared code
+│       │   ├── api/           # GraphQL operations
+│       │   ├── components/    # Reusable UI components
+│       │   ├── constants/     # Frontend constants
+│       │   ├── hooks/         # Custom hooks
+│       │   ├── types/         # TypeScript types
+│       │   └── utils/         # Utility functions
+│       └── styles/            # Global styles
 │
-├── docker-compose.yml      # Orkiestracja kontenerów
-└── README.md
+└── shared/                     # Shared types (backend & frontend)
+    └── types/
 ```
 
-## 🔌 API GraphQL
+## 🚀 Features
 
-### Queries
+- **Quiz Modes**
+  - Standard quiz with word limit
+  - Timed mode
+  - Reinforcement mode (repeat incorrect answers)
+  
+- **Filtering**
+  - By category (Animals, Food, Colors, etc.)
+  - By difficulty (Easy, Medium, Hard)
+  
+- **Translation Directions**
+  - English → Polish
+  - Polish → English
+
+## 🛠️ Tech Stack
+
+### Backend
+- **TypeScript** - Type safety
+- **Apollo Server** - GraphQL server
+- **Express** - HTTP server
+- **Zod** - Runtime validation
+
+### Frontend
+- **TypeScript** - Type safety
+- **React 18** - UI library
+- **Vite** - Build tool
+- **Apollo Client** - GraphQL client
+- **XState** - State management
+- **React Router** - Navigation
+
+## 📦 Getting Started
+
+### Prerequisites
+- Node.js >= 18.0.0
+- npm >= 9.0.0
+
+### Installation
+
+```bash
+# Clone the repository
+git clone <repo-url>
+cd translator-app
+
+# Install dependencies
+npm install
+
+# Start development servers
+npm run dev
+```
+
+This will start:
+- Backend: http://localhost:4000
+- Frontend: http://localhost:3000
+- GraphQL Playground: http://localhost:4000/graphql
+
+### Individual Commands
+
+```bash
+# Backend only
+npm run dev:backend
+
+# Frontend only
+npm run dev:frontend
+
+# Build all
+npm run build
+
+# Run tests
+npm run test
+
+# Type checking
+npm run typecheck
+
+# Linting
+npm run lint
+```
+
+## 🧪 Testing
+
+Tests are written with **Vitest** and follow the testing pyramid:
+
+```bash
+# Run all tests
+npm run test
+
+# Run with coverage
+npm run test:coverage
+
+# Watch mode
+npm run test -- --watch
+```
+
+### Test Structure
+
+- **Unit tests** - Pure functions, entities, services
+- **Integration tests** - Service interactions
+- **State machine tests** - XState machine transitions
+
+## 🏛️ Design Patterns
+
+### Domain-Driven Design (Backend)
+- **Entities** - `Word` with business logic
+- **Repositories** - Data access abstraction
+- **Services** - Business logic orchestration
+
+### Feature-Sliced Design (Frontend)
+- Features are self-contained modules
+- Shared code is reusable across features
+- Clear dependency direction
+
+### State Machine (Frontend)
+XState is used for predictable state management:
+- All states and transitions are explicit
+- Easy to test and debug
+- Visualizable with XState Viz
+
+## 📝 API
+
+### GraphQL Queries
 
 ```graphql
-# Pobierz losowe słowo do tłumaczenia
-query GetRandomWord($mode: TranslationMode!) {
-  getRandomWord(mode: $mode) {
+# Get random word for translation
+query GetRandomWord($mode: TranslationMode!, $category: String, $difficulty: Int) {
+  getRandomWord(mode: $mode, category: $category, difficulty: $difficulty) {
     id
     wordToTranslate
+    correctTranslation
     mode
     category
     difficulty
   }
 }
 
-# Pobierz wszystkie słowa
-query GetAllWords {
-  getAllWords {
-    id
-    polish
-    english
-    category
-  }
-}
-
-# Pobierz kategorie
+# Get available categories
 query GetCategories {
   getCategories
 }
+
+# Get word count
+query GetWordCount($category: String, $difficulty: Int) {
+  getWordCount(category: $category, difficulty: $difficulty) {
+    count
+  }
+}
 ```
 
-### Mutations
+### GraphQL Mutations
 
 ```graphql
-# Sprawdź tłumaczenie
+# Check translation
 mutation CheckTranslation($wordId: ID!, $userTranslation: String!, $mode: TranslationMode!) {
   checkTranslation(wordId: $wordId, userTranslation: $userTranslation, mode: $mode) {
     isCorrect
@@ -100,126 +206,39 @@ mutation CheckTranslation($wordId: ID!, $userTranslation: String!, $mode: Transl
   }
 }
 
-# Reset sesji
+# Reset session
 mutation ResetSession {
   resetSession
 }
 ```
 
-### Tryby tłumaczenia
+## 🔮 Future Roadmap
 
-- `EN_TO_PL` - z angielskiego na polski
-- `PL_TO_EN` - z polskiego na angielski
+The architecture is prepared for future enhancements:
 
-## 🛠 Technologie
+### Planned Features
+- [ ] User authentication (login/register)
+- [ ] Leaderboard
+- [ ] Personal progress tracking
+- [ ] Custom word lists
+- [ ] Spaced repetition algorithm
+- [ ] Multiple language support
 
-| Warstwa | Technologia |
-|---------|------------|
-| Frontend | React 18, Apollo Client, Vite |
-| Backend | Node.js, Express, Apollo Server |
-| API | GraphQL |
-| Konteneryzacja | Docker, Docker Compose |
+### Technical Improvements
+- [ ] Database integration (PostgreSQL/MongoDB)
+- [ ] Redis for session management
+- [ ] WebSocket for real-time features
+- [ ] PWA support
+- [ ] E2E tests with Playwright
 
-## 📱 Użycie z aplikacji mobilnej
+## 🤝 Contributing
 
-API jest gotowe do użycia z aplikacji mobilnej. Przykład w React Native:
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-```javascript
-import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
+## 📄 License
 
-const client = new ApolloClient({
-  uri: 'http://YOUR_SERVER:4000/graphql',
-  cache: new InMemoryCache(),
-});
-
-// Pobierz słowo
-const { data } = await client.query({
-  query: gql`
-    query GetRandomWord($mode: TranslationMode!) {
-      getRandomWord(mode: $mode) {
-        id
-        wordToTranslate
-      }
-    }
-  `,
-  variables: { mode: 'EN_TO_PL' },
-});
-```
-
-## 🗺 Roadmap - plan rozbudowy
-
-### Faza 2: Baza danych
-- [ ] Dodać PostgreSQL / MongoDB
-- [ ] Migracje schematu
-- [ ] Więcej słówek
-
-### Faza 3: Użytkownicy
-- [ ] Rejestracja / logowanie
-- [ ] Śledzenie postępów
-- [ ] Własne listy słówek
-
-### Faza 4: Zaawansowane funkcje
-- [ ] Spaced Repetition (algorytm powtórek)
-- [ ] Tryby nauki (fiszki, quiz, gry)
-- [ ] Leaderboard / gamifikacja
-- [ ] Import/export słówek
-
-### Faza 5: Skalowanie
-- [ ] Kubernetes deployment
-- [ ] Mikroserwisy (jeśli potrzebne)
-- [ ] CI/CD pipeline
-
-## 🐳 Kubernetes (przyszłość)
-
-Struktura jest przygotowana pod K8s. Przykładowy deployment:
-
-```yaml
-# k8s/backend-deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: translator-backend
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: translator-backend
-  template:
-    metadata:
-      labels:
-        app: translator-backend
-    spec:
-      containers:
-      - name: backend
-        image: translator-backend:latest
-        ports:
-        - containerPort: 4000
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 4000
-```
-
-## 📝 Dodawanie słówek
-
-Edytuj plik `backend/src/data/dictionary.js`:
-
-```javascript
-{ id: "31", polish: "nowe_słowo", english: "new_word", category: "basics", difficulty: 1 },
-```
-
-W przyszłości: panel admina lub import z pliku CSV.
-
-## 🤝 Rozwój
-
-```bash
-# Backend w trybie watch
-cd backend && npm run dev
-
-# Frontend z hot reload
-cd frontend && npm run dev
-```
-
-## 📄 Licencja
-
-MIT
+MIT License - see LICENSE file for details

@@ -10,8 +10,9 @@ services:
       - NODE_ENV=development
       - PORT=4000
       - CORS_ORIGIN=http://localhost:3000
+      - CHOKIDAR_USEPOLLING=true
     volumes:
-      - ./backend/src:/app/src
+      - ./backend/src:/app/src:delegated
     command: npm run dev
     restart: unless-stopped
 
@@ -24,8 +25,12 @@ services:
       - "3000:3000"
     environment:
       - VITE_GRAPHQL_URL=http://localhost:4000/graphql
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
     volumes:
-      - ./frontend/src:/app/src
+      - ./frontend/src:/app/src:delegated
+      - ./frontend/index.html:/app/index.html:delegated
+      - ./frontend/vite.config.ts:/app/vite.config.ts:delegated
     depends_on:
       - backend
     restart: unless-stopped
