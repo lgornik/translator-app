@@ -1,9 +1,20 @@
 import { describe, it, expect } from 'vitest';
 import { createActor } from 'xstate';
 import { quizMachine } from '../features/quiz/machines/quizMachine';
+import { TranslationMode } from '../shared/types';
 
 describe('Quiz Machine', () => {
   const createQuizActor = () => createActor(quizMachine);
+
+  const createTestWord = (overrides = {}) => ({
+    id: '1',
+    wordToTranslate: 'cat',
+    correctTranslation: 'kot',
+    mode: TranslationMode.EN_TO_PL,
+    category: 'Animals',
+    difficulty: 1,
+    ...overrides,
+  });
 
   describe('Initial State', () => {
     it('should start in setup state', () => {
@@ -18,7 +29,7 @@ describe('Quiz Machine', () => {
       actor.start();
       
       const { context } = actor.getSnapshot();
-      expect(context.mode).toBe('EN_TO_PL');
+      expect(context.mode).toBe(TranslationMode.EN_TO_PL);
       expect(context.wordLimit).toBe(50);
       expect(context.stats).toEqual({ correct: 0, incorrect: 0 });
     });
@@ -46,14 +57,14 @@ describe('Quiz Machine', () => {
         settings: { 
           wordLimit: 25,
           category: 'Animals',
-          mode: 'PL_TO_EN',
+          mode: TranslationMode.PL_TO_EN,
         } 
       });
       
       const { context } = actor.getSnapshot();
       expect(context.wordLimit).toBe(25);
       expect(context.category).toBe('Animals');
-      expect(context.mode).toBe('PL_TO_EN');
+      expect(context.mode).toBe(TranslationMode.PL_TO_EN);
     });
   });
 
@@ -63,17 +74,7 @@ describe('Quiz Machine', () => {
       actor.start();
       
       actor.send({ type: 'START', settings: {} });
-      actor.send({ 
-        type: 'WORD_LOADED', 
-        word: {
-          id: '1',
-          wordToTranslate: 'cat',
-          correctTranslation: 'kot',
-          mode: 'EN_TO_PL',
-          category: 'Animals',
-          difficulty: 1,
-        }
-      });
+      actor.send({ type: 'WORD_LOADED', word: createTestWord() });
       
       expect(actor.getSnapshot().value).toEqual({ playing: 'waitingForInput' });
     });
@@ -82,14 +83,7 @@ describe('Quiz Machine', () => {
       const actor = createQuizActor();
       actor.start();
       
-      const testWord = {
-        id: '1',
-        wordToTranslate: 'cat',
-        correctTranslation: 'kot',
-        mode: 'EN_TO_PL' as const,
-        category: 'Animals',
-        difficulty: 1,
-      };
+      const testWord = createTestWord();
       
       actor.send({ type: 'START', settings: {} });
       actor.send({ type: 'WORD_LOADED', word: testWord });
@@ -105,17 +99,7 @@ describe('Quiz Machine', () => {
       actor.start();
       
       actor.send({ type: 'START', settings: {} });
-      actor.send({ 
-        type: 'WORD_LOADED', 
-        word: {
-          id: '1',
-          wordToTranslate: 'cat',
-          correctTranslation: 'kot',
-          mode: 'EN_TO_PL',
-          category: 'Animals',
-          difficulty: 1,
-        }
-      });
+      actor.send({ type: 'WORD_LOADED', word: createTestWord() });
       actor.send({ type: 'INPUT_CHANGE', value: 'test' });
       
       expect(actor.getSnapshot().context.userInput).toBe('test');
@@ -128,17 +112,7 @@ describe('Quiz Machine', () => {
       actor.start();
       
       actor.send({ type: 'START', settings: {} });
-      actor.send({ 
-        type: 'WORD_LOADED', 
-        word: {
-          id: '1',
-          wordToTranslate: 'cat',
-          correctTranslation: 'kot',
-          mode: 'EN_TO_PL',
-          category: 'Animals',
-          difficulty: 1,
-        }
-      });
+      actor.send({ type: 'WORD_LOADED', word: createTestWord() });
       actor.send({ type: 'SUBMIT' });
       actor.send({ 
         type: 'RESULT_RECEIVED', 
@@ -159,17 +133,7 @@ describe('Quiz Machine', () => {
       actor.start();
       
       actor.send({ type: 'START', settings: {} });
-      actor.send({ 
-        type: 'WORD_LOADED', 
-        word: {
-          id: '1',
-          wordToTranslate: 'cat',
-          correctTranslation: 'kot',
-          mode: 'EN_TO_PL',
-          category: 'Animals',
-          difficulty: 1,
-        }
-      });
+      actor.send({ type: 'WORD_LOADED', word: createTestWord() });
       actor.send({ type: 'SUBMIT' });
       actor.send({ 
         type: 'RESULT_RECEIVED', 
@@ -191,13 +155,13 @@ describe('Quiz Machine', () => {
       const actor = createQuizActor();
       actor.start();
       
-      expect(actor.getSnapshot().context.mode).toBe('EN_TO_PL');
+      expect(actor.getSnapshot().context.mode).toBe(TranslationMode.EN_TO_PL);
       
       actor.send({ type: 'TOGGLE_MODE' });
-      expect(actor.getSnapshot().context.mode).toBe('PL_TO_EN');
+      expect(actor.getSnapshot().context.mode).toBe(TranslationMode.PL_TO_EN);
       
       actor.send({ type: 'TOGGLE_MODE' });
-      expect(actor.getSnapshot().context.mode).toBe('EN_TO_PL');
+      expect(actor.getSnapshot().context.mode).toBe(TranslationMode.EN_TO_PL);
     });
   });
 
@@ -207,17 +171,7 @@ describe('Quiz Machine', () => {
       actor.start();
       
       actor.send({ type: 'START', settings: {} });
-      actor.send({ 
-        type: 'WORD_LOADED', 
-        word: {
-          id: '1',
-          wordToTranslate: 'cat',
-          correctTranslation: 'kot',
-          mode: 'EN_TO_PL',
-          category: 'Animals',
-          difficulty: 1,
-        }
-      });
+      actor.send({ type: 'WORD_LOADED', word: createTestWord() });
       
       actor.send({ type: 'RESET' });
       
@@ -229,17 +183,7 @@ describe('Quiz Machine', () => {
       actor.start();
       
       actor.send({ type: 'START', settings: { wordLimit: 10 } });
-      actor.send({ 
-        type: 'WORD_LOADED', 
-        word: {
-          id: '1',
-          wordToTranslate: 'cat',
-          correctTranslation: 'kot',
-          mode: 'EN_TO_PL',
-          category: 'Animals',
-          difficulty: 1,
-        }
-      });
+      actor.send({ type: 'WORD_LOADED', word: createTestWord() });
       actor.send({ type: 'SUBMIT' });
       actor.send({ 
         type: 'RESULT_RECEIVED', 
@@ -261,24 +205,13 @@ describe('Quiz Machine', () => {
       actor.start();
       
       actor.send({ type: 'START', settings: { wordLimit: 1 } });
-      actor.send({ 
-        type: 'WORD_LOADED', 
-        word: {
-          id: '1',
-          wordToTranslate: 'cat',
-          correctTranslation: 'kot',
-          mode: 'EN_TO_PL',
-          category: 'Animals',
-          difficulty: 1,
-        }
-      });
+      actor.send({ type: 'WORD_LOADED', word: createTestWord() });
       actor.send({ type: 'SUBMIT' });
       actor.send({ 
         type: 'RESULT_RECEIVED', 
         result: { isCorrect: true, correctTranslation: 'kot', userTranslation: 'kot' }
       });
       
-      // After getting result for the last word, should auto-transition to finished
       expect(actor.getSnapshot().value).toBe('finished');
     });
   });

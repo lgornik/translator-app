@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Button, Select, Input } from '@/shared/components/ui';
+import { Button, Select } from '@/shared/components/ui';
 import { QUIZ_DEFAULTS, DIFFICULTY_CONFIG } from '@/shared/constants';
 import type { Difficulty } from '@/shared/types';
 
@@ -33,8 +33,8 @@ export function QuizSetup({
   onToggleMode,
   onFiltersChange,
 }: QuizSetupProps) {
-  const [customWords, setCustomWords] = useState(QUIZ_DEFAULTS.WORD_LIMIT);
-  const [customTime, setCustomTime] = useState(5);
+  const [customWords, setCustomWords] = useState<number>(QUIZ_DEFAULTS.WORD_LIMIT);
+  const [customTime, setCustomTime] = useState<number>(5);
   const [useReinforce, setUseReinforce] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -121,11 +121,6 @@ export function QuizSetup({
           value={selectedDifficulty?.toString() ?? ''}
           onChange={(e) => handleDifficultyChange(e.target.value)}
         />
-      </div>
-
-      {/* Word count info */}
-      <div className="quiz-setup__info">
-        Dostępnych słów: <strong>{availableWordCount}</strong>
       </div>
 
       {/* Error */}

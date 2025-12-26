@@ -4,7 +4,7 @@ import { GraphQLContext } from './queries.js';
 /**
  * Input type for checkTranslation mutation
  */
-interface CheckTranslationInput {
+export interface CheckTranslationInput {
   wordId: string;
   userTranslation: string;
   mode: keyof typeof TranslationMode;

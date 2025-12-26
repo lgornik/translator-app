@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants';
 import { QuizPage } from '@/features/quiz/pages/QuizPage';
 

@@ -31,8 +31,8 @@ export class TranslationService {
 
     if (availableWords.length === 0) {
       throw new NoWordsAvailableError({
-        category: filters.category ?? undefined,
-        difficulty: filters.difficulty ?? undefined,
+        ...(filters.category && { category: filters.category }),
+        ...(filters.difficulty && { difficulty: filters.difficulty }),
       });
     }
 

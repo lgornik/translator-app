@@ -251,18 +251,18 @@ export function useQuiz(): UseQuizReturn {
     });
   }, [send]);
   
-  const startTimedQuiz = useCallback((settings: QuizStartSettings) => {
-    send({
-      type: 'START',
-      settings: {
-        wordLimit: 999, // No word limit in timed mode
-        timeLimit: settings.timeLimit ?? 300,
-        category: settings.category ?? null,
-        difficulty: settings.difficulty ?? null,
-        mode: settings.mode ?? 'EN_TO_PL',
-      },
-    });
-  }, [send]);
+  // const startTimedQuiz = useCallback((settings: QuizStartSettings) => {
+  //   send({
+  //     type: 'START',
+  //     settings: {
+  //       wordLimit: 999, // No word limit in timed mode
+  //       timeLimit: settings.timeLimit ?? 300,
+  //       category: settings.category ?? null,
+  //       difficulty: settings.difficulty ?? null,
+  //       mode: settings.mode ?? 'EN_TO_PL',
+  //     },
+  //   });
+  // }, [send]);
   
   const submitAnswer = useCallback(() => {
     if (!snapshot.context.currentWord) return;

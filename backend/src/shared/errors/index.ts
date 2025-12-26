@@ -4,7 +4,7 @@
 export class AppError extends Error {
   readonly code: string;
   readonly statusCode: number;
-  readonly details?: Record<string, unknown>;
+  readonly details?: Record<string, unknown> | undefined;
 
   constructor(
     message: string,
@@ -16,7 +16,9 @@ export class AppError extends Error {
     this.name = this.constructor.name;
     this.code = code;
     this.statusCode = statusCode;
-    this.details = details;
+    if (details !== undefined) {
+      this.details = details;
+    }
     Error.captureStackTrace(this, this.constructor);
   }
 

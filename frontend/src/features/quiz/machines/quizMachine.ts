@@ -1,4 +1,4 @@
-import { setup, assign, fromPromise } from 'xstate';
+import { setup, assign } from 'xstate';
 import type { QuizStats, WordChallenge, TranslationResult, Difficulty } from '@/shared/types';
 import { shuffleArray } from '@/shared/utils';
 
@@ -128,8 +128,8 @@ export const quizMachine = setup({
         queue = shuffleArray(context.wordsToRepeat);
         
         // Avoid same word twice in a row
-        if (queue.length > 1 && queue[0]?.id === context.currentWord?.id) {
-          const first = queue[0];
+        const first = queue[0];
+        if (queue.length > 1 && first && first.id === context.currentWord?.id) {
           queue = [...queue.slice(1), first];
         }
       }

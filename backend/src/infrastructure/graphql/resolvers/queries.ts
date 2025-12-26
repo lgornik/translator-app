@@ -13,7 +13,7 @@ export interface GraphQLContext {
 /**
  * Input type for getRandomWord query
  */
-interface GetRandomWordInput {
+export interface GetRandomWordInput {
   mode: keyof typeof TranslationMode;
   category?: string | null;
   difficulty?: number | null;
@@ -22,7 +22,7 @@ interface GetRandomWordInput {
 /**
  * Input type for getWordCount query
  */
-interface GetWordCountInput {
+export interface GetWordCountInput {
   category?: string | null;
   difficulty?: number | null;
 }
@@ -40,6 +40,19 @@ const mapMode = (mode: keyof typeof TranslationMode): TranslationMode => {
 const mapDifficulty = (difficulty: number | null | undefined): Difficulty | null => {
   if (difficulty === null || difficulty === undefined) return null;
   return difficulty as Difficulty;
+};
+
+/**
+ * Build WordFilters object, excluding undefined values
+ */
+const buildFilters = (
+  category: string | null | undefined,
+  difficulty: Difficulty | null
+) => {
+  return {
+    ...(category !== undefined && { category }),
+    ...(difficulty !== undefined && { difficulty }),
+  };
 };
 
 /**
@@ -69,10 +82,7 @@ export const queryResolvers = {
 
     return translationService.getRandomWord(
       mode,
-      {
-        category: args.category,
-        difficulty,
-      },
+      buildFilters(args.category, difficulty),
       sessionId
     );
   },
@@ -113,10 +123,9 @@ export const queryResolvers = {
     const difficulty = mapDifficulty(args.difficulty);
 
     return {
-      count: translationService.getWordCount({
-        category: args.category,
-        difficulty,
-      }),
+      count: translationService.getWordCount(
+        buildFilters(args.category, difficulty)
+      ),
     };
   },
 };
