@@ -1,33 +1,55 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
-import { resolve } from 'path';
+import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
   test: {
     globals: true,
     environment: 'jsdom',
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     setupFiles: ['./src/__tests__/setup.ts'],
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    exclude: ['node_modules', 'dist'],
+    
+    // Coverage configuration
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules',
-        'dist',
-        'src/__tests__',
-        '**/*.d.ts',
+      reporter: ['text', 'text-summary', 'html', 'lcov'],
+      reportsDirectory: './coverage',
+      
+      // What to include in coverage
+      include: [
+        'src/**/*.{ts,tsx}',
       ],
+      
+      // What to exclude from coverage
+      exclude: [
+        'src/**/*.test.{ts,tsx}',
+        'src/**/*.spec.{ts,tsx}',
+        'src/__tests__/**',
+        'src/main.tsx',
+        'src/vite-env.d.ts',
+        'src/**/*.d.ts',
+        'src/**/index.ts', // barrel files
+        'src/shared/types/**', // type definitions
+      ],
+      
+      // Thresholds - fail if coverage drops below these
+      // thresholds: {
+      //   statements: 60,
+      //   branches: 60,
+      //   functions: 60,
+      //   lines: 60,
+      // },
     },
   },
   resolve: {
     alias: {
-      '@': resolve(__dirname, './src'),
-      '@shared': resolve(__dirname, '../shared'),
-      '@features': resolve(__dirname, './src/features'),
-      '@components': resolve(__dirname, './src/shared/components'),
-      '@hooks': resolve(__dirname, './src/shared/hooks'),
-      '@utils': resolve(__dirname, './src/shared/utils'),
+      '@': path.resolve(__dirname, './src'),
+      '@features': path.resolve(__dirname, './src/features'),
+      '@components': path.resolve(__dirname, './src/shared/components'),
+      '@hooks': path.resolve(__dirname, './src/shared/hooks'),
+      '@utils': path.resolve(__dirname, './src/shared/utils'),
     },
   },
 });

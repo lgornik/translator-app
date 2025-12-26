@@ -1,25 +1,16 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useMachine } from '@xstate/react';
-import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
+import { useEffect, useCallback } from 'react';
+import { useQuizMachine, type QuizState } from './useQuizMachine';
 
-import { quizMachine, QuizContext } from '../machines/quizMachine';
-import {
-  GET_RANDOM_WORD,
-  CHECK_TRANSLATION,
-  GET_CATEGORIES,
-  GET_WORD_COUNT,
-  type GetRandomWordData,
-  type GetRandomWordVariables,
-  type CheckTranslationData,
-  type CheckTranslationVariables,
-  type GetCategoriesData,
-  type GetWordCountData,
-  type GetWordCountVariables,
-} from '@/shared/api/operations';
-import type { Difficulty, WordChallenge } from '@/shared/types';
+// Re-export for consumers
+export type { QuizState };
+import { useQuizTimer } from './useQuizTimer';
+import { useQuizGraphQL } from './useQuizGraphQL';
+import { useQuizCategories } from './useQuizCategories';
+import type { Difficulty, WordChallenge, TranslationResult } from '@/shared/types';
+import type { QuizContext } from '../machines/quizMachine';
 
 /**
- * Quiz settings input
+ * Quiz start settings from UI
  */
 export interface QuizStartSettings {
   wordLimit?: number;
@@ -30,11 +21,11 @@ export interface QuizStartSettings {
 }
 
 /**
- * Hook return type for better intellisense
+ * Public API of useQuiz hook
  */
 export interface UseQuizReturn {
   // State
-  state: 'setup' | 'loading' | 'playing' | 'finished' | 'error';
+  state: QuizState;
   context: QuizContext;
   
   // Derived state
@@ -45,6 +36,10 @@ export interface UseQuizReturn {
   isError: boolean;
   isWaitingForInput: boolean;
   isShowingResult: boolean;
+  
+  // Timer
+  timerDisplay: string;
+  isTimerRunning: boolean;
   
   // Data
   categories: string[];
@@ -58,6 +53,8 @@ export interface UseQuizReturn {
   updateInput: (value: string) => void;
   toggleMode: () => void;
   reset: () => void;
+  updateFilters: (category: string | null, difficulty: Difficulty | null) => void;
+  /** @deprecated Use updateFilters instead */
   refetchWordCount: (variables: { category?: string | null; difficulty?: number | null }) => void;
   
   // Loading states
@@ -66,275 +63,156 @@ export interface UseQuizReturn {
 }
 
 /**
- * Main quiz hook - integrates XState machine with Apollo Client
+ * Main quiz hook - orchestrates all quiz functionality
+ * 
+ * This hook composes smaller, focused hooks:
+ * - useQuizMachine: State management
+ * - useQuizTimer: Timer logic
+ * - useQuizGraphQL: API operations
+ * - useQuizCategories: Categories & word count
+ * 
+ * @example
+ * function QuizPage() {
+ *   const quiz = useQuiz();
+ *   
+ *   if (quiz.isSetup) {
+ *     return <QuizSetup {...quiz} />;
+ *   }
+ *   
+ *   if (quiz.isPlaying) {
+ *     return <QuizPlaying {...quiz} />;
+ *   }
+ *   
+ *   return <QuizFinished {...quiz} />;
+ * }
  */
 export function useQuiz(): UseQuizReturn {
-  const [snapshot, send] = useMachine(quizMachine);
-  
-  // GraphQL queries
-  const { data: categoriesData } = useQuery<GetCategoriesData>(GET_CATEGORIES);
-  
-  const { data: wordCountData, refetch: refetchWordCount } = useQuery<
-    GetWordCountData,
-    GetWordCountVariables
-  >(GET_WORD_COUNT, {
-    variables: {
-      category: snapshot.context.category,
-      difficulty: snapshot.context.difficulty,
-    },
+  // Core state management
+  const { context, state, is, actions } = useQuizMachine();
+
+  // Categories and word count
+  const { 
+    categories, 
+    availableWordCount, 
+    updateWordCountFilters 
+  } = useQuizCategories({
+    category: context.category,
+    difficulty: context.difficulty,
   });
-  
-  const [fetchWord, { loading: loadingWord }] = useLazyQuery<
-    GetRandomWordData,
-    GetRandomWordVariables
-  >(GET_RANDOM_WORD, {
-    fetchPolicy: 'network-only',
-    onCompleted: (data) => {
-      console.log('[useQuiz] Word loaded:', data.getRandomWord);
-      
-      if (!data.getRandomWord) {
-        console.log('[useQuiz] No word returned, sending NO_MORE_WORDS');
-        send({ type: 'NO_MORE_WORDS' });
-        return;
-      }
-      
-      send({
-        type: 'WORD_LOADED',
-        word: data.getRandomWord as WordChallenge,
-      });
-    },
-    onError: (error) => {
-      console.error('[useQuiz] Error fetching word:', error);
-      
-      // Only treat as "no more words" if explicitly stated
-      const errorMsg = error.message.toLowerCase();
-      if (errorMsg.includes('no words') || errorMsg.includes('brak słów') || errorMsg.includes('available')) {
-        send({ type: 'NO_MORE_WORDS' });
-      } else {
-        send({ type: 'WORD_LOAD_ERROR', error: error.message });
-      }
-    },
+
+  // GraphQL operations with machine integration
+  const { 
+    fetchWord, 
+    checkAnswer, 
+    isLoadingWord, 
+    isCheckingAnswer 
+  } = useQuizGraphQL({
+    onWordLoaded: (word: WordChallenge) => actions.wordLoaded(word),
+    onNoMoreWords: () => actions.noMoreWords(),
+    onWordError: (error: string) => actions.wordError(error),
+    onResultReceived: (result: TranslationResult) => actions.resultReceived(result),
   });
-  
-  const [checkTranslation, { loading: checkingAnswer }] = useMutation<
-    CheckTranslationData,
-    CheckTranslationVariables
-  >(CHECK_TRANSLATION, {
-    onCompleted: (data) => {
-      send({
-        type: 'RESULT_RECEIVED',
-        result: data.checkTranslation,
-      });
-    },
-    onError: (error) => {
-      console.error('Error checking translation:', error);
-    },
+
+  // Timer management
+  const { isRunning: isTimerRunning, formattedTime: timerDisplay } = useQuizTimer({
+    timeLimit: context.timeLimit,
+    timeRemaining: context.timeRemaining,
+    isActive: is.playing,
+    onTick: actions.timerTick,
+    onEnd: actions.timerEnd,
   });
-  
-  // Track if we've started a timed quiz (persists until reset/finish)
-  const [timerActive, setTimerActive] = useState(false);
-  const isTimedMode = snapshot.context.timeLimit > 0;
-  
-  // Start timer when quiz starts in timed mode
-  useEffect(() => {
-    const justStartedPlaying = snapshot.matches('playing') && isTimedMode && !timerActive;
-    if (justStartedPlaying) {
-      console.log('[useQuiz] Activating timer');
-      setTimerActive(true);
-    }
-  }, [snapshot.value, isTimedMode, timerActive]);
-  
-  // Reset timer active state when quiz finishes or resets
-  useEffect(() => {
-    if (snapshot.matches('setup') || snapshot.matches('finished')) {
-      if (timerActive) {
-        console.log('[useQuiz] Deactivating timer (quiz ended)');
-        setTimerActive(false);
-      }
-    }
-  }, [snapshot.value, timerActive]);
-  
-  // The actual interval - only depends on timerActive
-  useEffect(() => {
-    if (timerActive && snapshot.context.timeRemaining > 0) {
-      console.log('[useQuiz] Starting timer interval, timeRemaining:', snapshot.context.timeRemaining);
-      
-      const intervalId = setInterval(() => {
-        send({ type: 'TIMER_TICK' });
-      }, 1000);
-      
-      return () => {
-        console.log('[useQuiz] Clearing timer interval');
-        clearInterval(intervalId);
-      };
-    }
-  }, [timerActive, send]); // send is stable from XState
-  
-  // Check timer end - only in timed mode
-  useEffect(() => {
-    const isTimedMode = snapshot.context.timeLimit > 0;
-    const timerExpired = snapshot.context.timeRemaining <= 0;
-    const isPlaying = snapshot.matches('playing');
-    
-    // Only end if we're in timed mode AND timer actually expired (was > 0 and reached 0)
-    if (isTimedMode && timerExpired && isPlaying) {
-      send({ type: 'TIMER_END' });
-    }
-  }, [snapshot.context.timeRemaining, snapshot.context.timeLimit, snapshot.value, send]);
-  
+
   // Fetch word when entering loading state
   useEffect(() => {
-    const isLoading = snapshot.matches('loading');
-    const isLoadingNext = snapshot.matches('loadingNext');
-    
-    console.log('[useQuiz] State check:', { 
-      value: snapshot.value, 
-      isLoading, 
-      isLoadingNext,
-      mode: snapshot.context.mode 
-    });
-    
-    if (isLoading || isLoadingNext) {
-      console.log('[useQuiz] Fetching word with variables:', {
-        mode: snapshot.context.mode,
-        category: snapshot.context.category,
-        difficulty: snapshot.context.difficulty,
-      });
-      
+    if (is.loading) {
       fetchWord({
-        variables: {
-          mode: snapshot.context.mode,
-          category: snapshot.context.category,
-          difficulty: snapshot.context.difficulty,
-        },
+        mode: context.mode,
+        category: context.category,
+        difficulty: context.difficulty,
       });
     }
-  }, [
-    snapshot.value,
-    snapshot.context.mode,
-    snapshot.context.category,
-    snapshot.context.difficulty,
-    fetchWord
-  ]);
-  
-  // Actions
+  }, [is.loading, context.mode, context.category, context.difficulty, fetchWord]);
+
+  // Public actions with default values
   const startQuiz = useCallback((settings: QuizStartSettings) => {
-    const hasTimeLimit = settings.timeLimit && settings.timeLimit > 0;
-    
-    const finalSettings = {
-      wordLimit: hasTimeLimit ? 9999 : (settings.wordLimit ?? 50), // No word limit in timed mode
+    actions.start({
+      wordLimit: settings.wordLimit ?? 50,
       timeLimit: settings.timeLimit ?? 0,
       category: settings.category ?? null,
       difficulty: settings.difficulty ?? null,
       mode: settings.mode ?? 'EN_TO_PL',
-    };
-    
-    console.log('[useQuiz] startQuiz called with:', settings);
-    console.log('[useQuiz] Final settings:', finalSettings);
-    
-    send({
-      type: 'START',
-      settings: finalSettings,
     });
-  }, [send]);
-  
+  }, [actions]);
+
   const startQuizWithReinforce = useCallback((settings: QuizStartSettings) => {
-    send({
-      type: 'START_REINFORCE',
-      settings: {
-        wordLimit: settings.wordLimit ?? 50,
-        timeLimit: 0,
-        category: settings.category ?? null,
-        difficulty: settings.difficulty ?? null,
-        mode: settings.mode ?? 'EN_TO_PL',
-      },
+    actions.startWithReinforce({
+      wordLimit: settings.wordLimit ?? 50,
+      timeLimit: 0,
+      category: settings.category ?? null,
+      difficulty: settings.difficulty ?? null,
+      mode: settings.mode ?? 'EN_TO_PL',
     });
-  }, [send]);
-  
-  // const startTimedQuiz = useCallback((settings: QuizStartSettings) => {
-  //   send({
-  //     type: 'START',
-  //     settings: {
-  //       wordLimit: 999, // No word limit in timed mode
-  //       timeLimit: settings.timeLimit ?? 300,
-  //       category: settings.category ?? null,
-  //       difficulty: settings.difficulty ?? null,
-  //       mode: settings.mode ?? 'EN_TO_PL',
-  //     },
-  //   });
-  // }, [send]);
-  
+  }, [actions]);
+
   const submitAnswer = useCallback(() => {
-    if (!snapshot.context.currentWord) return;
+    if (!context.currentWord) return;
     
-    send({ type: 'SUBMIT' });
+    actions.submit();
     
-    checkTranslation({
-      variables: {
-        wordId: snapshot.context.currentWord.id,
-        userTranslation: snapshot.context.userInput.trim(),
-        mode: snapshot.context.mode,
-      },
+    checkAnswer({
+      wordId: context.currentWord.id,
+      userTranslation: context.userInput.trim(),
+      mode: context.mode,
     });
-  }, [checkTranslation, snapshot.context, send]);
-  
-  const nextWord = useCallback(() => {
-    send({ type: 'NEXT_WORD' });
-  }, [send]);
-  
-  const updateInput = useCallback((value: string) => {
-    send({ type: 'INPUT_CHANGE', value });
-  }, [send]);
-  
-  const toggleMode = useCallback(() => {
-    send({ type: 'TOGGLE_MODE' });
-  }, [send]);
-  
-  const reset = useCallback(() => {
-    send({ type: 'RESET' });
-  }, [send]);
-  
-  // Derive current state string
-  const getStateString = (): UseQuizReturn['state'] => {
-    if (snapshot.matches('setup')) return 'setup';
-    if (snapshot.matches('loading')) return 'loading';
-    if (snapshot.matches('loadingNext')) return 'loading';
-    if (snapshot.matches('playing')) return 'playing';
-    if (snapshot.matches('finished')) return 'finished';
-    if (snapshot.matches('error')) return 'error';
-    return 'setup';
-  };
-  
+  }, [actions, checkAnswer, context.currentWord, context.userInput, context.mode]);
+
+  const updateFilters = useCallback((
+    category: string | null, 
+    difficulty: Difficulty | null
+  ) => {
+    updateWordCountFilters({ category, difficulty });
+  }, [updateWordCountFilters]);
+
   return {
     // State
-    state: getStateString(),
-    context: snapshot.context,
+    state,
+    context,
     
-    // Derived state
-    isSetup: snapshot.matches('setup'),
-    isPlaying: snapshot.matches('playing'),
-    isLoading: snapshot.matches('loading') || snapshot.matches('loadingNext'),
-    isFinished: snapshot.matches('finished'),
-    isError: snapshot.matches('error'),
-    isWaitingForInput: snapshot.matches({ playing: 'waitingForInput' }),
-    isShowingResult: snapshot.matches({ playing: 'showingResult' }),
+    // Derived state (flat for convenience)
+    isSetup: is.setup,
+    isPlaying: is.playing,
+    isLoading: is.loading,
+    isFinished: is.finished,
+    isError: is.error,
+    isWaitingForInput: is.waitingForInput,
+    isShowingResult: is.showingResult,
+    
+    // Timer
+    timerDisplay,
+    isTimerRunning,
     
     // Data
-    categories: categoriesData?.getCategories ?? [],
-    availableWordCount: wordCountData?.getWordCount?.count ?? 0,
+    categories,
+    availableWordCount,
     
     // Actions
     startQuiz,
     startQuizWithReinforce,
     submitAnswer,
-    nextWord,
-    updateInput,
-    toggleMode,
-    reset,
-    refetchWordCount,
+    nextWord: actions.nextWord,
+    updateInput: actions.updateInput,
+    toggleMode: actions.toggleMode,
+    reset: actions.reset,
+    updateFilters,
+    refetchWordCount: (variables: { category?: string | null; difficulty?: number | null }) => {
+      updateWordCountFilters({ 
+        category: variables.category ?? null, 
+        difficulty: variables.difficulty as Difficulty | null ?? null 
+      });
+    },
     
     // Loading states
-    loadingWord,
-    checkingAnswer,
+    loadingWord: isLoadingWord,
+    checkingAnswer: isCheckingAnswer,
   };
 }
