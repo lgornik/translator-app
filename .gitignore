@@ -27,3 +27,4 @@ yarn-error.log*
 backend/dist/
 *.js.map
 *.d.ts.map
+frontend/dist
