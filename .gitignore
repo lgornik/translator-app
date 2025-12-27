@@ -29,3 +29,5 @@ backend/dist/
 *.d.ts.map
 frontend/dist
 frontend/coverage
+playwright-report
+test-results

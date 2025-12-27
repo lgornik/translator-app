@@ -10,22 +10,26 @@
     "frontend"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=backend & npm run dev --workspace=frontend",
-    "dev:backend": "npm run dev --workspace=backend",
-    "dev:frontend": "npm run dev --workspace=frontend",
-    "build": "npm run build --workspaces",
-    "build:backend": "npm run build --workspace=backend",
-    "build:frontend": "npm run build --workspace=frontend",
-    "lint": "npm run lint --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
-    "clean": "rm -rf node_modules backend/node_modules frontend/node_modules backend/dist frontend/dist"
-  },
+  "dev": "npm run dev --workspace=backend & npm run dev --workspace=frontend",
+  "dev:backend": "npm run dev --workspace=backend",
+  "dev:frontend": "npm run dev --workspace=frontend",
+  "build": "npm run build --workspaces",
+  "build:backend": "npm run build --workspace=backend",
+  "build:frontend": "npm run build --workspace=frontend",
+  "lint": "npm run lint --workspaces --if-present",
+  "typecheck": "npm run typecheck --workspaces --if-present",
+  "test": "npm run test --workspaces --if-present",
+  "test:e2e": "playwright test",
+  "test:e2e:ui": "playwright test --ui",
+  "test:e2e:headed": "playwright test --headed",
+  "clean": "rm -rf node_modules backend/node_modules frontend/node_modules backend/dist frontend/dist"
+ },
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
     "@testing-library/user-event": "^14.6.1",

@@ -213,6 +213,6 @@ export function useQuiz(): UseQuizReturn {
     
     // Loading states
     loadingWord: isLoadingWord,
-    checkingAnswer: isCheckingAnswer,
+    checkingAnswer: is.checking || isCheckingAnswer,
   };
 }
