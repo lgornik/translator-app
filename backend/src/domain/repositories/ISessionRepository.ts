@@ -36,4 +36,9 @@ export interface ISessionRepository {
    * Check if session exists
    */
   exists(id: SessionId): boolean;
+
+  /**
+   * Get total count of active sessions
+   */
+  count(): number;
 }

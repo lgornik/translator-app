@@ -1,5 +1,9 @@
-import { vi } from 'vitest';
-import type { WordChallenge, TranslationResult, QuizStats, Difficulty } from '@/shared/types';
+﻿import { vi } from 'vitest';
+import { ReactElement, ReactNode } from 'react';
+import { render, RenderOptions } from '@testing-library/react';
+import { MockedProvider, MockedResponse } from '@apollo/client/testing';
+import { BrowserRouter } from 'react-router-dom';
+import { TranslationMode, type WordChallenge, type TranslationResult, type QuizStats, type Difficulty } from '@/shared/types';
 
 /**
  * Factory functions for creating test data
@@ -9,7 +13,7 @@ export const createMockWord = (overrides: Partial<WordChallenge> = {}): WordChal
   id: `word-${Math.random().toString(36).substr(2, 9)}`,
   wordToTranslate: 'cat',
   correctTranslation: 'kot',
-  mode: 'EN_TO_PL',
+  mode: TranslationMode.EN_TO_PL,
   category: 'Animals',
   difficulty: 1 as Difficulty,
   ...overrides,
@@ -36,10 +40,9 @@ export const createMockStats = (overrides: Partial<QuizStats> = {}): QuizStats =
  */
 
 export const createMockUseQuiz = (overrides = {}) => ({
-  // State
   state: 'setup' as const,
   context: {
-    mode: 'EN_TO_PL' as const,
+    mode: TranslationMode.EN_TO_PL,
     category: null,
     difficulty: null,
     wordLimit: 50,
@@ -58,8 +61,6 @@ export const createMockUseQuiz = (overrides = {}) => ({
     error: null,
     noMoreWords: false,
   },
-  
-  // Derived state
   isSetup: true,
   isPlaying: false,
   isLoading: false,
@@ -67,16 +68,10 @@ export const createMockUseQuiz = (overrides = {}) => ({
   isError: false,
   isWaitingForInput: false,
   isShowingResult: false,
-  
-  // Timer
   timerDisplay: '00:00',
   isTimerRunning: false,
-  
-  // Data
   categories: ['Animals', 'Food', 'Colors'],
   availableWordCount: 100,
-  
-  // Actions
   startQuiz: vi.fn(),
   startQuizWithReinforce: vi.fn(),
   submitAnswer: vi.fn(),
@@ -86,11 +81,8 @@ export const createMockUseQuiz = (overrides = {}) => ({
   reset: vi.fn(),
   updateFilters: vi.fn(),
   refetchWordCount: vi.fn(),
-  
-  // Loading states
   loadingWord: false,
   checkingAnswer: false,
-  
   ...overrides,
 });
 
@@ -98,87 +90,79 @@ export const createMockUseQuiz = (overrides = {}) => ({
  * Apollo Client test helpers
  */
 
-export const createApolloMock = <TData, TVariables>(
-  query: any,
+export function createApolloMock<TData, TVariables>(
+  query: unknown,
   variables: TVariables,
   data: TData
-) => ({
-  request: {
-    query,
-    variables,
-  },
-  result: {
-    data,
-  },
-});
+) {
+  return {
+    request: { query, variables },
+    result: { data },
+  };
+}
 
-export const createApolloErrorMock = <TVariables>(
-  query: any,
+export function createApolloErrorMock<TVariables>(
+  query: unknown,
   variables: TVariables,
   errorMessage: string
-) => ({
-  request: {
-    query,
-    variables,
-  },
-  error: new Error(errorMessage),
-});
+) {
+  return {
+    request: { query, variables },
+    error: new Error(errorMessage),
+  };
+}
 
 /**
  * Timer helpers for testing
  */
 
-export const advanceTimersBySeconds = (seconds: number) => {
+export function advanceTimersBySeconds(seconds: number): void {
   vi.advanceTimersByTime(seconds * 1000);
-};
+}
 
 /**
  * Custom render with providers
  */
-
-import { ReactElement, ReactNode } from 'react';
-import { render, RenderOptions } from '@testing-library/react';
-import { MockedProvider, MockedResponse } from '@apollo/client/testing';
-import { BrowserRouter } from 'react-router-dom';
 
 interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
   apolloMocks?: MockedResponse[];
   route?: string;
 }
 
-export const renderWithProviders = (
+export function renderWithProviders(
   ui: ReactElement,
-  {
-    apolloMocks = [],
-    route = '/',
-    ...renderOptions
-  }: CustomRenderOptions = {}
-) => {
+  options: CustomRenderOptions = {}
+) {
+  const { apolloMocks = [], route = '/', ...renderOptions } = options;
+  
   window.history.pushState({}, 'Test page', route);
 
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <MockedProvider mocks={apolloMocks} addTypename={false}>
-      <BrowserRouter>{children}</BrowserRouter>
-    </MockedProvider>
-  );
+  function Wrapper({ children }: { children: ReactNode }) {
+    return (
+      <MockedProvider mocks={apolloMocks} addTypename={false}>
+        <BrowserRouter>{children}</BrowserRouter>
+      </MockedProvider>
+    );
+  }
 
   return {
     ...render(ui, { wrapper: Wrapper, ...renderOptions }),
   };
-};
+}
 
 /**
  * Wait helpers
  */
 
-export const waitForLoadingToFinish = () =>
-  new Promise((resolve) => setTimeout(resolve, 0));
+export function waitForLoadingToFinish(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
 
 /**
  * Keyboard event helpers
  */
 
-export const pressEnter = (element: Element) => {
+export function pressEnter(element: Element): void {
   element.dispatchEvent(
     new KeyboardEvent('keydown', {
       key: 'Enter',
@@ -186,9 +170,9 @@ export const pressEnter = (element: Element) => {
       bubbles: true,
     })
   );
-};
+}
 
-export const pressEscape = (element: Element) => {
+export function pressEscape(element: Element): void {
   element.dispatchEvent(
     new KeyboardEvent('keydown', {
       key: 'Escape',
@@ -196,4 +180,4 @@ export const pressEscape = (element: Element) => {
       bubbles: true,
     })
   );
-};
+}

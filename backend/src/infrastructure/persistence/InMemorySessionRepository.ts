@@ -68,7 +68,7 @@ export class InMemorySessionRepository implements ISessionRepository {
   /**
    * Get current session count (for monitoring)
    */
-  get count(): number {
+  count(): number {
     return this.sessions.size;
   }
 

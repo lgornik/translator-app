@@ -1,4 +1,4 @@
-import { InputHTMLAttributes, forwardRef } from 'react';
+import { InputHTMLAttributes, forwardRef, useId } from 'react';
 import { cn } from '@/shared/utils';
 
 export type InputState = 'default' | 'correct' | 'incorrect';
@@ -8,6 +8,8 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   state?: InputState;
   fullWidth?: boolean;
+  /** Helper text shown below input */
+  helperText?: string;
 }
 
 const stateClasses: Record<InputState, string> = {
@@ -17,7 +19,7 @@ const stateClasses: Record<InputState, string> = {
 };
 
 /**
- * Reusable Input component
+ * Reusable Input component with full accessibility support
  */
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   (
@@ -26,13 +28,25 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       error,
       state = 'default',
       fullWidth = true,
+      helperText,
       className,
       id,
+      'aria-describedby': ariaDescribedBy,
       ...props
     },
     ref
   ) => {
-    const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
+    const generatedId = useId();
+    const inputId = id || generatedId;
+    const errorId = `${inputId}-error`;
+    const helperId = `${inputId}-helper`;
+
+    // Build aria-describedby from error, helper text, and any passed value
+    const describedByParts: string[] = [];
+    if (error) describedByParts.push(errorId);
+    if (helperText && !error) describedByParts.push(helperId);
+    if (ariaDescribedBy) describedByParts.push(ariaDescribedBy);
+    const describedBy = describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
 
     return (
       <div className={cn('input-group', fullWidth && 'input-group--full-width')}>
@@ -50,9 +64,25 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             error && 'input-group__input--error',
             className
           )}
+          aria-invalid={!!error || state === 'incorrect'}
+          aria-describedby={describedBy}
           {...props}
         />
-        {error && <span className="input-group__error">{error}</span>}
+        {error && (
+          <span 
+            id={errorId} 
+            className="input-group__error" 
+            role="alert"
+            aria-live="polite"
+          >
+            {error}
+          </span>
+        )}
+        {helperText && !error && (
+          <span id={helperId} className="input-group__helper">
+            {helperText}
+          </span>
+        )}
       </div>
     );
   }

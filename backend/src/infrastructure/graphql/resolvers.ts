@@ -3,7 +3,6 @@ import { Result } from '../../shared/core/Result.js';
 import { DomainError } from '../../shared/errors/DomainErrors.js';
 import { GraphQLError } from 'graphql';
 import { config } from '../config/Config.js';
-import { InMemorySessionRepository } from '../persistence/InMemorySessionRepository.js';
 
 /**
  * Helper to convert Result to GraphQL response
@@ -37,7 +36,7 @@ const queryResolvers = {
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: (Date.now() - ctx.startTime) / 1000,
-    sessionCount: (ctx.sessionRepository as InMemorySessionRepository).count ?? 0,
+    sessionCount: ctx.sessionRepository.count(),
     wordCount: ctx.wordRepository.count(),
   }),
 

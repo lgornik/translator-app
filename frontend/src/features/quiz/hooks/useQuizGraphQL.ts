@@ -10,7 +10,6 @@ import {
 } from '@/shared/api/operations';
 import type { WordChallenge, TranslationResult } from '@/shared/types';
 import { logger } from '@/shared/utils/logger';
-// import { logger } from '@/shared/utils/logger';
 
 interface FetchWordParams {
   mode: 'EN_TO_PL' | 'PL_TO_EN';

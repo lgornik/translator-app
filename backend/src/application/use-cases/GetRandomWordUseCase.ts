@@ -2,7 +2,6 @@ import { Result } from '../../shared/core/Result.js';
 import {
   DomainError,
   NoWordsAvailableError,
-  ValidationError,
 } from '../../shared/errors/DomainErrors.js';
 import { IWordRepository, WordFilters } from '../../domain/repositories/IWordRepository.js';
 import { ISessionRepository } from '../../domain/repositories/ISessionRepository.js';
@@ -10,7 +9,6 @@ import { TranslationMode } from '../../domain/value-objects/TranslationMode.js';
 import { Difficulty } from '../../domain/value-objects/Difficulty.js';
 import { Category } from '../../domain/value-objects/Category.js';
 import { SessionId } from '../../domain/value-objects/SessionId.js';
-import { WordId } from '../../domain/value-objects/WordId.js';
 import { RandomWordPicker } from '../../domain/services/RandomWordPicker.js';
 import { IUseCase } from '../interfaces/IUseCase.js';
 import { ILogger } from '../interfaces/ILogger.js';
@@ -70,12 +68,11 @@ export class GetRandomWordUseCase
     const availableWords = this.wordRepository.findByFilters(filters);
 
     if (availableWords.length === 0) {
-      return Result.fail(
-        new NoWordsAvailableError({
-          category: category?.name,
-          difficulty: difficulty?.value,
-        })
-      );
+      const errorFilters: { category?: string | undefined; difficulty?: number | undefined } = {};
+      if (category) errorFilters.category = category.name;
+      if (difficulty) errorFilters.difficulty = difficulty.value;
+      
+      return Result.fail(new NoWordsAvailableError(errorFilters));
     }
 
     // 3. Get or create session
@@ -83,7 +80,7 @@ export class GetRandomWordUseCase
 
     // 4. Filter out used words
     const unusedWords = availableWords.filter(
-      (word) => !session.hasUsedWord(word.id as unknown as WordId)
+      (word) => !session.hasUsedWord(word.id)
     );
 
     // 5. Reset session if all words used
@@ -94,7 +91,7 @@ export class GetRandomWordUseCase
       });
 
       // Reset only words matching current filters
-      session.resetWords(availableWords.map((w) => w.id as unknown as WordId));
+      session.resetWords(availableWords.map((w) => w.id));
       this.sessionRepository.save(session);
 
       // Recursive call with fresh session
@@ -108,7 +105,7 @@ export class GetRandomWordUseCase
     }
 
     // 7. Mark word as used
-    session.markWordAsUsed(selectedWord.id as unknown as WordId);
+    session.markWordAsUsed(selectedWord.id);
     this.sessionRepository.save(session);
 
     // 8. Log and return

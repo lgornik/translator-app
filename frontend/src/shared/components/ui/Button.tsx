@@ -9,6 +9,8 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: ButtonSize;
   fullWidth?: boolean;
   loading?: boolean;
+  /** Accessible label for screen readers */
+  'aria-label'?: string;
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
@@ -25,7 +27,7 @@ const sizeClasses: Record<ButtonSize, string> = {
 };
 
 /**
- * Reusable Button component
+ * Reusable Button component with full accessibility support
  */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
@@ -37,6 +39,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       disabled,
       className,
       children,
+      'aria-label': ariaLabel,
       ...props
     },
     ref
@@ -53,12 +56,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           className
         )}
         disabled={disabled || loading}
+        aria-label={ariaLabel}
+        aria-busy={loading}
+        aria-disabled={disabled || loading}
         {...props}
       >
         {loading ? (
           <>
-            <span className="btn__spinner" />
+            <span className="btn__spinner" aria-hidden="true" />
             <span className="btn__text">{children}</span>
+            <span className="sr-only">Ładowanie...</span>
           </>
         ) : (
           children

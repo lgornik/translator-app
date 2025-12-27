@@ -2,7 +2,7 @@
  * Base Value Object class
  * Value Objects are immutable and compared by their properties
  */
-export abstract class ValueObject<T extends Record<string, unknown>> {
+export abstract class ValueObject<T extends object> {
   protected readonly props: Readonly<T>;
 
   protected constructor(props: T) {
@@ -21,7 +21,10 @@ export abstract class ValueObject<T extends Record<string, unknown>> {
       return false;
     }
 
-    return this.shallowEquals(this.props, other.props);
+    return this.shallowEquals(
+      this.props as Record<string, unknown>,
+      other.props as Record<string, unknown>
+    );
   }
 
   private shallowEquals(

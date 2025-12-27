@@ -10,7 +10,7 @@ export abstract class DomainError extends Error {
   abstract readonly code: string;
   abstract readonly httpStatus: number;
   readonly timestamp: Date;
-  readonly details?: Record<string, unknown>;
+  readonly details: Record<string, unknown> | undefined;
 
   protected constructor(message: string, details?: Record<string, unknown>) {
     super(message);
@@ -42,7 +42,7 @@ export class NotFoundError extends DomainError {
   readonly code = 'NOT_FOUND' as const;
   readonly httpStatus = 404;
   readonly entityType: string;
-  readonly entityId?: string;
+  readonly entityId: string | undefined;
 
   constructor(entityType: string, entityId?: string) {
     const message = entityId
@@ -69,7 +69,7 @@ export class NotFoundError extends DomainError {
 export class ValidationError extends DomainError {
   readonly code = 'VALIDATION_ERROR' as const;
   readonly httpStatus = 400;
-  readonly field?: string;
+  readonly field: string | undefined;
 
   constructor(message: string, field?: string, details?: Record<string, unknown>) {
     super(message, { field, ...details });
@@ -109,11 +109,11 @@ export class NoWordsAvailableError extends DomainError {
   readonly code = 'NO_WORDS_AVAILABLE' as const;
   readonly httpStatus = 404;
   readonly filters: {
-    category?: string;
-    difficulty?: number;
+    category?: string | undefined;
+    difficulty?: number | undefined;
   };
 
-  constructor(filters: { category?: string; difficulty?: number } = {}) {
+  constructor(filters: { category?: string | undefined; difficulty?: number | undefined } = {}) {
     const filterDesc = Object.entries(filters)
       .filter(([_, v]) => v !== undefined)
       .map(([k, v]) => `${k}=${v}`)
@@ -123,7 +123,7 @@ export class NoWordsAvailableError extends DomainError {
       ? `No words available for filters: ${filterDesc}`
       : 'No words available';
 
-    super(message, filters);
+    super(message, filters as Record<string, unknown>);
     this.filters = filters;
   }
 }
@@ -154,7 +154,7 @@ export class SessionError extends DomainError {
 export class InfrastructureError extends DomainError {
   readonly code = 'INFRASTRUCTURE_ERROR' as const;
   readonly httpStatus = 500;
-  readonly cause?: Error;
+  readonly cause: Error | undefined;
 
   constructor(message: string, cause?: Error) {
     super(message, cause ? { originalError: cause.message } : undefined);
