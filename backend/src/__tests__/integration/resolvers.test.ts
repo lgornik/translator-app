@@ -11,7 +11,7 @@ describe('GraphQL Resolvers', () => {
     { id: '1', polish: 'kot', english: 'cat', category: 'Animals', difficulty: 1 },
     { id: '2', polish: 'pies', english: 'dog', category: 'Animals', difficulty: 1 },
     { id: '3', polish: 'dom', english: 'house', category: 'Objects', difficulty: 2 },
-    { id: '4', polish: 'trudne sÅ‚owo', english: 'difficult word', category: 'Objects', difficulty: 3 },
+    { id: '4', polish: 'trudne słowo', english: 'difficult word', category: 'Objects', difficulty: 3 },
   ];
 
   let ctx: GraphQLContext;
@@ -57,7 +57,7 @@ describe('GraphQL Resolvers', () => {
   });
 
   describe('Query.getRandomWord', () => {
-    it('should return a random word', () => {
+    it('should return a random word without correctTranslation', () => {
       const result = resolvers.Query.getRandomWord(
         {},
         { mode: 'EN_TO_PL' },
@@ -66,7 +66,7 @@ describe('GraphQL Resolvers', () => {
 
       expect(result).toHaveProperty('id');
       expect(result).toHaveProperty('wordToTranslate');
-      expect(result).toHaveProperty('correctTranslation');
+      expect(result).not.toHaveProperty('correctTranslation');
       expect(result.mode).toBe('EN_TO_PL');
     });
 

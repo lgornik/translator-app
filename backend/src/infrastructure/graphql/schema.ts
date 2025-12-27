@@ -18,14 +18,13 @@ export const typeDefs = `#graphql
 
   """
   A word challenge for the user to translate
+  NOTE: correctTranslation is NOT exposed here for security
   """
   type WordChallenge {
     "Unique identifier"
     id: ID!
     "The word to be translated"
     wordToTranslate: String!
-    "The correct translation (for verification)"
-    correctTranslation: String!
     "Translation direction"
     mode: TranslationMode!
     "Word category"
@@ -40,7 +39,7 @@ export const typeDefs = `#graphql
   type TranslationResult {
     "Whether the translation was correct"
     isCorrect: Boolean!
-    "The correct translation"
+    "The correct translation (revealed after checking)"
     correctTranslation: String!
     "What the user submitted"
     userTranslation: String!

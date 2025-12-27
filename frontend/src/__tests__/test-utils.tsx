@@ -12,7 +12,6 @@ import { TranslationMode, type WordChallenge, type TranslationResult, type QuizS
 export const createMockWord = (overrides: Partial<WordChallenge> = {}): WordChallenge => ({
   id: `word-${Math.random().toString(36).substr(2, 9)}`,
   wordToTranslate: 'cat',
-  correctTranslation: 'kot',
   mode: TranslationMode.EN_TO_PL,
   category: 'Animals',
   difficulty: 1 as Difficulty,
@@ -134,7 +133,7 @@ export function renderWithProviders(
   options: CustomRenderOptions = {}
 ) {
   const { apolloMocks = [], route = '/', ...renderOptions } = options;
-  
+
   window.history.pushState({}, 'Test page', route);
 
   function Wrapper({ children }: { children: React.ReactNode }) {

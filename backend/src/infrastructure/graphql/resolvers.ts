@@ -52,7 +52,16 @@ const queryResolvers = {
       sessionId: ctx.sessionId,
     });
 
-    return handleResult(result);
+    const output = handleResult(result);
+    
+    // Remove correctTranslation from response for security
+    return {
+      id: output.id,
+      wordToTranslate: output.wordToTranslate,
+      mode: output.mode,
+      category: output.category,
+      difficulty: output.difficulty,
+    };
   },
 
   getAllWords: (_: unknown, __: unknown, ctx: GraphQLContext) => {

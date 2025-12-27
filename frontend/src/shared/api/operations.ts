@@ -7,7 +7,6 @@ export const WORD_CHALLENGE_FRAGMENT = gql`
   fragment WordChallengeFields on WordChallenge {
     id
     wordToTranslate
-    correctTranslation
     mode
     category
     difficulty
@@ -91,7 +90,6 @@ export interface GetRandomWordData {
   getRandomWord: {
     id: string;
     wordToTranslate: string;
-    correctTranslation: string;
     mode: 'EN_TO_PL' | 'PL_TO_EN';
     category: string;
     difficulty: number;
