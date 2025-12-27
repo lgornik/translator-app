@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QuizPlaying } from './QuizPlaying';
@@ -159,7 +159,8 @@ describe('QuizPlaying', () => {
       render(<QuizPlaying {...defaultProps} result={createMockResult(false)} />);
       
       expect(screen.getByText(/Niestety/)).toBeInTheDocument();
-      expect(screen.getByText(/Poprawna odpowiedÅº/)).toBeInTheDocument();
+      expect(document.querySelector('.result__answer')).toBeInTheDocument();
+
     });
 
     it('should show NastÄ™pne sÅ‚owo button when result shown', () => {

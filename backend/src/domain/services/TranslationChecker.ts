@@ -1,4 +1,4 @@
-import { TranslationMode } from '../value-objects/TranslationMode.js';
+﻿import { TranslationMode } from '../value-objects/TranslationMode.js';
 
 /**
  * Translation check result
@@ -25,23 +25,11 @@ export class TranslationChecker {
     _mode: TranslationMode
   ): TranslationCheckResult {
     const normalizedUser = this.normalizeAnswer(userAnswer);
-    const normalizedCorrect = this.normalizeAnswer(correctAnswer);
 
-    // Exact match after normalization
-    if (normalizedUser === normalizedCorrect) {
-      return {
-        isCorrect: true,
-        correctTranslation: correctAnswer,
-        userTranslation: userAnswer,
-      };
-    }
+    // Generate all valid variants of the correct answer
+    const validVariants = this.generateValidVariants(correctAnswer);
 
-    // Check against multiple options (separated by "/")
-    const options = correctAnswer
-      .split('/')
-      .map((opt) => this.normalizeAnswer(opt));
-
-    const isCorrect = options.includes(normalizedUser);
+    const isCorrect = validVariants.includes(normalizedUser);
 
     return {
       isCorrect,
@@ -51,20 +39,54 @@ export class TranslationChecker {
   }
 
   /**
+   * Generate all valid answer variants
+   * Handles "/" for multiple options and "()" for optional parts
+   */
+  private generateValidVariants(answer: string): string[] {
+    const variants: string[] = [];
+
+    // Split by "/" for multiple correct answers
+    const options = answer.split('/').map((opt) => opt.trim());
+
+    for (const option of options) {
+      // Variant 1: without parenthetical content
+      const withoutParenthetical = option
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, ' ')
+        .replace(/\s*\([^)]*\)\s*/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      variants.push(withoutParenthetical);
+
+      // Variant 2: with parenthetical content but without the parentheses themselves
+      const withParenthetical = option
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, ' ')
+        .replace(/[()]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (withParenthetical !== withoutParenthetical) {
+        variants.push(withParenthetical);
+      }
+    }
+
+    return [...new Set(variants)];
+  }
+
+  /**
    * Normalize answer for comparison
    * - Convert to lowercase
    * - Trim whitespace
    * - Normalize multiple spaces to single space
-   * - Remove parentheses content for optional parts
    */
   private normalizeAnswer(answer: string): string {
     return answer
       .toLowerCase()
       .trim()
-      .replace(/\s+/g, ' ')
-      // Handle optional parts in parentheses - accept answer with or without
-      .replace(/\s*\([^)]*\)\s*/g, ' ')
-      .trim();
+      .replace(/\s+/g, ' ');
   }
 
   /**

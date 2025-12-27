@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+﻿import { useState, useCallback, useEffect } from 'react';
 import { Button, Select } from '@/shared/components/ui';
 import { QUIZ_DEFAULTS, DIFFICULTY_CONFIG } from '@/shared/constants';
 import type { Difficulty } from '@/shared/types';
@@ -37,12 +37,12 @@ export function QuizSetup({
   const [customTime, setCustomTime] = useState<number>(5);
   const [useReinforce, setUseReinforce] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Local filter state
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
 
-  const modeLabel = mode === 'EN_TO_PL' ? 'EN â†’ PL' : 'PL â†’ EN';
+  const modeLabel = mode === 'EN_TO_PL' ? 'EN → PL' : 'PL → EN';
 
   const difficultyOptions = [
     { value: '', label: 'Wszystkie poziomy' },
@@ -71,13 +71,13 @@ export function QuizSetup({
   const validateAndStart = useCallback(
     (wordLimit: number, withReinforce: boolean) => {
       if (wordLimit > availableWordCount) {
-        setError(`DostÄ™pnych jest tylko ${availableWordCount} sÅ‚Ã³w dla wybranych filtrÃ³w.`);
+        setError(`Dostępnych jest tylko ${availableWordCount} słów dla wybranych filtrów.`);
         return;
       }
       setError(null);
 
       const settings = { ...getSettings(), wordLimit };
-      
+
       if (withReinforce) {
         onStartWithReinforce(settings);
       } else {
@@ -116,7 +116,7 @@ export function QuizSetup({
           onChange={(e) => handleCategoryChange(e.target.value)}
         />
         <Select
-          label="Poziom trudnoÅ›ci"
+          label="Poziom trudności"
           options={difficultyOptions}
           value={selectedDifficulty?.toString() ?? ''}
           onChange={(e) => handleDifficultyChange(e.target.value)}
@@ -134,14 +134,14 @@ export function QuizSetup({
           onClick={() => validateAndStart(50, useReinforce)}
           disabled={availableWordCount === 0}
         >
-          <span className="quiz-option__icon">ðŸ“</span>
+          <span className="quiz-option__icon">📝</span>
           <span className="quiz-option__title">TEST</span>
-          <span className="quiz-option__desc">50 sÅ‚Ã³w</span>
+          <span className="quiz-option__desc">50 słów</span>
         </button>
 
         {/* Timed mode */}
         <div className="quiz-option quiz-option--custom">
-          <span className="quiz-option__icon">â±ï¸</span>
+          <span className="quiz-option__icon">⏱️</span>
           <span className="quiz-option__title">Na czas</span>
           <div className="quiz-option__input-group">
             <input
@@ -168,8 +168,8 @@ export function QuizSetup({
 
         {/* Custom word count */}
         <div className="quiz-option quiz-option--custom">
-          <span className="quiz-option__icon">ðŸŽ¯</span>
-          <span className="quiz-option__title">WÅ‚asna liczba</span>
+          <span className="quiz-option__icon">🎯</span>
+          <span className="quiz-option__title">Własna liczba</span>
           <div className="quiz-option__input-group">
             <input
               type="number"
@@ -179,7 +179,7 @@ export function QuizSetup({
               onChange={(e) => handleCustomWordsChange(e.target.value)}
               className="quiz-option__input"
             />
-            <span>sÅ‚Ã³w</span>
+            <span>słów</span>
             <Button
               size="small"
               onClick={() => validateAndStart(customWords, useReinforce)}
@@ -202,7 +202,7 @@ export function QuizSetup({
             <span className="quiz-reinforce__text">Tryb utrwalania</span>
           </label>
           <span className="quiz-reinforce__hint">
-            BÅ‚Ä™dne odpowiedzi bÄ™dÄ… powtarzane
+            Błędne odpowiedzi będą powtarzane
           </span>
         </div>
       </div>

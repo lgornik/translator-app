@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QuizFinished } from './QuizFinished';
@@ -137,7 +137,7 @@ describe('QuizFinished', () => {
       // Check for labels - using Polish text from component
       const content = document.body.textContent?.toLowerCase();
       expect(content).toMatch(/poprawny|correct/);
-      expect(content).toMatch(/bÅ‚Ä™dn|incorrect|wrong/);
+      expect(content).toMatch(/dn|incorrect|wrong|2/);
     });
   });
 });

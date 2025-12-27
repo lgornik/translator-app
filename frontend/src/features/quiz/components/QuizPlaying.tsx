@@ -24,10 +24,6 @@ interface QuizPlayingProps {
   onReset: () => void;
 }
 
-/**
- * Quiz playing screen - word display, input, results
- * Fully accessible with ARIA live regions
- */
 export function QuizPlaying({
   mode,
   currentWord,
@@ -53,7 +49,6 @@ export function QuizPlaying({
   const targetLanguage = mode === 'EN_TO_PL' ? 'polski' : 'angielski';
   const isTimedMode = timeRemaining > 0 || (wordLimit === 999);
 
-  // Focus input when ready for input
   useEffect(() => {
     if (currentWord && !result && inputRef.current) {
       inputRef.current.focus();
@@ -71,16 +66,15 @@ export function QuizPlaying({
     return result.isCorrect ? 'correct' as const : 'incorrect' as const;
   };
 
-  // Progress display
   const renderProgress = () => {
     if (isTimedMode) {
       return (
-        <div 
+        <div
           className="quiz-progress__timer"
           role="timer"
-          aria-label={`PozostaÅ‚y czas: ${formatTime(timeRemaining)}`}
+          aria-label={`Pozostały czas: ${formatTime(timeRemaining)}`}
         >
-          <span aria-hidden="true">â±ï¸</span> {formatTime(timeRemaining)}
+          <span aria-hidden="true">⏱️</span> {formatTime(timeRemaining)}
         </div>
       );
     }
@@ -88,12 +82,12 @@ export function QuizPlaying({
     if (reinforceMode) {
       return (
         <div className="quiz-progress__info" role="status" aria-live="polite">
-          <div className="quiz-progress__counter" aria-label={`Opanowano ${masteredCount} z ${wordLimit} sÅ‚Ã³w`}>
-            <span aria-hidden="true">âœ“</span> {masteredCount} / {wordLimit}
+          <div className="quiz-progress__counter" aria-label={`Opanowano ${masteredCount} z ${wordLimit} słów`}>
+            <span aria-hidden="true">✓</span> {masteredCount} / {wordLimit}
           </div>
           {wordsToRepeatCount > 0 && (
-            <div className="quiz-progress__repeat" aria-label={`${wordsToRepeatCount} sÅ‚Ã³w do powtÃ³rki`}>
-              <span aria-hidden="true">ðŸ”„</span> {wordsToRepeatCount} do powtÃ³rki
+            <div className="quiz-progress__repeat" aria-label={`${wordsToRepeatCount} słów do powtórki`}>
+              <span aria-hidden="true">🔄</span> {wordsToRepeatCount} do powtórki
             </div>
           )}
         </div>
@@ -101,11 +95,11 @@ export function QuizPlaying({
     }
 
     return (
-      <div 
+      <div
         className="quiz-progress__counter"
         role="status"
         aria-live="polite"
-        aria-label={`UkoÅ„czono ${wordsCompleted} z ${wordLimit} sÅ‚Ã³w`}
+        aria-label={`Ukończono ${wordsCompleted} z ${wordLimit} słów`}
       >
         {wordsCompleted} / {wordLimit}
       </div>
@@ -114,28 +108,26 @@ export function QuizPlaying({
 
   return (
     <section aria-label="Quiz">
-      {/* Progress bar */}
       <div className="quiz-progress">
         {renderProgress()}
-        <Button 
-          variant="text" 
+        <Button
+          variant="text"
           onClick={onReset}
-          aria-label="ZakoÅ„cz quiz"
+          aria-label="Zakończ quiz"
         >
-          <span aria-hidden="true">âœ•</span> ZakoÅ„cz
+          <span aria-hidden="true">✕</span> Zakończ
         </Button>
       </div>
 
-      {/* Word Display */}
-      <div 
+      <div
         className="word-display"
         role="region"
-        aria-label="SÅ‚owo do przetÅ‚umaczenia"
+        aria-label="Słowo do przetłumaczenia"
       >
         <div className="word-display__label" id="translation-instruction">
-          PrzetÅ‚umacz z {sourceLanguage} na {targetLanguage}
+          Przetłumacz z {sourceLanguage} na {targetLanguage}
         </div>
-        <div 
+        <div
           className="word-display__word"
           aria-live="polite"
           aria-atomic="true"
@@ -144,14 +136,14 @@ export function QuizPlaying({
             <Loading size="small" />
           ) : noMoreWords ? (
             <span className="word-display__no-words" role="alert">
-              Brak wiÄ™cej sÅ‚Ã³w dla wybranych kryteriÃ³w
+              Brak więcej słów dla wybranych kryteriów
             </span>
           ) : currentWord ? (
             <span lang={mode === 'EN_TO_PL' ? 'en' : 'pl'}>
               {currentWord.wordToTranslate}
             </span>
           ) : (
-            <span className="word-display__placeholder">Åadowanie...</span>
+            <span className="word-display__placeholder">Ładowanie...</span>
           )}
         </div>
         {currentWord?.category && !noMoreWords && (
@@ -161,12 +153,11 @@ export function QuizPlaying({
         )}
       </div>
 
-      {/* Input - hide when no more words */}
       {!noMoreWords && (
         <Input
           ref={inputRef}
-          label="Twoje tÅ‚umaczenie"
-          placeholder={`Wpisz tÅ‚umaczenie po ${targetLanguage}u...`}
+          label="Twoje tłumaczenie"
+          placeholder={`Przetłumacz na język ${targetLanguage}`}
           value={userInput}
           onChange={(e) => onInputChange(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -177,20 +168,19 @@ export function QuizPlaying({
         />
       )}
 
-      {/* Result - with live region for screen readers */}
-      <div 
-        role="status" 
-        aria-live="assertive" 
+      <div
+        role="status"
+        aria-live="assertive"
         aria-atomic="true"
         className="sr-only"
       >
         {result && (
-          result.isCorrect 
-            ? 'OdpowiedÅº poprawna!' 
-            : `OdpowiedÅº niepoprawna. Poprawna odpowiedÅº to: ${result.correctTranslation}`
+          result.isCorrect
+            ? 'Odpowiedź poprawna!'
+            : `Odpowiedź niepoprawna. Poprawna odpowiedź to: ${result.correctTranslation}`
         )}
       </div>
-      
+
       {result && !noMoreWords && (
         <div
           className={`result ${
@@ -199,45 +189,43 @@ export function QuizPlaying({
           aria-hidden="true"
         >
           <div className="result__message">
-            {result.isCorrect ? 'âœ“ Åšwietnie!' : 'âœ— Niestety nie...'}
+            {result.isCorrect ? '✓ Świetnie!' : '✗ Niestety nie...'}
           </div>
           {!result.isCorrect && (
             <div className="result__answer">
-              Poprawna odpowiedÅº: <span lang={mode === 'EN_TO_PL' ? 'pl' : 'en'}>{result.correctTranslation}</span>
+              Poprawna odpowiedź: <span lang={mode === 'EN_TO_PL' ? 'pl' : 'en'}>{result.correctTranslation}</span>
             </div>
           )}
         </div>
       )}
 
-      {/* Buttons */}
       <div className="button-group" role="group" aria-label="Akcje quizu">
         {noMoreWords ? (
-          <Button onClick={onReset} aria-label="ZakoÅ„cz quiz">
-            ZakoÅ„cz quiz
+          <Button onClick={onReset} aria-label="Zakończ quiz">
+            Zakończ quiz
           </Button>
         ) : !result ? (
-          <Button 
-            onClick={onSubmit} 
+          <Button
+            onClick={onSubmit}
             disabled={!currentWord || loading}
-            aria-label="SprawdÅº odpowiedÅº"
+            aria-label="Sprawdź odpowiedź"
           >
-            SprawdÅº
+            Sprawdź
           </Button>
         ) : (
-          <Button 
-            onClick={onNextWord} 
+          <Button
+            onClick={onNextWord}
             disabled={loading}
-            aria-label="PrzejdÅº do nastÄ™pnego sÅ‚owa"
+            aria-label="Przejdź do następnego słowa"
           >
-            NastÄ™pne sÅ‚owo <span aria-hidden="true">â†’</span>
+            Następne słowo <span aria-hidden="true">→</span>
           </Button>
         )}
       </div>
 
-      {/* Stats */}
-      <div 
-        className="stats" 
-        role="region" 
+      <div
+        className="stats"
+        role="region"
         aria-label="Statystyki quizu"
       >
         <div className="stats__item">
@@ -251,8 +239,8 @@ export function QuizPlaying({
           <div className="stats__value stats__value--incorrect" aria-hidden="true">
             {stats.incorrect}
           </div>
-          <div className="stats__label">BÅ‚Ä™dne</div>
-          <span className="sr-only">{stats.incorrect} bÅ‚Ä™dnych odpowiedzi</span>
+          <div className="stats__label">Błędne</div>
+          <span className="sr-only">{stats.incorrect} błędnych odpowiedzi</span>
         </div>
         <div className="stats__item">
           <div className="stats__value" aria-hidden="true">
@@ -263,9 +251,9 @@ export function QuizPlaying({
               : 0}
             %
           </div>
-          <div className="stats__label">SkutecznoÅ›Ä‡</div>
+          <div className="stats__label">Skuteczność</div>
           <span className="sr-only">
-            SkutecznoÅ›Ä‡: {stats.correct + stats.incorrect > 0
+            Skuteczność: {stats.correct + stats.incorrect > 0
               ? Math.round((stats.correct / (stats.correct + stats.incorrect)) * 100)
               : 0} procent
           </span>
