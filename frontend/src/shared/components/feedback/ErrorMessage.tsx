@@ -12,19 +12,19 @@ interface ErrorMessageProps {
  * Error message component
  */
 export function ErrorMessage({
-  title = 'WystÄ…piÅ‚ bÅ‚Ä…d',
+  title = 'WystÃ„â€¦piÃ…â€š bÃ…â€šÃ„â€¦d',
   message,
   onRetry,
   className,
 }: ErrorMessageProps) {
   return (
     <div className={cn('error-message', className)}>
-      <div className="error-message__icon">âš ï¸</div>
+      <div className="error-message__icon">Ã¢Å¡Â Ã¯Â¸Â</div>
       <h3 className="error-message__title">{title}</h3>
       <p className="error-message__text">{message}</p>
       {onRetry && (
         <Button variant="secondary" onClick={onRetry}>
-          SprÃ³buj ponownie
+          SprÃƒÂ³buj ponownie
         </Button>
       )}
     </div>

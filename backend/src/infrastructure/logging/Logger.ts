@@ -99,28 +99,28 @@ export class DevLogger implements ILogger {
 
   debug(message: string, context?: LogContext): void {
     console.debug(
-      `ðŸ” [DEBUG] ${message}`,
+      `Ã°Å¸â€Â [DEBUG] ${message}`,
       this.formatContext(context)
     );
   }
 
   info(message: string, context?: LogContext): void {
     console.info(
-      `â„¹ï¸  [INFO]  ${message}`,
+      `Ã¢â€žÂ¹Ã¯Â¸Â  [INFO]  ${message}`,
       this.formatContext(context)
     );
   }
 
   warn(message: string, context?: LogContext): void {
     console.warn(
-      `âš ï¸  [WARN]  ${message}`,
+      `Ã¢Å¡Â Ã¯Â¸Â  [WARN]  ${message}`,
       this.formatContext(context)
     );
   }
 
   error(message: string, error?: Error, context?: LogContext): void {
     console.error(
-      `âŒ [ERROR] ${message}`,
+      `Ã¢ÂÅ’ [ERROR] ${message}`,
       this.formatContext(context)
     );
     if (error) {
