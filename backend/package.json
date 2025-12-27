@@ -1,17 +1,21 @@
 {
   "name": "@translator-app/backend",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "description": "Clean Architecture Translator API",
   "type": "module",
+  "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon",
     "dev:tsx": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest --coverage",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "typecheck": "tsc --noEmit",
-    "test": "vitest",
-    "test:coverage": "vitest --coverage"
+    "clean": "rm -rf dist coverage"
   },
   "dependencies": {
     "@apollo/server": "^4.10.0",
@@ -27,10 +31,15 @@
     "@types/node": "^20.11.0",
     "@typescript-eslint/eslint-plugin": "^6.19.0",
     "@typescript-eslint/parser": "^6.19.0",
+    "@vitest/coverage-v8": "^1.2.0",
     "eslint": "^8.56.0",
     "nodemon": "^3.0.3",
+    "supertest": "^6.3.4",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
     "vitest": "^1.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

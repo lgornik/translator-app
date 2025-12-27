@@ -8,7 +8,7 @@ export const typeDefs = `#graphql
   }
 
   """
-  Difficulty level
+  Difficulty level (1=Easy, 2=Medium, 3=Hard)
   """
   enum Difficulty {
     EASY
@@ -20,11 +20,17 @@ export const typeDefs = `#graphql
   A word challenge for the user to translate
   """
   type WordChallenge {
+    "Unique identifier"
     id: ID!
+    "The word to be translated"
     wordToTranslate: String!
+    "The correct translation (for verification)"
     correctTranslation: String!
+    "Translation direction"
     mode: TranslationMode!
+    "Word category"
     category: String!
+    "Difficulty level (1-3)"
     difficulty: Int!
   }
 
@@ -32,8 +38,11 @@ export const typeDefs = `#graphql
   Result of checking a translation
   """
   type TranslationResult {
+    "Whether the translation was correct"
     isCorrect: Boolean!
+    "The correct translation"
     correctTranslation: String!
+    "What the user submitted"
     userTranslation: String!
   }
 
@@ -62,6 +71,18 @@ export const typeDefs = `#graphql
     name: String!
     version: String!
     status: String!
+    uptime: Float!
+  }
+
+  """
+  Health check response
+  """
+  type HealthCheck {
+    status: String!
+    timestamp: String!
+    uptime: Float!
+    sessionCount: Int!
+    wordCount: Int!
   }
 
   # ============================================================================
@@ -73,6 +94,11 @@ export const typeDefs = `#graphql
     Get API information
     """
     info: ApiInfo!
+
+    """
+    Health check endpoint
+    """
+    health: HealthCheck!
 
     """
     Get a random word for translation with optional filters
