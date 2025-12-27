@@ -5,7 +5,7 @@
 export const APP_CONFIG = {
   name: 'Translator',
   version: '1.0.0',
-  description: 'Ucz się słówek przez tłumaczenie',
+  description: 'Ucz siÄ™ sÅ‚Ã³wek przez tÅ‚umaczenie',
 } as const;
 
 export const ROUTES = {
@@ -27,16 +27,16 @@ export const QUIZ_DEFAULTS = {
 } as const;
 
 export const DIFFICULTY_CONFIG = {
-  1: { label: 'Łatwy', emoji: '⭐' },
-  2: { label: 'Średni', emoji: '⭐⭐' },
-  3: { label: 'Trudny', emoji: '⭐⭐⭐' },
+  1: { label: 'Åatwy', emoji: 'â­' },
+  2: { label: 'Åšredni', emoji: 'â­â­' },
+  3: { label: 'Trudny', emoji: 'â­â­â­' },
 } as const;
 
 export const RESULT_MESSAGES = {
-  EXCELLENT: { emoji: '🏆', text: 'Doskonale!', minAccuracy: 90 },
-  GREAT: { emoji: '👏', text: 'Świetna robota!', minAccuracy: 70 },
-  GOOD: { emoji: '💪', text: 'Nieźle, ćwicz dalej!', minAccuracy: 50 },
-  PRACTICE: { emoji: '📖', text: 'Warto powtórzyć!', minAccuracy: 0 },
+  EXCELLENT: { emoji: 'ðŸ†', text: 'Doskonale!', minAccuracy: 90 },
+  GREAT: { emoji: 'ðŸ‘', text: 'Åšwietna robota!', minAccuracy: 70 },
+  GOOD: { emoji: 'ðŸ’ª', text: 'NieÅºle, Ä‡wicz dalej!', minAccuracy: 50 },
+  PRACTICE: { emoji: 'ðŸ“–', text: 'Warto powtÃ³rzyÄ‡!', minAccuracy: 0 },
 } as const;
 
 export const KEYBOARD_KEYS = {

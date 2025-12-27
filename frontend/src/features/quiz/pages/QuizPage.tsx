@@ -57,7 +57,7 @@ export function QuizPage() {
     if (isError) {
       return (
         <ErrorMessage
-          message={context.error || 'Wystąpił nieoczekiwany błąd'}
+          message={context.error || 'WystÄ…piÅ‚ nieoczekiwany bÅ‚Ä…d'}
           onRetry={reset}
         />
       );
@@ -124,8 +124,8 @@ export function QuizPage() {
         <h1 className="header__title">Translator</h1>
         <p className="header__subtitle">
           {isFinished
-            ? 'Quiz zakończony!'
-            : 'Ucz się słówek przez tłumaczenie'}
+            ? 'Quiz zakoÅ„czony!'
+            : 'Ucz siÄ™ sÅ‚Ã³wek przez tÅ‚umaczenie'}
         </p>
       </header>
 

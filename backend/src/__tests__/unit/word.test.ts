@@ -1,4 +1,4 @@
-﻿import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { Word, WordData } from '../../domain/entities/Word.js';
 import { TranslationMode } from '../../domain/value-objects/TranslationMode.js';
 import { Category } from '../../domain/value-objects/Category.js';

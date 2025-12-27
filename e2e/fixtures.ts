@@ -24,11 +24,11 @@ class QuizPage {
   }
 
   async selectDifficulty(difficulty: string) {
-    await this.page.getByLabel('Poziom trudności').selectOption(difficulty);
+    await this.page.getByLabel('Poziom trudnoÅ›ci').selectOption(difficulty);
   }
 
   async toggleMode() {
-    const button = this.page.getByText(/EN → PL|PL → EN/);
+    const button = this.page.getByText(/EN â†’ PL|PL â†’ EN/);
     await button.click();
   }
 
@@ -47,30 +47,30 @@ class QuizPage {
   }
 
   async startCustomQuiz(wordCount: number) {
-    const section = this.page.locator('.quiz-option').filter({ hasText: 'Własna liczba' });
+    const section = this.page.locator('.quiz-option').filter({ hasText: 'WÅ‚asna liczba' });
     await section.getByRole('spinbutton').fill(String(wordCount));
     await section.getByText('Start').click();
   }
 
   // Playing page actions
   async enterAnswer(answer: string) {
-    await this.page.getByLabel('Twoje tłumaczenie').fill(answer);
+    await this.page.getByLabel('Twoje tÅ‚umaczenie').fill(answer);
   }
 
   async submitAnswer() {
-    await this.page.getByText('Sprawdź').click();
+    await this.page.getByText('SprawdÅº').click();
   }
 
   async submitAnswerWithEnter() {
-    await this.page.getByLabel('Twoje tłumaczenie').press('Enter');
+    await this.page.getByLabel('Twoje tÅ‚umaczenie').press('Enter');
   }
 
   async nextWord() {
-    await this.page.getByText('Następne słowo').click();
+    await this.page.getByText('NastÄ™pne sÅ‚owo').click();
   }
 
   async endQuiz() {
-    await this.page.getByText(/✕ Zakończ/).click();
+    await this.page.getByText(/âœ• ZakoÅ„cz/).click();
   }
 
   // Results page actions
@@ -84,7 +84,7 @@ class QuizPage {
   }
 
   async expectPlayingPage() {
-    await expect(this.page.getByText('Przetłumacz z')).toBeVisible();
+    await expect(this.page.getByText('PrzetÅ‚umacz z')).toBeVisible();
   }
 
   async expectResultsPage() {
@@ -92,7 +92,7 @@ class QuizPage {
   }
 
   async expectCorrectAnswer() {
-    await expect(this.page.getByText(/Świetnie/)).toBeVisible();
+    await expect(this.page.getByText(/Åšwietnie/)).toBeVisible();
   }
 
   async expectIncorrectAnswer() {

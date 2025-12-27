@@ -138,6 +138,6 @@ export class TranslationMode extends ValueObject<TranslationModeProps> {
    * Human readable description
    */
   toDisplayString(): string {
-    return `${this.sourceLanguageName} → ${this.targetLanguageName}`;
+    return `${this.sourceLanguageName} â†’ ${this.targetLanguageName}`;
   }
 }

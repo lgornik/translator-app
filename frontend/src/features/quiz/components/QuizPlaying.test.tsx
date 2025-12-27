@@ -68,7 +68,7 @@ describe('QuizPlaying', () => {
     it('should show no more words message', () => {
       render(<QuizPlaying {...defaultProps} noMoreWords={true} />);
       
-      expect(screen.getByText(/Brak więcej słów/)).toBeInTheDocument();
+      expect(screen.getByText(/Brak wiÄ™cej sÅ‚Ã³w/)).toBeInTheDocument();
     });
   });
 
@@ -76,13 +76,13 @@ describe('QuizPlaying', () => {
     it('should render input field', () => {
       render(<QuizPlaying {...defaultProps} />);
       
-      expect(screen.getByLabelText('Twoje tłumaczenie')).toBeInTheDocument();
+      expect(screen.getByLabelText('Twoje tÅ‚umaczenie')).toBeInTheDocument();
     });
 
     it('should call onInputChange when typing', () => {
       render(<QuizPlaying {...defaultProps} />);
       
-      const input = screen.getByLabelText('Twoje tłumaczenie');
+      const input = screen.getByLabelText('Twoje tÅ‚umaczenie');
       fireEvent.change(input, { target: { value: 'kot' } });
       
       expect(defaultProps.onInputChange).toHaveBeenCalledWith('kot');
@@ -91,37 +91,37 @@ describe('QuizPlaying', () => {
     it('should display current userInput value', () => {
       render(<QuizPlaying {...defaultProps} userInput="ko" />);
       
-      const input = screen.getByLabelText('Twoje tłumaczenie') as HTMLInputElement;
+      const input = screen.getByLabelText('Twoje tÅ‚umaczenie') as HTMLInputElement;
       expect(input.value).toBe('ko');
     });
 
     it('should disable input when loading', () => {
       render(<QuizPlaying {...defaultProps} loading={true} />);
       
-      const input = screen.getByLabelText('Twoje tłumaczenie');
+      const input = screen.getByLabelText('Twoje tÅ‚umaczenie');
       expect(input).toBeDisabled();
     });
 
     it('should disable input when result is shown', () => {
       render(<QuizPlaying {...defaultProps} result={createMockResult(true)} />);
       
-      const input = screen.getByLabelText('Twoje tłumaczenie');
+      const input = screen.getByLabelText('Twoje tÅ‚umaczenie');
       expect(input).toBeDisabled();
     });
 
     it('should hide input when no more words', () => {
       render(<QuizPlaying {...defaultProps} noMoreWords={true} />);
       
-      expect(screen.queryByLabelText('Twoje tłumaczenie')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Twoje tÅ‚umaczenie')).not.toBeInTheDocument();
     });
   });
 
   describe('Submit Behavior', () => {
-    it('should call onSubmit when Sprawdź button clicked', async () => {
+    it('should call onSubmit when SprawdÅº button clicked', async () => {
       const user = userEvent.setup();
       render(<QuizPlaying {...defaultProps} userInput="kot" />);
       
-      await user.click(screen.getByText('Sprawdź'));
+      await user.click(screen.getByText('SprawdÅº'));
       
       expect(defaultProps.onSubmit).toHaveBeenCalledTimes(1);
     });
@@ -129,22 +129,22 @@ describe('QuizPlaying', () => {
     it('should call onSubmit when Enter pressed', () => {
       render(<QuizPlaying {...defaultProps} userInput="kot" />);
       
-      const input = screen.getByLabelText('Twoje tłumaczenie');
+      const input = screen.getByLabelText('Twoje tÅ‚umaczenie');
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
       
       expect(defaultProps.onSubmit).toHaveBeenCalled();
     });
 
-    it('should disable Sprawdź button when no current word', () => {
+    it('should disable SprawdÅº button when no current word', () => {
       render(<QuizPlaying {...defaultProps} currentWord={null} />);
       
-      expect(screen.getByText('Sprawdź')).toBeDisabled();
+      expect(screen.getByText('SprawdÅº')).toBeDisabled();
     });
 
-    it('should disable Sprawdź button when loading', () => {
+    it('should disable SprawdÅº button when loading', () => {
       render(<QuizPlaying {...defaultProps} loading={true} />);
       
-      expect(screen.getByText('Sprawdź')).toBeDisabled();
+      expect(screen.getByText('SprawdÅº')).toBeDisabled();
     });
   });
 
@@ -152,27 +152,27 @@ describe('QuizPlaying', () => {
     it('should show correct result message', () => {
       render(<QuizPlaying {...defaultProps} result={createMockResult(true)} />);
       
-      expect(screen.getByText(/Świetnie/)).toBeInTheDocument();
+      expect(screen.getByText(/Åšwietnie/)).toBeInTheDocument();
     });
 
     it('should show incorrect result with correct answer', () => {
       render(<QuizPlaying {...defaultProps} result={createMockResult(false)} />);
       
       expect(screen.getByText(/Niestety/)).toBeInTheDocument();
-      expect(screen.getByText(/Poprawna odpowiedź/)).toBeInTheDocument();
+      expect(screen.getByText(/Poprawna odpowiedÅº/)).toBeInTheDocument();
     });
 
-    it('should show Następne słowo button when result shown', () => {
+    it('should show NastÄ™pne sÅ‚owo button when result shown', () => {
       render(<QuizPlaying {...defaultProps} result={createMockResult(true)} />);
       
-      expect(screen.getByText(/Następne słowo/)).toBeInTheDocument();
+      expect(screen.getByText(/NastÄ™pne sÅ‚owo/)).toBeInTheDocument();
     });
 
-    it('should call onNextWord when Następne słowo clicked', async () => {
+    it('should call onNextWord when NastÄ™pne sÅ‚owo clicked', async () => {
       const user = userEvent.setup();
       render(<QuizPlaying {...defaultProps} result={createMockResult(true)} />);
       
-      await user.click(screen.getByText(/Następne słowo/));
+      await user.click(screen.getByText(/NastÄ™pne sÅ‚owo/));
       
       expect(defaultProps.onNextWord).toHaveBeenCalledTimes(1);
     });
@@ -213,7 +213,7 @@ describe('QuizPlaying', () => {
         />
       );
       
-      expect(screen.getByText(/2 do powtórki/)).toBeInTheDocument();
+      expect(screen.getByText(/2 do powtÃ³rki/)).toBeInTheDocument();
     });
   });
 
@@ -229,7 +229,7 @@ describe('QuizPlaying', () => {
       render(<QuizPlaying {...defaultProps} stats={{ correct: 5, incorrect: 2 }} />);
       
       expect(screen.getByText('2')).toBeInTheDocument();
-      expect(screen.getByText('Błędne')).toBeInTheDocument();
+      expect(screen.getByText('BÅ‚Ä™dne')).toBeInTheDocument();
     });
 
     it('should calculate accuracy percentage', () => {
@@ -247,26 +247,26 @@ describe('QuizPlaying', () => {
   });
 
   describe('Reset/End Quiz', () => {
-    it('should show Zakończ button', () => {
+    it('should show ZakoÅ„cz button', () => {
       render(<QuizPlaying {...defaultProps} />);
       
-      expect(screen.getByText(/Zakończ/)).toBeInTheDocument();
+      expect(screen.getByText(/ZakoÅ„cz/)).toBeInTheDocument();
     });
 
-    it('should call onReset when Zakończ clicked', async () => {
+    it('should call onReset when ZakoÅ„cz clicked', async () => {
       const user = userEvent.setup();
       render(<QuizPlaying {...defaultProps} />);
       
-      await user.click(screen.getByText(/Zakończ/));
+      await user.click(screen.getByText(/ZakoÅ„cz/));
       
       expect(defaultProps.onReset).toHaveBeenCalledTimes(1);
     });
 
-    it('should show Zakończ quiz button when no more words', async () => {
+    it('should show ZakoÅ„cz quiz button when no more words', async () => {
       const user = userEvent.setup();
       render(<QuizPlaying {...defaultProps} noMoreWords={true} />);
       
-      const button = screen.getByText('Zakończ quiz');
+      const button = screen.getByText('ZakoÅ„cz quiz');
       await user.click(button);
       
       expect(defaultProps.onReset).toHaveBeenCalled();

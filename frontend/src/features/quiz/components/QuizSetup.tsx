@@ -42,7 +42,7 @@ export function QuizSetup({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
 
-  const modeLabel = mode === 'EN_TO_PL' ? 'EN → PL' : 'PL → EN';
+  const modeLabel = mode === 'EN_TO_PL' ? 'EN â†’ PL' : 'PL â†’ EN';
 
   const difficultyOptions = [
     { value: '', label: 'Wszystkie poziomy' },
@@ -71,7 +71,7 @@ export function QuizSetup({
   const validateAndStart = useCallback(
     (wordLimit: number, withReinforce: boolean) => {
       if (wordLimit > availableWordCount) {
-        setError(`Dostępnych jest tylko ${availableWordCount} słów dla wybranych filtrów.`);
+        setError(`DostÄ™pnych jest tylko ${availableWordCount} sÅ‚Ã³w dla wybranych filtrÃ³w.`);
         return;
       }
       setError(null);
@@ -116,7 +116,7 @@ export function QuizSetup({
           onChange={(e) => handleCategoryChange(e.target.value)}
         />
         <Select
-          label="Poziom trudności"
+          label="Poziom trudnoÅ›ci"
           options={difficultyOptions}
           value={selectedDifficulty?.toString() ?? ''}
           onChange={(e) => handleDifficultyChange(e.target.value)}
@@ -134,14 +134,14 @@ export function QuizSetup({
           onClick={() => validateAndStart(50, useReinforce)}
           disabled={availableWordCount === 0}
         >
-          <span className="quiz-option__icon">📝</span>
+          <span className="quiz-option__icon">ðŸ“</span>
           <span className="quiz-option__title">TEST</span>
-          <span className="quiz-option__desc">50 słów</span>
+          <span className="quiz-option__desc">50 sÅ‚Ã³w</span>
         </button>
 
         {/* Timed mode */}
         <div className="quiz-option quiz-option--custom">
-          <span className="quiz-option__icon">⏱️</span>
+          <span className="quiz-option__icon">â±ï¸</span>
           <span className="quiz-option__title">Na czas</span>
           <div className="quiz-option__input-group">
             <input
@@ -168,8 +168,8 @@ export function QuizSetup({
 
         {/* Custom word count */}
         <div className="quiz-option quiz-option--custom">
-          <span className="quiz-option__icon">🎯</span>
-          <span className="quiz-option__title">Własna liczba</span>
+          <span className="quiz-option__icon">ðŸŽ¯</span>
+          <span className="quiz-option__title">WÅ‚asna liczba</span>
           <div className="quiz-option__input-group">
             <input
               type="number"
@@ -179,7 +179,7 @@ export function QuizSetup({
               onChange={(e) => handleCustomWordsChange(e.target.value)}
               className="quiz-option__input"
             />
-            <span>słów</span>
+            <span>sÅ‚Ã³w</span>
             <Button
               size="small"
               onClick={() => validateAndStart(customWords, useReinforce)}
@@ -202,7 +202,7 @@ export function QuizSetup({
             <span className="quiz-reinforce__text">Tryb utrwalania</span>
           </label>
           <span className="quiz-reinforce__hint">
-            Błędne odpowiedzi będą powtarzane
+            BÅ‚Ä™dne odpowiedzi bÄ™dÄ… powtarzane
           </span>
         </div>
       </div>

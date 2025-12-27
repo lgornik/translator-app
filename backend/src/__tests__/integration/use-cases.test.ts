@@ -15,7 +15,7 @@ describe('Use Cases Integration', () => {
     { id: '1', polish: 'kot', english: 'cat', category: 'Animals', difficulty: 1 },
     { id: '2', polish: 'pies', english: 'dog', category: 'Animals', difficulty: 1 },
     { id: '3', polish: 'dom', english: 'house', category: 'Objects', difficulty: 2 },
-    { id: '4', polish: 'trudne słowo', english: 'difficult word', category: 'Objects', difficulty: 3 },
+    { id: '4', polish: 'trudne sÅ‚owo', english: 'difficult word', category: 'Objects', difficulty: 3 },
   ];
 
   let wordRepository: InMemoryWordRepository;

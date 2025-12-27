@@ -44,7 +44,7 @@ function parseEnv(): EnvConfig {
   const result = envSchema.safeParse(process.env);
 
   if (!result.success) {
-    console.error('❌ Invalid environment configuration:');
+    console.error('âŒ Invalid environment configuration:');
     for (const error of result.error.errors) {
       console.error(`   ${error.path.join('.')}: ${error.message}`);
     }

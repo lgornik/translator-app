@@ -65,7 +65,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           <>
             <span className="btn__spinner" aria-hidden="true" />
             <span className="btn__text">{children}</span>
-            <span className="sr-only">Ładowanie...</span>
+            <span className="sr-only">Åadowanie...</span>
           </>
         ) : (
           children

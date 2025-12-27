@@ -47,8 +47,8 @@ describe('TranslationChecker', () => {
     });
 
     it('should handle optional parts in parentheses', () => {
-      expect(checker.check('pogodzić się z (czymś)', 'pogodzić się z', mode).isCorrect).toBe(true);
-      expect(checker.check('pogodzić się z (czymś)', 'pogodzić się z czymś', mode).isCorrect).toBe(true);
+      expect(checker.check('pogodziÄ‡ siÄ™ z (czymÅ›)', 'pogodziÄ‡ siÄ™ z', mode).isCorrect).toBe(true);
+      expect(checker.check('pogodziÄ‡ siÄ™ z (czymÅ›)', 'pogodziÄ‡ siÄ™ z czymÅ›', mode).isCorrect).toBe(true);
     });
   });
 

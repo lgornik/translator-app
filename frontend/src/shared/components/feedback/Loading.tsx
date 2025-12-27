@@ -9,7 +9,7 @@ interface LoadingProps {
 /**
  * Loading spinner component
  */
-export function Loading({ text = 'Ładowanie...', size = 'medium', className }: LoadingProps) {
+export function Loading({ text = 'Åadowanie...', size = 'medium', className }: LoadingProps) {
   return (
     <div className={cn('loading', `loading--${size}`, className)}>
       <div className="loading__spinner" />

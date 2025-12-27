@@ -82,7 +82,7 @@ describe('Value Objects', () => {
 
     it('should display correctly', () => {
       const mode = TranslationMode.englishToPolish();
-      expect(mode.toDisplayString()).toBe('English → Polish');
+      expect(mode.toDisplayString()).toBe('English â†’ Polish');
     });
   });
 

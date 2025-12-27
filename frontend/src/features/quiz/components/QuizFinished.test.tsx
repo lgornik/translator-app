@@ -67,7 +67,7 @@ describe('QuizFinished', () => {
       
       // Check for positive emoji or message
       const content = document.body.textContent;
-      expect(content).toMatch(/🏆|świetn|doskonał|excellent/i);
+      expect(content).toMatch(/ðŸ†|Å›wietn|doskonaÅ‚|excellent/i);
     });
 
     it('should show good feedback for medium accuracy', () => {
@@ -137,7 +137,7 @@ describe('QuizFinished', () => {
       // Check for labels - using Polish text from component
       const content = document.body.textContent?.toLowerCase();
       expect(content).toMatch(/poprawny|correct/);
-      expect(content).toMatch(/błędn|incorrect|wrong/);
+      expect(content).toMatch(/bÅ‚Ä™dn|incorrect|wrong/);
     });
   });
 });

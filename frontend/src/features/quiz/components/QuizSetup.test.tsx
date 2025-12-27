@@ -45,13 +45,13 @@ describe('QuizSetup', () => {
       
       expect(screen.getByText('TEST')).toBeInTheDocument();
       expect(screen.getByText('Na czas')).toBeInTheDocument();
-      expect(screen.getByText('Własna liczba')).toBeInTheDocument();
+      expect(screen.getByText('WÅ‚asna liczba')).toBeInTheDocument();
     });
 
     it('should render mode toggle button', () => {
       render(<QuizSetup {...defaultProps} />);
       
-      expect(screen.getByText('EN → PL')).toBeInTheDocument();
+      expect(screen.getByText('EN â†’ PL')).toBeInTheDocument();
     });
 
     it('should render reinforce mode checkbox checked by default', () => {
@@ -67,20 +67,20 @@ describe('QuizSetup', () => {
     it('should display correct mode label for EN_TO_PL', () => {
       render(<QuizSetup {...defaultProps} mode="EN_TO_PL" />);
       
-      expect(screen.getByText('EN → PL')).toBeInTheDocument();
+      expect(screen.getByText('EN â†’ PL')).toBeInTheDocument();
     });
 
     it('should display correct mode label for PL_TO_EN', () => {
       render(<QuizSetup {...defaultProps} mode="PL_TO_EN" />);
       
-      expect(screen.getByText('PL → EN')).toBeInTheDocument();
+      expect(screen.getByText('PL â†’ EN')).toBeInTheDocument();
     });
 
     it('should call onToggleMode when clicked', async () => {
       const user = userEvent.setup();
       render(<QuizSetup {...defaultProps} />);
       
-      await user.click(screen.getByText('EN → PL'));
+      await user.click(screen.getByText('EN â†’ PL'));
       
       expect(defaultProps.onToggleMode).toHaveBeenCalledTimes(1);
     });
@@ -99,7 +99,7 @@ describe('QuizSetup', () => {
     it('should call onFiltersChange when difficulty changes', () => {
       render(<QuizSetup {...defaultProps} />);
       
-      const difficultySelect = screen.getByLabelText('Poziom trudności');
+      const difficultySelect = screen.getByLabelText('Poziom trudnoÅ›ci');
       fireEvent.change(difficultySelect, { target: { value: '1' } });
       
       expect(defaultProps.onFiltersChange).toHaveBeenCalled();
@@ -178,7 +178,7 @@ describe('QuizSetup', () => {
       const user = userEvent.setup();
       render(<QuizSetup {...defaultProps} />);
       
-      const customSection = screen.getByText('Własna liczba').closest('.quiz-option') as HTMLElement;
+      const customSection = screen.getByText('WÅ‚asna liczba').closest('.quiz-option') as HTMLElement;
       const wordInput = within(customSection).getByRole('spinbutton');
       const startButton = within(customSection).getByText('Start');
       
@@ -207,7 +207,7 @@ describe('QuizSetup', () => {
       const testButton = screen.getByText('TEST').closest('button') as HTMLElement;
       await user.click(testButton);
       
-      expect(screen.getByText(/Dostępnych jest tylko 10 słów/)).toBeInTheDocument();
+      expect(screen.getByText(/DostÄ™pnych jest tylko 10 sÅ‚Ã³w/)).toBeInTheDocument();
       expect(defaultProps.onStart).not.toHaveBeenCalled();
       expect(defaultProps.onStartWithReinforce).not.toHaveBeenCalled();
     });
@@ -220,13 +220,13 @@ describe('QuizSetup', () => {
       const testButton = screen.getByText('TEST').closest('button') as HTMLElement;
       await user.click(testButton);
       
-      expect(screen.getByText(/Dostępnych jest tylko 10 słów/)).toBeInTheDocument();
+      expect(screen.getByText(/DostÄ™pnych jest tylko 10 sÅ‚Ã³w/)).toBeInTheDocument();
       
       // Change category using fireEvent
       const categorySelect = screen.getByLabelText('Kategoria');
       fireEvent.change(categorySelect, { target: { value: 'Animals' } });
       
-      expect(screen.queryByText(/Dostępnych jest tylko/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/DostÄ™pnych jest tylko/)).not.toBeInTheDocument();
     });
   });
 
@@ -252,7 +252,7 @@ describe('QuizSetup', () => {
     it('should clamp word count to max limit', () => {
       render(<QuizSetup {...defaultProps} />);
       
-      const customSection = screen.getByText('Własna liczba').closest('.quiz-option') as HTMLElement;
+      const customSection = screen.getByText('WÅ‚asna liczba').closest('.quiz-option') as HTMLElement;
       const wordInput = within(customSection).getByRole('spinbutton') as HTMLInputElement;
       
       fireEvent.change(wordInput, { target: { value: '9999' } });
