@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import { Word, WordData } from '../../domain/entities/Word.js';
 import { TranslationMode } from '../../domain/value-objects/TranslationMode.js';
+import { Category } from '../../domain/value-objects/Category.js';
 
 describe('Word Entity', () => {
   const validWordData: WordData = {
@@ -110,7 +111,6 @@ describe('Word Entity', () => {
   describe('matchesCategory', () => {
     it('should match same category', () => {
       const word = Word.fromTrusted(validWordData);
-      const { Category } = require('../../domain/value-objects/Category.js');
       const category = Category.fromTrusted('Animals');
 
       expect(word.matchesCategory(category)).toBe(true);
@@ -118,7 +118,6 @@ describe('Word Entity', () => {
 
     it('should not match different category', () => {
       const word = Word.fromTrusted(validWordData);
-      const { Category } = require('../../domain/value-objects/Category.js');
       const category = Category.fromTrusted('Food');
 
       expect(word.matchesCategory(category)).toBe(false);
