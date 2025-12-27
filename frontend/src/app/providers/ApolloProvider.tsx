@@ -1,4 +1,4 @@
-import { ApolloClient, InMemoryCache, ApolloProvider as BaseApolloProvider } from '@apollo/client';
+﻿import { ApolloClient, InMemoryCache, ApolloProvider as BaseApolloProvider } from '@apollo/client';
 import { ReactNode } from 'react';
 import { API_CONFIG } from '@/shared/constants';
 
@@ -29,7 +29,7 @@ interface ApolloProviderProps {
 export function ApolloProvider({ children }: ApolloProviderProps) {
   return (
     <BaseApolloProvider client={apolloClient}>
-      {children}
+      {children as React.ReactNode}
     </BaseApolloProvider>
   );
 }

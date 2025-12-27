@@ -1,4 +1,4 @@
-name: CI
+﻿name: CI
 
 on:
   push:
@@ -11,10 +11,6 @@ jobs:
   backend-test:
     name: Backend Tests
     runs-on: ubuntu-latest
-    
-    defaults:
-      run:
-        working-directory: ./backend
 
     steps:
       - name: Checkout code
@@ -25,38 +21,23 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
-      - name: Run linter
-        run: npm run lint
+      - name: Run backend linter
+        run: npm run lint --workspace=backend
 
-      - name: Run type check
-        run: npm run typecheck
+      - name: Run backend type check
+        run: npm run typecheck --workspace=backend
 
-      - name: Run tests
-        run: npm run test
-
-      - name: Run tests with coverage
-        run: npm run test:coverage
-
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
-        with:
-          directory: ./backend/coverage
-          flags: backend
-          name: backend-coverage
+      - name: Run backend tests
+        run: npm run test:run --workspace=backend
 
   # Frontend Tests
   frontend-test:
     name: Frontend Tests
     runs-on: ubuntu-latest
-    
-    defaults:
-      run:
-        working-directory: ./frontend
 
     steps:
       - name: Checkout code
@@ -67,29 +48,18 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Run linter
-        run: npm run lint
+      - name: Run frontend linter
+        run: npm run lint --workspace=frontend
 
-      - name: Run type check
-        run: npm run typecheck
+      - name: Run frontend type check
+        run: npm run typecheck --workspace=frontend
 
-      - name: Run tests
-        run: npm run test
-
-      - name: Run tests with coverage
-        run: npm run test:coverage
-
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
-        with:
-          directory: ./frontend/coverage
-          flags: frontend
-          name: frontend-coverage
+      - name: Run frontend tests
+        run: npm run test:run --workspace=frontend
 
   # Build Check
   build:
@@ -107,21 +77,11 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install backend dependencies
-        run: npm ci
-        working-directory: ./backend
-
-      - name: Build backend
-        run: npm run build
-        working-directory: ./backend
-
-      - name: Install frontend dependencies
+      - name: Install dependencies
         run: npm ci --legacy-peer-deps
-        working-directory: ./frontend
 
-      - name: Build frontend
+      - name: Build all
         run: npm run build
-        working-directory: ./frontend
 
   # Docker Build Check
   docker:

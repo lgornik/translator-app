@@ -1,5 +1,5 @@
 ﻿import { vi } from 'vitest';
-import { ReactElement, ReactNode } from 'react';
+import { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { MockedProvider, MockedResponse } from '@apollo/client/testing';
 import { BrowserRouter } from 'react-router-dom';
@@ -137,7 +137,7 @@ export function renderWithProviders(
   
   window.history.pushState({}, 'Test page', route);
 
-  function Wrapper({ children }: { children: ReactNode }) {
+  function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <MockedProvider mocks={apolloMocks} addTypename={false}>
         <BrowserRouter>{children}</BrowserRouter>
