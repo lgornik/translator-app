@@ -69,10 +69,11 @@ translator-app/
 - **Apollo Server** - GraphQL server
 - **Express** - HTTP server
 - **Zod** - Runtime validation
+- **Rate Limiting** - API protection against abuse
 
 ### Frontend
 - **TypeScript** - Type safety
-- **React 18** - UI library
+- **React 19** - UI library
 - **Vite** - Build tool
 - **Apollo Client** - GraphQL client
 - **XState** - State management

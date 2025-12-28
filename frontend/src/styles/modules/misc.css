@@ -1,0 +1,143 @@
+/**
+ * Miscellaneous Components
+ */
+
+/* ============================================================================
+   Mode Toggle - Fixed Position
+   ============================================================================ */
+
+.mode-toggle {
+  position: fixed;
+  bottom: var(--spacing-2xl);
+  right: var(--spacing-2xl);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) 1.25rem;
+  background: var(--color-bg-card);
+  border: var(--border-light);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.mode-toggle:hover {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-accent-primary);
+}
+
+.mode-toggle__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.mode-toggle__value {
+  font-family: var(--font-display);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-accent-primary);
+}
+
+.mode-toggle__icon {
+  width: 20px;
+  height: 20px;
+  color: var(--color-text-muted);
+}
+
+/* ============================================================================
+   Round End
+   ============================================================================ */
+
+.round-end {
+  text-align: center;
+  padding: var(--spacing-lg) 0;
+}
+
+.round-end__emoji {
+  font-size: 3rem;
+  margin-bottom: var(--spacing-lg);
+}
+
+.round-end__title {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  margin-bottom: var(--spacing-xl);
+  color: var(--color-text-primary);
+}
+
+.round-end__stats {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-2xl);
+  margin-bottom: var(--spacing-xl);
+}
+
+.round-end__stat {
+  text-align: center;
+}
+
+.round-end__stat-value {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+}
+
+.round-end__stat--correct .round-end__stat-value {
+  color: var(--color-success);
+}
+
+.round-end__stat--incorrect .round-end__stat-value {
+  color: var(--color-error);
+}
+
+.round-end__stat-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.round-end__message {
+  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  text-align: left;
+}
+
+.round-end__message p {
+  margin-bottom: var(--spacing-md);
+  color: var(--color-text-secondary);
+}
+
+.round-end__words {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.round-end__words li {
+  padding: var(--spacing-xs) 0;
+  color: var(--color-text-primary);
+  font-family: var(--font-display);
+}
+
+.round-end__actions {
+  display: flex;
+  gap: var(--spacing-lg);
+}
+
+.round-end__actions .btn {
+  flex: 1;
+}
+
+/* ============================================================================
+   Responsive
+   ============================================================================ */
+
+@media (max-width: 540px) {
+  .mode-toggle {
+    bottom: var(--spacing-lg);
+    right: var(--spacing-lg);
+  }
+}

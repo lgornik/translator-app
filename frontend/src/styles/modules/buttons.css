@@ -1,0 +1,151 @@
+/**
+ * Button Components
+ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  font-family: var(--font-body);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  outline: none;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================================
+   Button Variants
+   ============================================================================ */
+
+.btn--primary {
+  background: var(--color-accent-primary);
+  color: white;
+  width: 100%;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  transform: translateY(-1px);
+}
+
+.btn--primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn--secondary {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  border: var(--border-light);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: var(--color-bg-input);
+  color: var(--color-text-primary);
+}
+
+.btn--text {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  transition: color var(--transition-normal);
+}
+
+.btn--text:hover:not(:disabled) {
+  color: var(--color-error);
+}
+
+.btn--danger {
+  background: var(--color-error);
+  color: white;
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: var(--font-size-sm);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  color: var(--color-text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ============================================================================
+   Button Sizes
+   ============================================================================ */
+
+.btn--small {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-size: var(--font-size-sm);
+}
+
+.btn--large {
+  padding: 1.25rem 2.5rem;
+  font-size: 1.1rem;
+}
+
+.btn--full-width {
+  width: 100%;
+}
+
+/* ============================================================================
+   Button Loading State
+   ============================================================================ */
+
+.btn--loading {
+  position: relative;
+}
+
+.btn__spinner {
+  width: 1em;
+  height: 1em;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.btn__text {
+  opacity: 0.7;
+}
+
+/* ============================================================================
+   Button Group
+   ============================================================================ */
+
+.button-group {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.button-group .btn {
+  flex: 1;
+}
+
+/* ============================================================================
+   Focus Visible
+   ============================================================================ */
+
+.btn:focus-visible {
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 2px;
+}

@@ -3,7 +3,7 @@ import { Card } from '@/shared/components/ui';
 import { Loading } from '@/shared/components/feedback/Loading';
 import { ErrorMessage } from '@/shared/components/feedback/ErrorMessage';
 import { useQuiz, QuizSetup, QuizPlaying, QuizFinished } from '@/features/quiz';
-import { useEnterKey } from '@/shared/hooks/useKeyboard';
+import { useEnterKey, useDeferredLoading } from '@/shared/hooks';
 import type { Difficulty } from '@/shared/types';
 
 /**
@@ -31,6 +31,9 @@ export function QuizPage() {
     loadingWord,
     checkingAnswer,
   } = useQuiz();
+
+  const deferredCheckingAnswer = useDeferredLoading(checkingAnswer, 150);
+  const deferredLoadingWord = useDeferredLoading(loadingWord, 150);
 
   // Handle Enter key for next word
   useEnterKey(
@@ -93,7 +96,7 @@ export function QuizPage() {
           masteredCount={context.masteredCount}
           wordsToRepeatCount={context.wordsToRepeat.length}
           noMoreWords={context.noMoreWords}
-          loading={loadingWord || checkingAnswer || state === 'loading'}
+          loading={deferredLoadingWord || deferredCheckingAnswer || state === 'loading'}
           onInputChange={updateInput}
           onSubmit={submitAnswer}
           onNextWord={nextWord}

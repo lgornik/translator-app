@@ -1,0 +1,109 @@
+/**
+ * Design Tokens - CSS Custom Properties
+ * Single source of truth for all design values
+ */
+
+:root {
+  /* ============================================================================
+     Colors - Dark theme with accent
+     ============================================================================ */
+  --color-bg-primary: #0a0a0f;
+  --color-bg-secondary: #12121a;
+  --color-bg-card: #1a1a24;
+  --color-bg-input: #0d0d12;
+  
+  --color-text-primary: #f0f0f5;
+  --color-text-secondary: #8888a0;
+  --color-text-muted: #555566;
+  
+  --color-accent-primary: #6366f1;
+  --color-accent-hover: #818cf8;
+  
+  --color-success: #22c55e;
+  --color-success-bg: rgba(34, 197, 94, 0.1);
+  --color-error: #ef4444;
+  --color-error-bg: rgba(239, 68, 68, 0.1);
+  --color-warning: #f59e0b;
+  --color-warning-bg: rgba(245, 158, 11, 0.1);
+
+  /* ============================================================================
+     Typography
+     ============================================================================ */
+  --font-display: 'Space Mono', monospace;
+  --font-body: 'DM Sans', sans-serif;
+  
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 2rem;
+  --font-size-4xl: 2.5rem;
+
+  /* ============================================================================
+     Spacing
+     ============================================================================ */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 0.75rem;
+  --spacing-lg: 1rem;
+  --spacing-xl: 1.5rem;
+  --spacing-2xl: 2rem;
+  --spacing-3xl: 3rem;
+
+  /* ============================================================================
+     Borders & Radius
+     ============================================================================ */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 100px;
+  
+  --border-subtle: 1px solid rgba(255, 255, 255, 0.05);
+  --border-light: 1px solid rgba(255, 255, 255, 0.08);
+  --border-medium: 2px solid rgba(255, 255, 255, 0.08);
+
+  /* ============================================================================
+     Shadows
+     ============================================================================ */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 20px 40px -10px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 12px -2px rgba(0, 0, 0, 0.4), 0 30px 60px -15px rgba(0, 0, 0, 0.5);
+
+  /* ============================================================================
+     Transitions
+     ============================================================================ */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* ============================================================================
+     Z-Index Scale
+     ============================================================================ */
+  --z-base: 0;
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-modal: 30;
+  --z-toast: 40;
+  --z-tooltip: 50;
+
+  /* Legacy aliases for backward compatibility */
+  --bg-primary: var(--color-bg-primary);
+  --bg-secondary: var(--color-bg-secondary);
+  --bg-card: var(--color-bg-card);
+  --bg-input: var(--color-bg-input);
+  --text-primary: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
+  --text-muted: var(--color-text-muted);
+  --accent-primary: var(--color-accent-primary);
+  --accent-hover: var(--color-accent-hover);
+  --success: var(--color-success);
+  --success-bg: var(--color-success-bg);
+  --error: var(--color-error);
+  --error-bg: var(--color-error-bg);
+  --warning: var(--color-warning);
+  --warning-bg: var(--color-warning-bg);
+  --radius: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+}
