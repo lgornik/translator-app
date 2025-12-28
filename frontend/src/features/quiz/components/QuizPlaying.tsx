@@ -50,13 +50,13 @@ export function QuizPlaying({
   const isTimedMode = timeRemaining > 0 || (wordLimit === 999);
 
   useEffect(() => {
-    if (currentWord && !result && inputRef.current) {
+    if (currentWord && !result && !loading && inputRef.current) {
       inputRef.current.focus();
     }
-  }, [currentWord, result]);
+  }, [currentWord, result, loading]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !result && currentWord) {
+    if (e.key === 'Enter' && !result && currentWord && !loading) {
       onSubmit();
     }
   };
@@ -106,6 +106,12 @@ export function QuizPlaying({
     );
   };
 
+  // Pokazuj loader gdy trwa ładowanie (niezależnie od currentWord)
+  const showLoader = loading;
+  const showWord = !loading && currentWord && !noMoreWords;
+  const showNoWords = !loading && noMoreWords;
+  const showPlaceholder = !loading && !currentWord && !noMoreWords;
+
   return (
     <section aria-label="Quiz">
       <div className="quiz-progress">
@@ -132,21 +138,21 @@ export function QuizPlaying({
           aria-live="polite"
           aria-atomic="true"
         >
-          {loading && !currentWord ? (
+          {showLoader ? (
             <Loading size="small" />
-          ) : noMoreWords ? (
+          ) : showNoWords ? (
             <span className="word-display__no-words" role="alert">
               Brak więcej słów dla wybranych kryteriów
             </span>
-          ) : currentWord ? (
+          ) : showWord ? (
             <span lang={mode === 'EN_TO_PL' ? 'en' : 'pl'}>
               {currentWord.wordToTranslate}
             </span>
-          ) : (
+          ) : showPlaceholder ? (
             <span className="word-display__placeholder">Ładowanie...</span>
-          )}
+          ) : null}
         </div>
-        {currentWord?.category && !noMoreWords && (
+        {showWord && currentWord.category && (
           <div className="word-display__category" aria-label={`Kategoria: ${currentWord.category}`}>
             {currentWord.category}
           </div>
@@ -181,7 +187,7 @@ export function QuizPlaying({
         )}
       </div>
 
-      {result && !noMoreWords && (
+      {result && !noMoreWords && !loading && (
         <div
           className={`result ${
             result.isCorrect ? 'result--correct' : 'result--incorrect'
