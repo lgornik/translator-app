@@ -1,6 +1,4 @@
-﻿import { TranslationMode } from '../value-objects/TranslationMode.js';
-
-/**
+﻿/**
  * Translation check result
  */
 export interface TranslationCheckResult {
