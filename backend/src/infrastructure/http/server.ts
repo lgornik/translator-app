@@ -159,7 +159,7 @@ export class HttpServer {
       '/health',
       createHealthHandler(
         this.startTime,
-        this.contextDeps.wordRepository.count()
+        this.contextDeps.wordRepository
       )
     );
 

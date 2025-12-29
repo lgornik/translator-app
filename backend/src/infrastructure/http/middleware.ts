@@ -100,8 +100,9 @@ export function createErrorHandler(logger: ILogger): ErrorRequestHandler {
 /**
  * Health check handler
  */
-export function createHealthHandler(startTime: number, wordCount: number) {
-  return (_req: Request, res: Response): void => {
+export function createHealthHandler(startTime: number, wordRepository: { count(): Promise<number> }) {
+  return async (_req: Request, res: Response): Promise<void> => {
+    const wordCount = await wordRepository.count();
     res.json({
       status: 'ok',
       timestamp: new Date().toISOString(),

@@ -1,54 +1,52 @@
 import { describe, it, expect } from 'vitest';
 import { TranslationChecker } from '../../domain/services/TranslationChecker.js';
-import { TranslationMode } from '../../domain/value-objects/TranslationMode.js';
 
 describe('TranslationChecker', () => {
   const checker = new TranslationChecker();
-  const mode = TranslationMode.englishToPolish();
 
   describe('check', () => {
     it('should return correct for exact match', () => {
-      const result = checker.check('kot', 'kot', mode);
+      const result = checker.check('kot', 'kot');
       expect(result.isCorrect).toBe(true);
       expect(result.correctTranslation).toBe('kot');
       expect(result.userTranslation).toBe('kot');
     });
 
     it('should be case insensitive', () => {
-      expect(checker.check('kot', 'KOT', mode).isCorrect).toBe(true);
-      expect(checker.check('kot', 'Kot', mode).isCorrect).toBe(true);
-      expect(checker.check('KOT', 'kot', mode).isCorrect).toBe(true);
+      expect(checker.check('kot', 'KOT').isCorrect).toBe(true);
+      expect(checker.check('kot', 'Kot').isCorrect).toBe(true);
+      expect(checker.check('KOT', 'kot').isCorrect).toBe(true);
     });
 
     it('should trim whitespace', () => {
-      expect(checker.check('kot', '  kot  ', mode).isCorrect).toBe(true);
-      expect(checker.check('  kot  ', 'kot', mode).isCorrect).toBe(true);
+      expect(checker.check('kot', '  kot  ').isCorrect).toBe(true);
+      expect(checker.check('  kot  ', 'kot').isCorrect).toBe(true);
     });
 
     it('should normalize multiple spaces', () => {
-      expect(checker.check('make a decision', 'make  a  decision', mode).isCorrect).toBe(true);
+      expect(checker.check('make a decision', 'make  a  decision').isCorrect).toBe(true);
     });
 
     it('should handle multiple correct answers with /', () => {
-      expect(checker.check('ziemniak/kartofel', 'ziemniak', mode).isCorrect).toBe(true);
-      expect(checker.check('ziemniak/kartofel', 'kartofel', mode).isCorrect).toBe(true);
+      expect(checker.check('ziemniak/kartofel', 'ziemniak').isCorrect).toBe(true);
+      expect(checker.check('ziemniak/kartofel', 'kartofel').isCorrect).toBe(true);
     });
 
     it('should return incorrect for wrong answer', () => {
-      const result = checker.check('kot', 'pies', mode);
+      const result = checker.check('kot', 'pies');
       expect(result.isCorrect).toBe(false);
       expect(result.correctTranslation).toBe('kot');
       expect(result.userTranslation).toBe('pies');
     });
 
     it('should handle empty user answer', () => {
-      const result = checker.check('kot', '', mode);
+      const result = checker.check('kot', '');
       expect(result.isCorrect).toBe(false);
     });
 
     it('should handle optional parts in parentheses', () => {
-      expect(checker.check('pogodziÄ‡ siÄ™ z (czymÅ›)', 'pogodziÄ‡ siÄ™ z', mode).isCorrect).toBe(true);
-      expect(checker.check('pogodziÄ‡ siÄ™ z (czymÅ›)', 'pogodziÄ‡ siÄ™ z czymÅ›', mode).isCorrect).toBe(true);
+      expect(checker.check('pogodzić się z (czymś)', 'pogodzić się z').isCorrect).toBe(true);
+      expect(checker.check('pogodzić się z (czymś)', 'pogodzić się z czymś').isCorrect).toBe(true);
     });
   });
 

@@ -63,15 +63,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         >
           <div className="error-boundary__content">
             <h2 className="error-boundary__title">
-              Ups! CoÅ› poszÅ‚o nie tak
+              Ups! Coś poszło nie tak
             </h2>
             <p className="error-boundary__message">
-              Przepraszamy, wystÄ…piÅ‚ nieoczekiwany bÅ‚Ä…d. 
-              SprÃ³buj odÅ›wieÅ¼yÄ‡ stronÄ™ lub skontaktuj siÄ™ z pomocÄ… technicznÄ….
+              Przepraszamy, wystąpił nieoczekiwany błąd. 
+              Spróbuj odświeżyć stronę lub skontaktuj się z pomocą techniczną.
             </p>
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <details className="error-boundary__details">
-                <summary>SzczegÃ³Å‚y bÅ‚Ä™du (tylko w trybie deweloperskim)</summary>
+                <summary>Szczegóły błędu (tylko w trybie deweloperskim)</summary>
                 <pre>{this.state.error.message}</pre>
                 <pre>{this.state.error.stack}</pre>
               </details>
@@ -81,16 +81,16 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 <Button 
                   variant="primary" 
                   onClick={this.handleReset}
-                  aria-label="SprÃ³buj ponownie"
+                  aria-label="Spróbuj ponownie"
                 >
-                  SprÃ³buj ponownie
+                  Spróbuj ponownie
                 </Button>
                 <Button 
                   variant="secondary" 
                   onClick={() => window.location.reload()}
-                  aria-label="OdÅ›wieÅ¼ stronÄ™"
+                  aria-label="Odśwież stronę"
                 >
-                  OdÅ›wieÅ¼ stronÄ™
+                  Odśwież stronę
                 </Button>
               </div>
             )}

@@ -3,19 +3,16 @@ import { DomainError } from '../../shared/errors/DomainErrors.js';
 import { IWordRepository, WordFilters } from '../../domain/repositories/IWordRepository.js';
 import { Difficulty } from '../../domain/value-objects/Difficulty.js';
 import { Category } from '../../domain/value-objects/Category.js';
-import { IUseCase } from '../interfaces/IUseCase.js';
 import { GetWordCountInput, GetWordCountOutput } from '../dtos/index.js';
 
 /**
  * Get Word Count Use Case
  * Returns the number of words matching given filters
  */
-export class GetWordCountUseCase
-  implements IUseCase<GetWordCountInput, GetWordCountOutput, DomainError>
-{
+export class GetWordCountUseCase {
   constructor(private readonly wordRepository: IWordRepository) {}
 
-  execute(input: GetWordCountInput): Result<GetWordCountOutput, DomainError> {
+  async execute(input: GetWordCountInput): Promise<Result<GetWordCountOutput, DomainError>> {
     // Parse optional filters
     let difficulty: Difficulty | null = null;
     if (input.difficulty !== null && input.difficulty !== undefined) {
@@ -36,7 +33,7 @@ export class GetWordCountUseCase
     }
 
     const filters: WordFilters = { category, difficulty };
-    const count = this.wordRepository.count(filters);
+    const count = await this.wordRepository.count(filters);
 
     return Result.ok({ count });
   }

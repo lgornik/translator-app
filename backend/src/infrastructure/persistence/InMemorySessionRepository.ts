@@ -16,7 +16,7 @@ export class InMemorySessionRepository implements ISessionRepository {
     this.maxSessions = maxSessions;
   }
 
-  findById(id: SessionId): Session | null {
+  async findById(id: SessionId): Promise<Session | null> {
     const session = this.sessions.get(id.value);
     if (session) {
       session.touch();
@@ -24,7 +24,7 @@ export class InMemorySessionRepository implements ISessionRepository {
     return session ?? null;
   }
 
-  findOrCreate(id: SessionId): Session {
+  async findOrCreate(id: SessionId): Promise<Session> {
     let session = this.sessions.get(id.value);
     
     if (!session) {
@@ -40,15 +40,15 @@ export class InMemorySessionRepository implements ISessionRepository {
     return session;
   }
 
-  save(session: Session): void {
+  async save(session: Session): Promise<void> {
     this.sessions.set(session.id.value, session);
   }
 
-  delete(id: SessionId): boolean {
+  async delete(id: SessionId): Promise<boolean> {
     return this.sessions.delete(id.value);
   }
 
-  deleteExpired(maxAgeMs: number): number {
+  async deleteExpired(maxAgeMs: number): Promise<number> {
     let deleted = 0;
 
     for (const [id, session] of this.sessions.entries()) {
@@ -61,14 +61,14 @@ export class InMemorySessionRepository implements ISessionRepository {
     return deleted;
   }
 
-  exists(id: SessionId): boolean {
+  async exists(id: SessionId): Promise<boolean> {
     return this.sessions.has(id.value);
   }
 
   /**
    * Get current session count (for monitoring)
    */
-  count(): number {
+  async count(): Promise<number> {
     return this.sessions.size;
   }
 

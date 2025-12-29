@@ -15,7 +15,7 @@ describe('Use Cases Integration', () => {
     { id: '1', polish: 'kot', english: 'cat', category: 'Animals', difficulty: 1 },
     { id: '2', polish: 'pies', english: 'dog', category: 'Animals', difficulty: 1 },
     { id: '3', polish: 'dom', english: 'house', category: 'Objects', difficulty: 2 },
-    { id: '4', polish: 'trudne sÅ‚owo', english: 'difficult word', category: 'Objects', difficulty: 3 },
+    { id: '4', polish: 'trudne słowo', english: 'difficult word', category: 'Objects', difficulty: 3 },
   ];
 
   let wordRepository: InMemoryWordRepository;
@@ -29,7 +29,7 @@ describe('Use Cases Integration', () => {
   });
 
   describe('GetRandomWordUseCase', () => {
-    it('should return a random word', () => {
+    it('should return a random word', async () => {
       const useCase = new GetRandomWordUseCase(
         wordRepository,
         sessionRepository,
@@ -37,7 +37,7 @@ describe('Use Cases Integration', () => {
         logger
       );
 
-      const result = useCase.execute({
+      const result = await useCase.execute({
         mode: 'EN_TO_PL',
         sessionId: 'test-session',
       });
@@ -50,7 +50,7 @@ describe('Use Cases Integration', () => {
       }
     });
 
-    it('should filter by category', () => {
+    it('should filter by category', async () => {
       const useCase = new GetRandomWordUseCase(
         wordRepository,
         sessionRepository,
@@ -58,7 +58,7 @@ describe('Use Cases Integration', () => {
         logger
       );
 
-      const result = useCase.execute({
+      const result = await useCase.execute({
         mode: 'EN_TO_PL',
         category: 'Animals',
         sessionId: 'test-session',
@@ -70,7 +70,7 @@ describe('Use Cases Integration', () => {
       }
     });
 
-    it('should filter by difficulty', () => {
+    it('should filter by difficulty', async () => {
       const useCase = new GetRandomWordUseCase(
         wordRepository,
         sessionRepository,
@@ -78,7 +78,7 @@ describe('Use Cases Integration', () => {
         logger
       );
 
-      const result = useCase.execute({
+      const result = await useCase.execute({
         mode: 'EN_TO_PL',
         difficulty: 3,
         sessionId: 'test-session',
@@ -90,7 +90,7 @@ describe('Use Cases Integration', () => {
       }
     });
 
-    it('should return error for invalid mode', () => {
+    it('should return error for invalid mode', async () => {
       const useCase = new GetRandomWordUseCase(
         wordRepository,
         sessionRepository,
@@ -98,7 +98,7 @@ describe('Use Cases Integration', () => {
         logger
       );
 
-      const result = useCase.execute({
+      const result = await useCase.execute({
         mode: 'INVALID',
         sessionId: 'test-session',
       });
@@ -109,7 +109,7 @@ describe('Use Cases Integration', () => {
       }
     });
 
-    it('should return error for non-existent category', () => {
+    it('should return error for non-existent category', async () => {
       const useCase = new GetRandomWordUseCase(
         wordRepository,
         sessionRepository,
@@ -117,7 +117,7 @@ describe('Use Cases Integration', () => {
         logger
       );
 
-      const result = useCase.execute({
+      const result = await useCase.execute({
         mode: 'EN_TO_PL',
         category: 'NonExistent',
         sessionId: 'test-session',
@@ -129,7 +129,7 @@ describe('Use Cases Integration', () => {
       }
     });
 
-    it('should track used words per session', () => {
+    it('should track used words per session', async () => {
       const useCase = new GetRandomWordUseCase(
         wordRepository,
         sessionRepository,
@@ -142,7 +142,7 @@ describe('Use Cases Integration', () => {
 
       // Get all words
       for (let i = 0; i < testWords.length; i++) {
-        const result = useCase.execute({
+        const result = await useCase.execute({
           mode: 'EN_TO_PL',
           sessionId,
         });
@@ -159,14 +159,14 @@ describe('Use Cases Integration', () => {
   });
 
   describe('CheckTranslationUseCase', () => {
-    it('should return correct for right answer', () => {
+    it('should return correct for right answer', async () => {
       const useCase = new CheckTranslationUseCase(
         wordRepository,
         new TranslationChecker(),
         logger
       );
 
-      const result = useCase.execute({
+      const result = await useCase.execute({
         wordId: '1',
         userTranslation: 'kot',
         mode: 'EN_TO_PL',
@@ -180,14 +180,14 @@ describe('Use Cases Integration', () => {
       }
     });
 
-    it('should return incorrect for wrong answer', () => {
+    it('should return incorrect for wrong answer', async () => {
       const useCase = new CheckTranslationUseCase(
         wordRepository,
         new TranslationChecker(),
         logger
       );
 
-      const result = useCase.execute({
+      const result = await useCase.execute({
         wordId: '1',
         userTranslation: 'pies',
         mode: 'EN_TO_PL',
@@ -200,14 +200,14 @@ describe('Use Cases Integration', () => {
       }
     });
 
-    it('should return error for non-existent word', () => {
+    it('should return error for non-existent word', async () => {
       const useCase = new CheckTranslationUseCase(
         wordRepository,
         new TranslationChecker(),
         logger
       );
 
-      const result = useCase.execute({
+      const result = await useCase.execute({
         wordId: 'non-existent',
         userTranslation: 'test',
         mode: 'EN_TO_PL',
@@ -222,9 +222,9 @@ describe('Use Cases Integration', () => {
   });
 
   describe('GetWordCountUseCase', () => {
-    it('should return total count without filters', () => {
+    it('should return total count without filters', async () => {
       const useCase = new GetWordCountUseCase(wordRepository);
-      const result = useCase.execute({});
+      const result = await useCase.execute({});
 
       expect(result.ok).toBe(true);
       if (result.ok) {
@@ -232,9 +232,9 @@ describe('Use Cases Integration', () => {
       }
     });
 
-    it('should return filtered count by category', () => {
+    it('should return filtered count by category', async () => {
       const useCase = new GetWordCountUseCase(wordRepository);
-      const result = useCase.execute({ category: 'Animals' });
+      const result = await useCase.execute({ category: 'Animals' });
 
       expect(result.ok).toBe(true);
       if (result.ok) {
@@ -242,9 +242,9 @@ describe('Use Cases Integration', () => {
       }
     });
 
-    it('should return filtered count by difficulty', () => {
+    it('should return filtered count by difficulty', async () => {
       const useCase = new GetWordCountUseCase(wordRepository);
-      const result = useCase.execute({ difficulty: 1 });
+      const result = await useCase.execute({ difficulty: 1 });
 
       expect(result.ok).toBe(true);
       if (result.ok) {
@@ -254,9 +254,9 @@ describe('Use Cases Integration', () => {
   });
 
   describe('ResetSessionUseCase', () => {
-    it('should reset session successfully', () => {
+    it('should reset session successfully', async () => {
       const useCase = new ResetSessionUseCase(sessionRepository, logger);
-      const result = useCase.execute({ sessionId: 'test-session' });
+      const result = await useCase.execute({ sessionId: 'test-session' });
 
       expect(result.ok).toBe(true);
       if (result.ok) {
@@ -264,9 +264,9 @@ describe('Use Cases Integration', () => {
       }
     });
 
-    it('should succeed even for non-existent session', () => {
+    it('should succeed even for non-existent session', async () => {
       const useCase = new ResetSessionUseCase(sessionRepository, logger);
-      const result = useCase.execute({ sessionId: 'non-existent' });
+      const result = await useCase.execute({ sessionId: 'non-existent' });
 
       expect(result.ok).toBe(true);
     });

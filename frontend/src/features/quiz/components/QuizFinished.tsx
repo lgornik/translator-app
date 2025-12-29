@@ -23,7 +23,7 @@ export function QuizFinished({
 
   const getMessage = () => {
     if (reinforceMode) {
-      return { emoji: 'ðŸ†', text: 'Wszystko opanowane!' };
+      return { emoji: '🏆', text: 'Wszystko opanowane!' };
     }
 
     if (accuracy >= RESULT_MESSAGES.EXCELLENT.minAccuracy) {
@@ -48,7 +48,7 @@ export function QuizFinished({
       <div className="quiz-finished__stats">
         <div className="quiz-finished__stat">
           <span className="quiz-finished__stat-value">{wordsCompleted}</span>
-          <span className="quiz-finished__stat-label">sÅ‚Ã³w</span>
+          <span className="quiz-finished__stat-label">słów</span>
         </div>
         <div className="quiz-finished__stat quiz-finished__stat--correct">
           <span className="quiz-finished__stat-value">{stats.correct}</span>
@@ -56,11 +56,11 @@ export function QuizFinished({
         </div>
         <div className="quiz-finished__stat quiz-finished__stat--incorrect">
           <span className="quiz-finished__stat-value">{stats.incorrect}</span>
-          <span className="quiz-finished__stat-label">bÅ‚Ä™dnych</span>
+          <span className="quiz-finished__stat-label">błędnych</span>
         </div>
         <div className="quiz-finished__stat">
           <span className="quiz-finished__stat-value">{accuracy}%</span>
-          <span className="quiz-finished__stat-label">skutecznoÅ›Ä‡</span>
+          <span className="quiz-finished__stat-label">skuteczność</span>
         </div>
       </div>
 

@@ -44,10 +44,13 @@
     "@types/react": "^19.0.0",
     "@vitest/coverage-v8": "^4.0.16",
     "@vitest/ui": "^4.0.16",
+    "drizzle-kit": "^0.31.8",
     "jsdom": "^27.4.0",
     "prettier": "^3.2.0"
   },
   "dependencies": {
+    "drizzle-orm": "^0.45.1",
+    "postgres": "^3.4.7",
     "react": "^19.2.3"
   }
 }

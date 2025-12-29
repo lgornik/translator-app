@@ -7,7 +7,6 @@ import { IWordRepository } from '../../domain/repositories/IWordRepository.js';
 import { TranslationMode } from '../../domain/value-objects/TranslationMode.js';
 import { WordId } from '../../domain/value-objects/WordId.js';
 import { TranslationChecker } from '../../domain/services/TranslationChecker.js';
-import { IUseCase } from '../interfaces/IUseCase.js';
 import { ILogger } from '../interfaces/ILogger.js';
 import { CheckTranslationInput, CheckTranslationOutput } from '../dtos/index.js';
 
@@ -15,16 +14,14 @@ import { CheckTranslationInput, CheckTranslationOutput } from '../dtos/index.js'
  * Check Translation Use Case
  * Validates a user's translation answer
  */
-export class CheckTranslationUseCase
-  implements IUseCase<CheckTranslationInput, CheckTranslationOutput, DomainError>
-{
+export class CheckTranslationUseCase {
   constructor(
     private readonly wordRepository: IWordRepository,
     private readonly translationChecker: TranslationChecker,
     private readonly logger: ILogger
   ) {}
 
-  execute(input: CheckTranslationInput): Result<CheckTranslationOutput, DomainError> {
+  async execute(input: CheckTranslationInput): Promise<Result<CheckTranslationOutput, DomainError>> {
     const startTime = Date.now();
 
     // 1. Validate input
@@ -41,7 +38,7 @@ export class CheckTranslationUseCase
     const mode = modeResult.value;
 
     // 2. Find word
-    const word = this.wordRepository.findById(wordId);
+    const word = await this.wordRepository.findById(wordId);
     if (!word) {
       return Result.fail(NotFoundError.word(wordId.value));
     }
@@ -50,8 +47,7 @@ export class CheckTranslationUseCase
     const correctAnswer = word.getCorrectTranslation(mode);
     const checkResult = this.translationChecker.check(
       correctAnswer,
-      input.userTranslation,
-      mode
+      input.userTranslation
     );
 
     // 4. Log result

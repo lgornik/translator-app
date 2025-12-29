@@ -84,7 +84,7 @@ export function useQuizGraphQL({
       const errorMsg = error.message.toLowerCase();
       const isNoWordsError = 
         errorMsg.includes('no words') || 
-        errorMsg.includes('brak sÅ‚Ã³w') || 
+        errorMsg.includes('brak słów') || 
         errorMsg.includes('available');
       
       if (isNoWordsError) {

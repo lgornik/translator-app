@@ -28,16 +28,16 @@ export class InMemoryWordRepository implements IWordRepository {
     this.difficultiesCache = this.computeDifficulties();
   }
 
-  findAll(): Word[] {
+  async findAll(): Promise<Word[]> {
     return Array.from(this.words.values());
   }
 
-  findById(id: WordId): Word | null {
+  async findById(id: WordId): Promise<Word | null> {
     return this.words.get(id.value) ?? null;
   }
 
-  findByFilters(filters: WordFilters): Word[] {
-    let words = this.findAll();
+  async findByFilters(filters: WordFilters): Promise<Word[]> {
+    let words = await this.findAll();
 
     if (filters.category) {
       words = words.filter((w) => w.matchesCategory(filters.category!));
@@ -50,22 +50,22 @@ export class InMemoryWordRepository implements IWordRepository {
     return words;
   }
 
-  getCategories(): Category[] {
+  async getCategories(): Promise<Category[]> {
     return this.categoriesCache;
   }
 
-  getDifficulties(): Difficulty[] {
+  async getDifficulties(): Promise<Difficulty[]> {
     return this.difficultiesCache;
   }
 
-  count(filters?: WordFilters): number {
+  async count(filters?: WordFilters): Promise<number> {
     if (!filters || (!filters.category && !filters.difficulty)) {
       return this.words.size;
     }
-    return this.findByFilters(filters).length;
+    return (await this.findByFilters(filters)).length;
   }
 
-  isEmpty(): boolean {
+  async isEmpty(): Promise<boolean> {
     return this.words.size === 0;
   }
 

@@ -10,7 +10,6 @@ import { Difficulty } from '../../domain/value-objects/Difficulty.js';
 import { Category } from '../../domain/value-objects/Category.js';
 import { SessionId } from '../../domain/value-objects/SessionId.js';
 import { RandomWordPicker } from '../../domain/services/RandomWordPicker.js';
-import { IUseCase } from '../interfaces/IUseCase.js';
 import { ILogger } from '../interfaces/ILogger.js';
 import { GetRandomWordInput, GetRandomWordOutput } from '../dtos/index.js';
 
@@ -18,9 +17,7 @@ import { GetRandomWordInput, GetRandomWordOutput } from '../dtos/index.js';
  * Get Random Word Use Case
  * Fetches a random word for translation, tracking used words per session
  */
-export class GetRandomWordUseCase
-  implements IUseCase<GetRandomWordInput, GetRandomWordOutput, DomainError>
-{
+export class GetRandomWordUseCase {
   constructor(
     private readonly wordRepository: IWordRepository,
     private readonly sessionRepository: ISessionRepository,
@@ -28,7 +25,7 @@ export class GetRandomWordUseCase
     private readonly logger: ILogger
   ) {}
 
-  execute(input: GetRandomWordInput): Result<GetRandomWordOutput, DomainError> {
+  async execute(input: GetRandomWordInput): Promise<Result<GetRandomWordOutput, DomainError>> {
     const startTime = Date.now();
 
     // 1. Validate and parse input
@@ -65,7 +62,7 @@ export class GetRandomWordUseCase
 
     // 2. Build filters and get available words
     const filters: WordFilters = { category, difficulty };
-    const availableWords = this.wordRepository.findByFilters(filters);
+    const availableWords = await this.wordRepository.findByFilters(filters);
 
     if (availableWords.length === 0) {
       const errorFilters: { category?: string | undefined; difficulty?: number | undefined } = {};
@@ -76,7 +73,7 @@ export class GetRandomWordUseCase
     }
 
     // 3. Get or create session
-    const session = this.sessionRepository.findOrCreate(sessionId);
+    const session = await this.sessionRepository.findOrCreate(sessionId);
 
     // 4. Filter out used words
     const unusedWords = availableWords.filter(
@@ -92,7 +89,7 @@ export class GetRandomWordUseCase
 
       // Reset only words matching current filters
       session.resetWords(availableWords.map((w) => w.id));
-      this.sessionRepository.save(session);
+      await this.sessionRepository.save(session);
 
       // Recursive call with fresh session
       return this.execute(input);
@@ -106,7 +103,7 @@ export class GetRandomWordUseCase
 
     // 7. Mark word as used
     session.markWordAsUsed(selectedWord.id);
-    this.sessionRepository.save(session);
+    await this.sessionRepository.save(session);
 
     // 8. Log and return
     const duration = Date.now() - startTime;

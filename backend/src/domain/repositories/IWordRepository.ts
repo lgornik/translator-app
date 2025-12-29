@@ -20,35 +20,35 @@ export interface IWordRepository {
   /**
    * Find all words
    */
-  findAll(): Word[];
+  findAll(): Promise<Word[]>;
 
   /**
    * Find word by ID
    */
-  findById(id: WordId): Word | null;
+  findById(id: WordId): Promise<Word | null>;
 
   /**
    * Find words matching filters
    */
-  findByFilters(filters: WordFilters): Word[];
+  findByFilters(filters: WordFilters): Promise<Word[]>;
 
   /**
    * Get all unique categories
    */
-  getCategories(): Category[];
+  getCategories(): Promise<Category[]>;
 
   /**
    * Get all unique difficulties
    */
-  getDifficulties(): Difficulty[];
+  getDifficulties(): Promise<Difficulty[]>;
 
   /**
    * Count words (optionally filtered)
    */
-  count(filters?: WordFilters): number;
+  count(filters?: WordFilters): Promise<number>;
 
   /**
    * Check if repository has any words
    */
-  isEmpty(): boolean;
+  isEmpty(): Promise<boolean>;
 }

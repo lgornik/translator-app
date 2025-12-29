@@ -10,35 +10,35 @@ export interface ISessionRepository {
   /**
    * Find session by ID
    */
-  findById(id: SessionId): Session | null;
+  findById(id: SessionId): Promise<Session | null>;
 
   /**
    * Find or create a session
    */
-  findOrCreate(id: SessionId): Session;
+  findOrCreate(id: SessionId): Promise<Session>;
 
   /**
    * Save session state
    */
-  save(session: Session): void;
+  save(session: Session): Promise<void>;
 
   /**
    * Delete a session
    */
-  delete(id: SessionId): boolean;
+  delete(id: SessionId): Promise<boolean>;
 
   /**
    * Delete expired sessions
    */
-  deleteExpired(maxAgeMs: number): number;
+  deleteExpired(maxAgeMs: number): Promise<number>;
 
   /**
    * Check if session exists
    */
-  exists(id: SessionId): boolean;
+  exists(id: SessionId): Promise<boolean>;
 
   /**
    * Get total count of active sessions
    */
-  count(): number;
+  count(): Promise<number>;
 }

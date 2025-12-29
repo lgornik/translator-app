@@ -21,8 +21,7 @@ export class TranslationChecker {
    */
   check(
     correctAnswer: string,
-    userAnswer: string,
-    _mode: TranslationMode
+    userAnswer: string
   ): TranslationCheckResult {
     const normalizedUser = this.normalizeAnswer(userAnswer);
 

@@ -23,7 +23,7 @@ function NotFoundPage() {
   return (
     <div className="not-found">
       <h1>404</h1>
-      <p>Strona nie zostaÅ‚a znaleziona</p>
+      <p>Strona nie została znaleziona</p>
     </div>
   );
 }

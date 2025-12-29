@@ -34,8 +34,8 @@ describe('GraphQL Resolvers', () => {
   });
 
   describe('Query.info', () => {
-    it('should return API info', () => {
-      const result = resolvers.Query.info({}, {}, ctx);
+    it('should return API info', async () => {
+      const result = await resolvers.Query.info({}, {}, ctx);
 
       expect(result).toHaveProperty('name');
       expect(result).toHaveProperty('version');
@@ -45,8 +45,8 @@ describe('GraphQL Resolvers', () => {
   });
 
   describe('Query.health', () => {
-    it('should return health status', () => {
-      const result = resolvers.Query.health({}, {}, ctx);
+    it('should return health status', async () => {
+      const result = await resolvers.Query.health({}, {}, ctx);
 
       expect(result.status).toBe('ok');
       expect(result).toHaveProperty('timestamp');
@@ -57,8 +57,8 @@ describe('GraphQL Resolvers', () => {
   });
 
   describe('Query.getRandomWord', () => {
-    it('should return a random word without correctTranslation', () => {
-      const result = resolvers.Query.getRandomWord(
+    it('should return a random word without correctTranslation', async () => {
+      const result = await resolvers.Query.getRandomWord(
         {},
         { mode: 'EN_TO_PL' },
         ctx
@@ -70,8 +70,8 @@ describe('GraphQL Resolvers', () => {
       expect(result.mode).toBe('EN_TO_PL');
     });
 
-    it('should filter by category', () => {
-      const result = resolvers.Query.getRandomWord(
+    it('should filter by category', async () => {
+      const result = await resolvers.Query.getRandomWord(
         {},
         { mode: 'EN_TO_PL', category: 'Animals' },
         ctx
@@ -80,8 +80,8 @@ describe('GraphQL Resolvers', () => {
       expect(result.category).toBe('Animals');
     });
 
-    it('should filter by difficulty', () => {
-      const result = resolvers.Query.getRandomWord(
+    it('should filter by difficulty', async () => {
+      const result = await resolvers.Query.getRandomWord(
         {},
         { mode: 'EN_TO_PL', difficulty: 3 },
         ctx
@@ -90,30 +90,30 @@ describe('GraphQL Resolvers', () => {
       expect(result.difficulty).toBe(3);
     });
 
-    it('should throw error for invalid mode', () => {
-      expect(() => {
+    it('should throw error for invalid mode', async () => {
+      await expect(
         resolvers.Query.getRandomWord(
           {},
           { mode: 'INVALID' },
           ctx
-        );
-      }).toThrow();
+        )
+      ).rejects.toThrow();
     });
 
-    it('should throw error when no words available', () => {
-      expect(() => {
+    it('should throw error when no words available', async () => {
+      await expect(
         resolvers.Query.getRandomWord(
           {},
           { mode: 'EN_TO_PL', category: 'NonExistent' },
           ctx
-        );
-      }).toThrow();
+        )
+      ).rejects.toThrow();
     });
   });
 
   describe('Query.getAllWords', () => {
-    it('should return all words', () => {
-      const result = resolvers.Query.getAllWords({}, {}, ctx);
+    it('should return all words', async () => {
+      const result = await resolvers.Query.getAllWords({}, {}, ctx);
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBe(testWords.length);
@@ -124,8 +124,8 @@ describe('GraphQL Resolvers', () => {
   });
 
   describe('Query.getCategories', () => {
-    it('should return unique categories', () => {
-      const result = resolvers.Query.getCategories({}, {}, ctx);
+    it('should return unique categories', async () => {
+      const result = await resolvers.Query.getCategories({}, {}, ctx);
 
       expect(Array.isArray(result)).toBe(true);
       expect(result).toContain('Animals');
@@ -135,8 +135,8 @@ describe('GraphQL Resolvers', () => {
   });
 
   describe('Query.getDifficulties', () => {
-    it('should return available difficulties', () => {
-      const result = resolvers.Query.getDifficulties({}, {}, ctx);
+    it('should return available difficulties', async () => {
+      const result = await resolvers.Query.getDifficulties({}, {}, ctx);
 
       expect(Array.isArray(result)).toBe(true);
       expect(result).toContain(1);
@@ -146,14 +146,14 @@ describe('GraphQL Resolvers', () => {
   });
 
   describe('Query.getWordCount', () => {
-    it('should return total count without filters', () => {
-      const result = resolvers.Query.getWordCount({}, {}, ctx);
+    it('should return total count without filters', async () => {
+      const result = await resolvers.Query.getWordCount({}, {}, ctx);
 
       expect(result.count).toBe(testWords.length);
     });
 
-    it('should return filtered count by category', () => {
-      const result = resolvers.Query.getWordCount(
+    it('should return filtered count by category', async () => {
+      const result = await resolvers.Query.getWordCount(
         {},
         { category: 'Animals' },
         ctx
@@ -162,8 +162,8 @@ describe('GraphQL Resolvers', () => {
       expect(result.count).toBe(2);
     });
 
-    it('should return filtered count by difficulty', () => {
-      const result = resolvers.Query.getWordCount(
+    it('should return filtered count by difficulty', async () => {
+      const result = await resolvers.Query.getWordCount(
         {},
         { difficulty: 1 },
         ctx
@@ -172,8 +172,8 @@ describe('GraphQL Resolvers', () => {
       expect(result.count).toBe(2);
     });
 
-    it('should return filtered count with both filters', () => {
-      const result = resolvers.Query.getWordCount(
+    it('should return filtered count with both filters', async () => {
+      const result = await resolvers.Query.getWordCount(
         {},
         { category: 'Animals', difficulty: 1 },
         ctx
@@ -184,8 +184,8 @@ describe('GraphQL Resolvers', () => {
   });
 
   describe('Mutation.checkTranslation', () => {
-    it('should return correct for right answer', () => {
-      const result = resolvers.Mutation.checkTranslation(
+    it('should return correct for right answer', async () => {
+      const result = await resolvers.Mutation.checkTranslation(
         {},
         { wordId: '1', userTranslation: 'kot', mode: 'EN_TO_PL' },
         ctx
@@ -196,8 +196,8 @@ describe('GraphQL Resolvers', () => {
       expect(result.userTranslation).toBe('kot');
     });
 
-    it('should return incorrect for wrong answer', () => {
-      const result = resolvers.Mutation.checkTranslation(
+    it('should return incorrect for wrong answer', async () => {
+      const result = await resolvers.Mutation.checkTranslation(
         {},
         { wordId: '1', userTranslation: 'pies', mode: 'EN_TO_PL' },
         ctx
@@ -207,8 +207,8 @@ describe('GraphQL Resolvers', () => {
       expect(result.correctTranslation).toBe('kot');
     });
 
-    it('should handle PL_TO_EN mode', () => {
-      const result = resolvers.Mutation.checkTranslation(
+    it('should handle PL_TO_EN mode', async () => {
+      const result = await resolvers.Mutation.checkTranslation(
         {},
         { wordId: '1', userTranslation: 'cat', mode: 'PL_TO_EN' },
         ctx
@@ -218,29 +218,29 @@ describe('GraphQL Resolvers', () => {
       expect(result.correctTranslation).toBe('cat');
     });
 
-    it('should throw error for non-existent word', () => {
-      expect(() => {
+    it('should throw error for non-existent word', async () => {
+      await expect(
         resolvers.Mutation.checkTranslation(
           {},
           { wordId: 'non-existent', userTranslation: 'test', mode: 'EN_TO_PL' },
           ctx
-        );
-      }).toThrow();
+        )
+      ).rejects.toThrow();
     });
   });
 
   describe('Mutation.resetSession', () => {
-    it('should reset session successfully', () => {
+    it('should reset session successfully', async () => {
       // First get a word to create session state
-      resolvers.Query.getRandomWord({}, { mode: 'EN_TO_PL' }, ctx);
+      await resolvers.Query.getRandomWord({}, { mode: 'EN_TO_PL' }, ctx);
 
-      const result = resolvers.Mutation.resetSession({}, {}, ctx);
+      const result = await resolvers.Mutation.resetSession({}, {}, ctx);
 
       expect(result).toBe(true);
     });
 
-    it('should succeed even for non-existent session', () => {
-      const result = resolvers.Mutation.resetSession({}, {}, ctx);
+    it('should succeed even for non-existent session', async () => {
+      const result = await resolvers.Mutation.resetSession({}, {}, ctx);
 
       expect(result).toBe(true);
     });

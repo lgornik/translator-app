@@ -25,27 +25,27 @@ function handleResult<T>(result: Result<T, DomainError>): T {
  * Query Resolvers
  */
 const queryResolvers = {
-  info: (_: unknown, __: unknown, ctx: GraphQLContext) => ({
+  info: async (_: unknown, __: unknown, ctx: GraphQLContext) => ({
     name: config.api.name,
     version: config.api.version,
     status: 'ok',
     uptime: (Date.now() - ctx.startTime) / 1000,
   }),
 
-  health: (_: unknown, __: unknown, ctx: GraphQLContext) => ({
+  health: async (_: unknown, __: unknown, ctx: GraphQLContext) => ({
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: (Date.now() - ctx.startTime) / 1000,
-    sessionCount: ctx.sessionRepository.count(),
-    wordCount: ctx.wordRepository.count(),
+    sessionCount: await ctx.sessionRepository.count(),
+    wordCount: await ctx.wordRepository.count(),
   }),
 
-  getRandomWord: (
+  getRandomWord: async (
     _: unknown,
     args: { mode: string; category?: string; difficulty?: number },
     ctx: GraphQLContext
   ) => {
-    const result = ctx.getRandomWord.execute({
+    const result = await ctx.getRandomWord.execute({
       mode: args.mode,
       category: args.category ?? null,
       difficulty: args.difficulty ?? null,
@@ -64,27 +64,27 @@ const queryResolvers = {
     };
   },
 
-  getAllWords: (_: unknown, __: unknown, ctx: GraphQLContext) => {
-    const result = ctx.getAllWords.execute();
+  getAllWords: async (_: unknown, __: unknown, ctx: GraphQLContext) => {
+    const result = await ctx.getAllWords.execute();
     return handleResult(result).words;
   },
 
-  getCategories: (_: unknown, __: unknown, ctx: GraphQLContext) => {
-    const result = ctx.getCategories.execute();
+  getCategories: async (_: unknown, __: unknown, ctx: GraphQLContext) => {
+    const result = await ctx.getCategories.execute();
     return handleResult(result).categories;
   },
 
-  getDifficulties: (_: unknown, __: unknown, ctx: GraphQLContext) => {
-    const result = ctx.getDifficulties.execute();
+  getDifficulties: async (_: unknown, __: unknown, ctx: GraphQLContext) => {
+    const result = await ctx.getDifficulties.execute();
     return handleResult(result).difficulties;
   },
 
-  getWordCount: (
+  getWordCount: async (
     _: unknown,
     args: { category?: string; difficulty?: number },
     ctx: GraphQLContext
   ) => {
-    const result = ctx.getWordCount.execute({
+    const result = await ctx.getWordCount.execute({
       category: args.category ?? null,
       difficulty: args.difficulty ?? null,
     });
@@ -97,12 +97,12 @@ const queryResolvers = {
  * Mutation Resolvers
  */
 const mutationResolvers = {
-  checkTranslation: (
+  checkTranslation: async (
     _: unknown,
     args: { wordId: string; userTranslation: string; mode: string },
     ctx: GraphQLContext
   ) => {
-    const result = ctx.checkTranslation.execute({
+    const result = await ctx.checkTranslation.execute({
       wordId: args.wordId,
       userTranslation: args.userTranslation,
       mode: args.mode,
@@ -112,8 +112,8 @@ const mutationResolvers = {
     return handleResult(result);
   },
 
-  resetSession: (_: unknown, __: unknown, ctx: GraphQLContext) => {
-    const result = ctx.resetSession.execute({
+  resetSession: async (_: unknown, __: unknown, ctx: GraphQLContext) => {
+    const result = await ctx.resetSession.execute({
       sessionId: ctx.sessionId,
     });
 

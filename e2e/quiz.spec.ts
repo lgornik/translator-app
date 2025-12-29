@@ -15,23 +15,23 @@ test.describe('Quiz App', () => {
       await expect(page.getByText('Wybierz tryb quizu')).toBeVisible();
       await expect(page.getByText('TEST')).toBeVisible();
       await expect(page.getByText('Na czas')).toBeVisible();
-      await expect(page.getByText('WÅ‚asna liczba')).toBeVisible();
+      await expect(page.getByText('Własna liczba')).toBeVisible();
     });
 
     test('should have category and difficulty filters', async ({ page }) => {
       await expect(page.getByLabel('Kategoria')).toBeVisible();
-      await expect(page.getByLabel('Poziom trudnoÅ›ci')).toBeVisible();
+      await expect(page.getByLabel('Poziom trudności')).toBeVisible();
     });
 
     test('should toggle translation mode', async ({ page }) => {
-      const modeButton = page.getByText('EN â†’ PL');
+      const modeButton = page.getByText('EN → PL');
       await expect(modeButton).toBeVisible();
       
       await modeButton.click();
-      await expect(page.getByText('PL â†’ EN')).toBeVisible();
+      await expect(page.getByText('PL → EN')).toBeVisible();
       
-      await page.getByText('PL â†’ EN').click();
-      await expect(page.getByText('EN â†’ PL')).toBeVisible();
+      await page.getByText('PL → EN').click();
+      await expect(page.getByText('EN → PL')).toBeVisible();
     });
 
     test('should have reinforce mode checkbox checked by default', async ({ page }) => {
@@ -47,36 +47,36 @@ test.describe('Quiz App', () => {
       await checkbox.uncheck();
       
       // Start with custom word count (smaller for faster test)
-      const customSection = page.locator('.quiz-option').filter({ hasText: 'WÅ‚asna liczba' });
+      const customSection = page.locator('.quiz-option').filter({ hasText: 'Własna liczba' });
       const wordInput = customSection.getByRole('spinbutton');
       await wordInput.fill('3');
       await customSection.getByText('Start').click();
 
       // Should be in playing state
-      await expect(page.getByText('PrzetÅ‚umacz z')).toBeVisible();
-      await expect(page.getByLabel('Twoje tÅ‚umaczenie')).toBeVisible();
+      await expect(page.getByText('Przetłumacz z')).toBeVisible();
+      await expect(page.getByLabel('Twoje tłumaczenie')).toBeVisible();
 
       // Complete 3 words
       for (let i = 0; i < 3; i++) {
         // Wait for word to load
-        await expect(page.getByLabel('Twoje tÅ‚umaczenie')).toBeEnabled({ timeout: 10000 });
+        await expect(page.getByLabel('Twoje tłumaczenie')).toBeEnabled({ timeout: 10000 });
         
         // Enter some answer
-        await page.getByLabel('Twoje tÅ‚umaczenie').fill('test');
-        await page.getByText('SprawdÅº').click();
+        await page.getByLabel('Twoje tłumaczenie').fill('test');
+        await page.getByText('Sprawdź').click();
 
         // Wait for result - either next word button or finish screen
-        await expect(page.getByText(/NastÄ™pne sÅ‚owo|Zagraj ponownie/)).toBeVisible({ timeout: 10000 });
+        await expect(page.getByText(/Następne słowo|Zagraj ponownie/)).toBeVisible({ timeout: 10000 });
         
         // Go to next word (if not last and next button exists)
-        const nextButton = page.getByText('NastÄ™pne sÅ‚owo');
+        const nextButton = page.getByText('Następne słowo');
         if (await nextButton.isVisible().catch(() => false)) {
           await nextButton.click();
         }
       }
 
       // Should show finished screen or next word button for last word
-      await expect(page.getByText(/zagraj ponownie|NastÄ™pne sÅ‚owo/i)).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText(/zagraj ponownie|Następne słowo/i)).toBeVisible({ timeout: 10000 });
     });
 
     test('should show correct/incorrect feedback', async ({ page }) => {
@@ -84,19 +84,19 @@ test.describe('Quiz App', () => {
       const checkbox = page.getByRole('checkbox');
       await checkbox.uncheck();
       
-      const customSection = page.locator('.quiz-option').filter({ hasText: 'WÅ‚asna liczba' });
+      const customSection = page.locator('.quiz-option').filter({ hasText: 'Własna liczba' });
       await customSection.getByRole('spinbutton').fill('1');
       await customSection.getByText('Start').click();
 
       // Wait for word
-      await expect(page.getByLabel('Twoje tÅ‚umaczenie')).toBeEnabled({ timeout: 10000 });
+      await expect(page.getByLabel('Twoje tłumaczenie')).toBeEnabled({ timeout: 10000 });
 
       // Submit wrong answer
-      await page.getByLabel('Twoje tÅ‚umaczenie').fill('wronganswer123');
-      await page.getByText('SprawdÅº').click();
+      await page.getByLabel('Twoje tłumaczenie').fill('wronganswer123');
+      await page.getByText('Sprawdź').click();
 
       // Should show result (either next button or finish screen)
-      await expect(page.getByText(/NastÄ™pne sÅ‚owo|Zagraj ponownie/)).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText(/Następne słowo|Zagraj ponownie/)).toBeVisible({ timeout: 10000 });
     });
 
     test('should allow submit with empty answer', async ({ page }) => {
@@ -104,22 +104,22 @@ test.describe('Quiz App', () => {
       const checkbox = page.getByRole('checkbox');
       await checkbox.uncheck();
       
-      const customSection = page.locator('.quiz-option').filter({ hasText: 'WÅ‚asna liczba' });
+      const customSection = page.locator('.quiz-option').filter({ hasText: 'Własna liczba' });
       await customSection.getByRole('spinbutton').fill('1');
       await customSection.getByText('Start').click();
 
       // Wait for word
-      await expect(page.getByLabel('Twoje tÅ‚umaczenie')).toBeEnabled({ timeout: 10000 });
+      await expect(page.getByLabel('Twoje tłumaczenie')).toBeEnabled({ timeout: 10000 });
 
       // Submit button should be enabled even with empty input
-      const submitButton = page.getByText('SprawdÅº');
+      const submitButton = page.getByText('Sprawdź');
       await expect(submitButton).toBeEnabled();
       
       // Submit empty answer
       await submitButton.click();
       
       // Should show result (either next button or finish screen)
-      await expect(page.getByText(/NastÄ™pne sÅ‚owo|Zagraj ponownie/)).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText(/Następne słowo|Zagraj ponownie/)).toBeVisible({ timeout: 10000 });
     });
   });
 
@@ -131,10 +131,10 @@ test.describe('Quiz App', () => {
       await timedSection.getByText('Start').click();
 
       // Should show timer
-      await expect(page.getByText(/â±ï¸.*\d:\d\d/)).toBeVisible();
+      await expect(page.getByText(/⏱️.*\d:\d\d/)).toBeVisible();
       
       // Should be able to answer
-      await expect(page.getByLabel('Twoje tÅ‚umaczenie')).toBeEnabled({ timeout: 10000 });
+      await expect(page.getByLabel('Twoje tłumaczenie')).toBeEnabled({ timeout: 10000 });
     });
   });
 
@@ -148,10 +148,10 @@ test.describe('Quiz App', () => {
       await page.locator('button').filter({ hasText: 'TEST' }).click();
 
       // Should be in playing state
-      await expect(page.getByText('PrzetÅ‚umacz z')).toBeVisible();
+      await expect(page.getByText('Przetłumacz z')).toBeVisible();
       
       // Should show mastered counter (reinforce mode indicator)
-      await expect(page.getByText(/âœ“.*\/.*50/)).toBeVisible();
+      await expect(page.getByText(/✔.*\/.*50/)).toBeVisible();
     });
   });
 
@@ -172,7 +172,7 @@ test.describe('Quiz App', () => {
     });
 
     test('should filter by difficulty', async ({ page }) => {
-      const difficultySelect = page.getByLabel('Poziom trudnoÅ›ci');
+      const difficultySelect = page.getByLabel('Poziom trudności');
       
       // Select first difficulty level
       const options = await difficultySelect.locator('option').allTextContents();
@@ -196,7 +196,7 @@ test.describe('Quiz App', () => {
       }
 
       // Try to start with more words than available
-      const customSection = page.locator('.quiz-option').filter({ hasText: 'WÅ‚asna liczba' });
+      const customSection = page.locator('.quiz-option').filter({ hasText: 'Własna liczba' });
       await customSection.getByRole('spinbutton').fill('999999');
       await customSection.getByText('Start').click();
 
@@ -212,19 +212,19 @@ test.describe('Quiz App', () => {
       const checkbox = page.getByRole('checkbox');
       await checkbox.uncheck();
       
-      const customSection = page.locator('.quiz-option').filter({ hasText: 'WÅ‚asna liczba' });
+      const customSection = page.locator('.quiz-option').filter({ hasText: 'Własna liczba' });
       await customSection.getByRole('spinbutton').fill('1');
       await customSection.getByText('Start').click();
 
       // Wait for word and input to be ready
-      await expect(page.getByLabel('Twoje tÅ‚umaczenie')).toBeEnabled({ timeout: 10000 });
+      await expect(page.getByLabel('Twoje tłumaczenie')).toBeEnabled({ timeout: 10000 });
 
       // Type answer and press Enter
-      await page.getByLabel('Twoje tÅ‚umaczenie').fill('test');
-      await page.getByLabel('Twoje tÅ‚umaczenie').press('Enter');
+      await page.getByLabel('Twoje tłumaczenie').fill('test');
+      await page.getByLabel('Twoje tłumaczenie').press('Enter');
 
       // Should show result
-      await expect(page.getByText(/NastÄ™pne sÅ‚owo|Zagraj ponownie/)).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText(/Następne słowo|Zagraj ponownie/)).toBeVisible({ timeout: 10000 });
     });
   });
 
@@ -239,12 +239,12 @@ test.describe('Quiz App', () => {
       const checkbox = page.getByRole('checkbox');
       await checkbox.uncheck();
       
-      const customSection = page.locator('.quiz-option').filter({ hasText: 'WÅ‚asna liczba' });
+      const customSection = page.locator('.quiz-option').filter({ hasText: 'Własna liczba' });
       await customSection.getByRole('spinbutton').fill('1');
       await customSection.getByText('Start').click();
 
       // Should show playing screen
-      await expect(page.getByText('PrzetÅ‚umacz z')).toBeVisible();
+      await expect(page.getByText('Przetłumacz z')).toBeVisible();
     });
   });
 
@@ -254,20 +254,20 @@ test.describe('Quiz App', () => {
       const checkbox = page.getByRole('checkbox');
       await checkbox.uncheck();
       
-      const customSection = page.locator('.quiz-option').filter({ hasText: 'WÅ‚asna liczba' });
+      const customSection = page.locator('.quiz-option').filter({ hasText: 'Własna liczba' });
       await customSection.getByRole('spinbutton').fill('1');
       await customSection.getByText('Start').click();
 
       // Answer the word
-      await expect(page.getByLabel('Twoje tÅ‚umaczenie')).toBeEnabled({ timeout: 10000 });
-      await page.getByLabel('Twoje tÅ‚umaczenie').fill('test');
-      await page.getByText('SprawdÅº').click();
+      await expect(page.getByLabel('Twoje tłumaczenie')).toBeEnabled({ timeout: 10000 });
+      await page.getByLabel('Twoje tłumaczenie').fill('test');
+      await page.getByText('Sprawdź').click();
 
-      // Wait for result - either "NastÄ™pne sÅ‚owo" or finish screen
-      await expect(page.getByText(/NastÄ™pne sÅ‚owo|Zagraj ponownie/)).toBeVisible({ timeout: 10000 });
+      // Wait for result - either "Następne słowo" or finish screen
+      await expect(page.getByText(/Następne słowo|Zagraj ponownie/)).toBeVisible({ timeout: 10000 });
 
       // If there's a next button, click it to go to results
-      const nextButton = page.getByText('NastÄ™pne sÅ‚owo');
+      const nextButton = page.getByText('Następne słowo');
       if (await nextButton.isVisible().catch(() => false)) {
         await nextButton.click();
       }
@@ -281,19 +281,19 @@ test.describe('Quiz App', () => {
       const checkbox = page.getByRole('checkbox');
       await checkbox.uncheck();
       
-      const customSection = page.locator('.quiz-option').filter({ hasText: 'WÅ‚asna liczba' });
+      const customSection = page.locator('.quiz-option').filter({ hasText: 'Własna liczba' });
       await customSection.getByRole('spinbutton').fill('1');
       await customSection.getByText('Start').click();
 
-      await expect(page.getByLabel('Twoje tÅ‚umaczenie')).toBeEnabled({ timeout: 10000 });
-      await page.getByLabel('Twoje tÅ‚umaczenie').fill('test');
-      await page.getByText('SprawdÅº').click();
+      await expect(page.getByLabel('Twoje tłumaczenie')).toBeEnabled({ timeout: 10000 });
+      await page.getByLabel('Twoje tłumaczenie').fill('test');
+      await page.getByText('Sprawdź').click();
 
       // Wait for result
-      await expect(page.getByText(/NastÄ™pne sÅ‚owo|Zagraj ponownie/)).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText(/Następne słowo|Zagraj ponownie/)).toBeVisible({ timeout: 10000 });
 
       // If there's a next button, click it
-      const nextButton = page.getByText('NastÄ™pne sÅ‚owo');
+      const nextButton = page.getByText('Następne słowo');
       if (await nextButton.isVisible().catch(() => false)) {
         await nextButton.click();
       }
