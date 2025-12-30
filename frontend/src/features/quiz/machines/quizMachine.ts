@@ -26,9 +26,11 @@ export interface QuizContext {
   timeRemaining: number;
   
   // Reinforce mode specific
-  wordsToRepeat: WordChallenge[];
+  wordPool: WordChallenge[];        // Stała pula słów pobrana na początku
+  wordsToRepeat: WordChallenge[];   // Słowa do powtórki (błędne odpowiedzi)
   masteredCount: number;
-  shuffledQueue: WordChallenge[];
+  shuffledQueue: WordChallenge[];   // Aktualna kolejka do przejścia
+  poolCollectionComplete: boolean;  // Czy zakończono zbieranie puli
   
   // Error state
   error: string | null;
@@ -70,9 +72,11 @@ const initialContext: QuizContext = {
   wordsCompleted: 0,
   usedWordIds: new Set(),
   timeRemaining: 0,
+  wordPool: [],
   wordsToRepeat: [],
   masteredCount: 0,
   shuffledQueue: [],
+  poolCollectionComplete: false,
   error: null,
   noMoreWords: false,
 };
@@ -98,9 +102,11 @@ export const quizMachine = setup({
         stats: { correct: 0, incorrect: 0 },
         wordsCompleted: 0,
         usedWordIds: new Set<string>(),
+        wordPool: [],
         wordsToRepeat: [],
         masteredCount: 0,
         shuffledQueue: [],
+        poolCollectionComplete: false,
         error: null,
         noMoreWords: false,
         timeRemaining: settings.timeLimit ?? initialContext.timeLimit,
@@ -120,12 +126,53 @@ export const quizMachine = setup({
       };
     }),
     
+    // Dodanie słowa do puli w trybie zbierania
+    addWordToPool: assign(({ context, event }) => {
+      if (event.type !== 'WORD_LOADED') return {};
+      const newUsedIds = new Set(context.usedWordIds);
+      newUsedIds.add(event.word.id);
+      return {
+        wordPool: [...context.wordPool, event.word],
+        usedWordIds: newUsedIds,
+      };
+    }),
+    
+    // Rozpoczęcie quizu z zebraną pulą
+    startWithCollectedPool: assign(({ context }) => {
+      const shuffled = shuffleArray([...context.wordPool]);
+      const [first, ...rest] = shuffled;
+      return {
+        poolCollectionComplete: true,
+        shuffledQueue: rest,
+        currentWord: first ?? null,
+        result: null,
+        userInput: '',
+        noMoreWords: shuffled.length === 0,
+      };
+    }),
+    
+    // Oznaczenie zakończenia zbierania (gdy brak więcej słów)
+    markPoolCollectionComplete: assign(({ context }) => {
+      const shuffled = shuffleArray([...context.wordPool]);
+      const [first, ...rest] = shuffled;
+      return {
+        poolCollectionComplete: true,
+        shuffledQueue: rest,
+        currentWord: first ?? null,
+        result: null,
+        userInput: '',
+        noMoreWords: shuffled.length === 0,
+      };
+    }),
+    
     setWordFromQueue: assign(({ context }) => {
-      let queue = context.shuffledQueue;
+      let queue = [...context.shuffledQueue];
+      let newWordsToRepeat = context.wordsToRepeat;
       
-      // If queue empty, reshuffle wordsToRepeat
+      // If queue empty, reshuffle wordsToRepeat into new queue
       if (queue.length === 0 && context.wordsToRepeat.length > 0) {
-        queue = shuffleArray(context.wordsToRepeat);
+        queue = shuffleArray([...context.wordsToRepeat]);
+        newWordsToRepeat = []; // Reset po przeniesieniu do kolejki
         
         // Avoid same word twice in a row
         const first = queue[0];
@@ -134,14 +181,19 @@ export const quizMachine = setup({
         }
       }
       
+      // All words mastered!
       if (queue.length === 0) {
-        return { noMoreWords: true };
+        return { 
+          noMoreWords: true,
+          currentWord: null,
+        };
       }
       
       const [nextWord, ...rest] = queue;
       return {
         currentWord: nextWord ?? null,
         shuffledQueue: rest,
+        wordsToRepeat: newWordsToRepeat,
         result: null,
         userInput: '',
       };
@@ -219,15 +271,24 @@ export const quizMachine = setup({
       noMoreWords: true,
     })),
     
+    // Reset usedWordIds dla trybu czasowego - pozwala losować słowa od nowa
+    resetUsedWords: assign(() => ({
+      usedWordIds: new Set<string>(),
+    })),
+    
     toggleTranslationMode: assign(({ context }) => ({
       mode: context.mode === 'EN_TO_PL' ? 'PL_TO_EN' : 'EN_TO_PL',
     })),
   },
   guards: {
     isQuizComplete: ({ context }) => {
+      // Tryb czasowy - kończy się tylko przez timer, nie przez liczbę słów
+      if (context.timeLimit > 0) {
+        return false;
+      }
       if (context.reinforceMode) {
-        return context.masteredCount >= context.wordLimit &&
-               context.wordsToRepeat.length === 0;
+        // Quiz kończy się gdy wszystkie słowa z puli zostały opanowane
+        return context.masteredCount >= context.wordPool.length;
       }
       return context.wordsCompleted >= context.wordLimit;
     },
@@ -239,7 +300,8 @@ export const quizMachine = setup({
     
     needsNewWord: ({ context }) => {
       if (context.reinforceMode) {
-        return context.masteredCount < context.wordLimit;
+        // W trybie reinforce nigdy nie pobieramy nowych słów po zebraniu puli
+        return false;
       }
       return true;
     },
@@ -247,6 +309,20 @@ export const quizMachine = setup({
     isReinforceMode: ({ context }) => context.reinforceMode,
     
     isTimedMode: ({ context }) => context.timeLimit > 0,
+    
+    // Czy to tryb czasowy i skończyły się słowa (trzeba zresetować)
+    isTimedModeAndNoWords: ({ context }) => context.timeLimit > 0,
+    
+    // Czy po dodaniu bieżącego słowa pula będzie kompletna
+    // (sprawdzane PRZED dodaniem słowa, więc używamy >= wordLimit - 1)
+    isPoolComplete: ({ context }) => 
+      context.wordPool.length >= context.wordLimit - 1,
+    
+    // Czy pula jest pusta (brak słów dla filtrów)
+    isPoolEmpty: ({ context }) => context.wordPool.length === 0,
+    
+    // Czy mamy jakiekolwiek słowa w puli
+    hasWordsInPool: ({ context }) => context.wordPool.length > 0,
   },
 }).createMachine({
   id: 'quiz',
@@ -260,11 +336,51 @@ export const quizMachine = setup({
           actions: ['applySettings'],
         },
         START_REINFORCE: {
-          target: 'loading',
+          target: 'collectingPool',
           actions: ['applySettings'],
         },
         TOGGLE_MODE: {
           actions: ['toggleTranslationMode'],
+        },
+      },
+    },
+    
+    // Nowy stan: zbieranie puli słów dla trybu reinforce
+    collectingPool: {
+      on: {
+        WORD_LOADED: [
+          {
+            // Pula kompletna - rozpocznij quiz
+            target: 'playing.waitingForInput',
+            guard: 'isPoolComplete',
+            actions: ['addWordToPool', 'startWithCollectedPool'],
+          },
+          {
+            // Kontynuuj zbieranie
+            target: 'collectingPool',
+            actions: ['addWordToPool'],
+          },
+        ],
+        NO_MORE_WORDS: [
+          {
+            // Mamy jakieś słowa - rozpocznij z tym co mamy
+            target: 'playing.waitingForInput',
+            guard: 'hasWordsInPool',
+            actions: ['markPoolCollectionComplete'],
+          },
+          {
+            // Brak słów w ogóle
+            target: 'finished',
+            actions: ['setNoMoreWords'],
+          },
+        ],
+        WORD_LOAD_ERROR: {
+          target: 'error',
+          actions: ['setError'],
+        },
+        RESET: {
+          target: 'setup',
+          actions: ['resetContext'],
         },
       },
     },
@@ -320,6 +436,12 @@ export const quizMachine = setup({
           ],
           on: {
             NEXT_WORD: [
+              // W trybie reinforce - zawsze bierz z kolejki/powtórek
+              {
+                target: 'repeatWord',
+                guard: 'isReinforceMode',
+              },
+              // W normalnym trybie - pobierz nowe słowo
               {
                 target: '#quiz.loadingNext',
                 guard: 'needsNewWord',
@@ -367,6 +489,12 @@ export const quizMachine = setup({
           actions: ['setCurrentWord', 'markWordUsed'],
         },
         WORD_LOAD_ERROR: [
+          // Tryb czasowy - resetuj i próbuj od nowa
+          {
+            target: 'loadingNext',
+            guard: 'isTimedModeAndNoWords',
+            actions: ['resetUsedWords'],
+          },
           {
             target: 'playing.repeatWord',
             guard: 'hasWordsToRepeat',
@@ -377,6 +505,12 @@ export const quizMachine = setup({
           },
         ],
         NO_MORE_WORDS: [
+          // Tryb czasowy - resetuj usedWordIds i pobierz od nowa
+          {
+            target: 'loadingNext',
+            guard: 'isTimedModeAndNoWords',
+            actions: ['resetUsedWords'],
+          },
           {
             target: 'playing.repeatWord',
             guard: 'hasWordsToRepeat',

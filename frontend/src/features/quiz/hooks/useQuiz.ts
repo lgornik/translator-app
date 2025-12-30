@@ -36,6 +36,7 @@ export interface UseQuizReturn {
   isError: boolean;
   isWaitingForInput: boolean;
   isShowingResult: boolean;
+  isCollectingPool: boolean;
   
   // Timer
   timerDisplay: string;
@@ -77,6 +78,10 @@ export interface UseQuizReturn {
  *   
  *   if (quiz.isSetup) {
  *     return <QuizSetup {...quiz} />;
+ *   }
+ *   
+ *   if (quiz.isCollectingPool) {
+ *     return <QuizCollectingPool {...quiz} />;
  *   }
  *   
  *   if (quiz.isPlaying) {
@@ -122,7 +127,7 @@ export function useQuiz(): UseQuizReturn {
     onEnd: actions.timerEnd,
   });
 
-  // Fetch word when entering loading state
+  // Fetch word when entering loading state (normalny tryb i tryb czasowy)
   useEffect(() => {
     if (is.loading) {
       fetchWord({
@@ -132,6 +137,25 @@ export function useQuiz(): UseQuizReturn {
       });
     }
   }, [is.loading, context.mode, context.category, context.difficulty, fetchWord]);
+
+  // Fetch words when collecting pool (tryb utrwalania)
+  useEffect(() => {
+    if (is.collectingPool && !isLoadingWord) {
+      fetchWord({
+        mode: context.mode,
+        category: context.category,
+        difficulty: context.difficulty,
+      });
+    }
+  }, [
+    is.collectingPool, 
+    isLoadingWord, 
+    context.wordPool.length,
+    context.mode, 
+    context.category, 
+    context.difficulty, 
+    fetchWord
+  ]);
 
   // Public actions with default values
   const startQuiz = useCallback((settings: QuizStartSettings) => {
@@ -186,6 +210,7 @@ export function useQuiz(): UseQuizReturn {
     isError: is.error,
     isWaitingForInput: is.waitingForInput,
     isShowingResult: is.showingResult,
+    isCollectingPool: is.collectingPool,
     
     // Timer
     timerDisplay,

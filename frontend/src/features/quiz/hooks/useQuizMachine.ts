@@ -1,145 +1,114 @@
-import { useMemo } from 'react';
 import { useMachine } from '@xstate/react';
-import { quizMachine, QuizContext } from '../machines/quizMachine';
-import type { Difficulty } from '@/shared/types';
+import { quizMachine, type QuizContext } from '../machines/quizMachine';
+import type { WordChallenge, TranslationResult } from '@/shared/types';
 
-/** Simplified state representation */
-export type QuizState = 'setup' | 'loading' | 'playing' | 'finished' | 'error';
-
-interface QuizSettings {
-  wordLimit: number;
-  timeLimit: number;
-  category: string | null;
-  difficulty: Difficulty | null;
-  mode: 'EN_TO_PL' | 'PL_TO_EN';
-}
+export type QuizState = 
+  | 'setup'
+  | 'collectingPool'
+  | 'loading'
+  | 'playing'
+  | 'playing.waitingForInput'
+  | 'playing.checking'
+  | 'playing.showingResult'
+  | 'playing.repeatWord'
+  | 'loadingNext'
+  | 'error'
+  | 'finished';
 
 interface UseQuizMachineReturn {
-  // Raw state
   context: QuizContext;
-  
-  // Simplified state
   state: QuizState;
-  
-  // State checks
   is: {
     setup: boolean;
+    collectingPool: boolean;
     loading: boolean;
     playing: boolean;
+    waitingForInput: boolean;
+    checking: boolean;
+    showingResult: boolean;
     finished: boolean;
     error: boolean;
-    waitingForInput: boolean;
-    showingResult: boolean;
-    checking: boolean;
   };
-  
-  // Actions
   actions: {
-    start: (settings: QuizSettings) => void;
-    startWithReinforce: (settings: QuizSettings) => void;
-    submit: () => void;
-    nextWord: () => void;
-    updateInput: (value: string) => void;
-    toggleMode: () => void;
-    reset: () => void;
-    wordLoaded: (word: QuizContext['currentWord']) => void;
+    start: (settings: Partial<QuizContext>) => void;
+    startWithReinforce: (settings: Partial<QuizContext>) => void;
+    wordLoaded: (word: WordChallenge) => void;
     noMoreWords: () => void;
     wordError: (error: string) => void;
-    resultReceived: (result: NonNullable<QuizContext['result']>) => void;
+    updateInput: (value: string) => void;
+    submit: () => void;
+    resultReceived: (result: TranslationResult) => void;
+    nextWord: () => void;
     timerTick: () => void;
     timerEnd: () => void;
+    reset: () => void;
+    toggleMode: () => void;
   };
 }
 
 /**
- * Wraps XState machine with convenient derived state and typed actions
- * 
- * Responsibilities:
- * - Initialize and manage quiz state machine
- * - Provide simplified state checks
- * - Expose typed action dispatchers
- * 
- * @example
- * const { context, state, is, actions } = useQuizMachine();
- * 
- * if (is.playing && is.waitingForInput) {
- *   // show input form
- * }
- * 
- * actions.submit();
+ * Hook wrapping the quiz state machine
+ * Provides typed access to state, context, and actions
  */
 export function useQuizMachine(): UseQuizMachineReturn {
-  const [snapshot, send] = useMachine(quizMachine);
+  const [state, send] = useMachine(quizMachine);
 
-  // Derive simple state string
-  const state = useMemo((): QuizState => {
-    if (snapshot.matches('setup')) return 'setup';
-    if (snapshot.matches('loading') || snapshot.matches('loadingNext')) return 'loading';
-    if (snapshot.matches('playing')) return 'playing';
-    if (snapshot.matches('finished')) return 'finished';
-    if (snapshot.matches('error')) return 'error';
-    return 'setup';
-  }, [snapshot]);
+  const is = {
+    setup: state.matches('setup'),
+    collectingPool: state.matches('collectingPool'),
+    loading: state.matches('loading'),
+    playing: state.matches('playing'),
+    waitingForInput: state.matches({ playing: 'waitingForInput' }),
+    checking: state.matches({ playing: 'checking' }),
+    showingResult: state.matches({ playing: 'showingResult' }),
+    finished: state.matches('finished'),
+    error: state.matches('error'),
+  };
 
-  // State checks object
-  const is = useMemo(() => ({
-    setup: snapshot.matches('setup'),
-    loading: snapshot.matches('loading') || snapshot.matches('loadingNext'),
-    playing: snapshot.matches('playing'),
-    finished: snapshot.matches('finished'),
-    error: snapshot.matches('error'),
-    waitingForInput: snapshot.matches({ playing: 'waitingForInput' }),
-    showingResult: snapshot.matches({ playing: 'showingResult' }),
-    checking: snapshot.matches({ playing: 'checking' }),
-  }), [snapshot]);
-
-  // Actions
-  const actions = useMemo(() => ({
-    start: (settings: QuizSettings) => {
-      send({
-        type: 'START',
-        settings: {
-          ...settings,
-          // In timed mode, don't limit words
-          wordLimit: settings.timeLimit > 0 ? 9999 : settings.wordLimit,
-        },
-      });
-    },
+  const actions = {
+    start: (settings: Partial<QuizContext>) => 
+      send({ type: 'START', settings }),
     
-    startWithReinforce: (settings: QuizSettings) => {
-      send({
-        type: 'START_REINFORCE',
-        settings: {
-          ...settings,
-          timeLimit: 0, // Reinforce mode doesn't support timer
-        },
-      });
-    },
+    startWithReinforce: (settings: Partial<QuizContext>) => 
+      send({ type: 'START_REINFORCE', settings }),
     
-    submit: () => send({ type: 'SUBMIT' }),
-    nextWord: () => send({ type: 'NEXT_WORD' }),
-    updateInput: (value: string) => send({ type: 'INPUT_CHANGE', value }),
-    toggleMode: () => send({ type: 'TOGGLE_MODE' }),
-    reset: () => send({ type: 'RESET' }),
+    wordLoaded: (word: WordChallenge) => 
+      send({ type: 'WORD_LOADED', word }),
     
-    // Events from external sources (GraphQL, timer)
-    wordLoaded: (word: QuizContext['currentWord']) => {
-      if (word) {
-        send({ type: 'WORD_LOADED', word });
-      }
-    },
-    noMoreWords: () => send({ type: 'NO_MORE_WORDS' }),
-    wordError: (error: string) => send({ type: 'WORD_LOAD_ERROR', error }),
-    resultReceived: (result: NonNullable<QuizContext['result']>) => {
-      send({ type: 'RESULT_RECEIVED', result });
-    },
-    timerTick: () => send({ type: 'TIMER_TICK' }),
-    timerEnd: () => send({ type: 'TIMER_END' }),
-  }), [send]);
+    noMoreWords: () => 
+      send({ type: 'NO_MORE_WORDS' }),
+    
+    wordError: (error: string) => 
+      send({ type: 'WORD_LOAD_ERROR', error }),
+    
+    updateInput: (value: string) => 
+      send({ type: 'INPUT_CHANGE', value }),
+    
+    submit: () => 
+      send({ type: 'SUBMIT' }),
+    
+    resultReceived: (result: TranslationResult) => 
+      send({ type: 'RESULT_RECEIVED', result }),
+    
+    nextWord: () => 
+      send({ type: 'NEXT_WORD' }),
+    
+    timerTick: () => 
+      send({ type: 'TIMER_TICK' }),
+    
+    timerEnd: () => 
+      send({ type: 'TIMER_END' }),
+    
+    reset: () => 
+      send({ type: 'RESET' }),
+    
+    toggleMode: () => 
+      send({ type: 'TOGGLE_MODE' }),
+  };
 
   return {
-    context: snapshot.context,
-    state,
+    context: state.context,
+    state: state.value as QuizState,
     is,
     actions,
   };
