@@ -63,7 +63,7 @@ const initialContext: QuizContext = {
   category: null,
   difficulty: null,
   wordLimit: 50,
-  timeLimit: 300,
+  timeLimit: 0,
   reinforceMode: false,
   currentWord: null,
   userInput: '',
@@ -96,8 +96,10 @@ export const quizMachine = setup({
     applySettings: assign(({ event }) => {
       if (event.type !== 'START' && event.type !== 'START_REINFORCE') return {};
       const settings = event.settings;
+      const timeLimit = settings.timeLimit ?? 0;
       return {
         ...settings,
+        timeLimit,
         reinforceMode: event.type === 'START_REINFORCE',
         stats: { correct: 0, incorrect: 0 },
         wordsCompleted: 0,
@@ -109,7 +111,7 @@ export const quizMachine = setup({
         poolCollectionComplete: false,
         error: null,
         noMoreWords: false,
-        timeRemaining: settings.timeLimit ?? initialContext.timeLimit,
+        timeRemaining: timeLimit,
       };
     }),
     
