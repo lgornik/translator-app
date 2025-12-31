@@ -1,7 +1,7 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { MockedProvider, MockedResponse } from '@apollo/client/testing';
 import { useQuiz } from './useQuiz';
-import { GET_RANDOM_WORD, CHECK_TRANSLATION } from '@/shared/api/operations';
+import { GET_RANDOM_WORD } from '@/shared/api/operations';
 import type { ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
 
