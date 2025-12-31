@@ -114,6 +114,61 @@ class QuizPage {
       incorrect: parseInt(incorrect || '0'),
     };
   }
+
+  // Pool collection helpers
+  async expectCollectingPoolScreen() {
+    await expect(this.page.getByText('Przygotowywanie słów do nauki')).toBeVisible();
+  }
+
+  async cancelPoolCollection() {
+    await this.page.getByRole('button', { name: 'Anuluj' }).click();
+  }
+
+  async getPoolProgress() {
+    const progressText = await this.page.getByText(/\d+ \/ \d+ słów/).textContent();
+    const match = progressText?.match(/(\d+) \/ (\d+)/);
+    return {
+      collected: parseInt(match?.[1] || '0'),
+      target: parseInt(match?.[2] || '0'),
+    };
+  }
+
+  // Reinforce mode helpers
+  async getMasteredCount() {
+    const counterText = await this.page.locator('.quiz-progress__counter').textContent();
+    const match = counterText?.match(/(\d+) \/ (\d+)/);
+    return {
+      mastered: parseInt(match?.[1] || '0'),
+      total: parseInt(match?.[2] || '0'),
+    };
+  }
+
+  async getRepeatCount() {
+    const repeatText = await this.page.locator('.quiz-progress__repeat').textContent();
+    const match = repeatText?.match(/(\d+)/);
+    return parseInt(match?.[1] || '0');
+  }
+
+  async isReinforceMode() {
+    return await this.page.getByText(/✓/).isVisible().catch(() => false);
+  }
+
+  async hasRepeatIndicator() {
+    return await this.page.getByText(/🔄.*do powtórki/).isVisible().catch(() => false);
+  }
+
+  // Assertions
+  async expectReinforceProgress(mastered: number, total: number) {
+    await expect(this.page.getByText(new RegExp(`✓.*${mastered}.*\\/.*${total}`))).toBeVisible();
+  }
+
+  async expectRepeatIndicator(count?: number) {
+    if (count !== undefined) {
+      await expect(this.page.getByText(new RegExp(`🔄.*${count}.*do powtórki`))).toBeVisible();
+    } else {
+      await expect(this.page.getByText(/🔄.*do powtórki/)).toBeVisible();
+    }
+  }
 }
 
 // Export extended test
