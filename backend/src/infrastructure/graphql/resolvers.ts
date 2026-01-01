@@ -64,6 +64,32 @@ const queryResolvers = {
     };
   },
 
+  // NOWY RESOLVER - pobieranie wielu słów naraz
+  getRandomWords: async (
+    _: unknown,
+    args: { mode: string; limit: number; category?: string; difficulty?: number },
+    ctx: GraphQLContext
+  ) => {
+    const result = await ctx.getRandomWords.execute({
+      mode: args.mode,
+      limit: args.limit,
+      category: args.category ?? null,
+      difficulty: args.difficulty ?? null,
+      sessionId: ctx.sessionId,
+    });
+
+    const output = handleResult(result);
+    
+    // Remove correctTranslation from each word for security
+    return output.words.map(word => ({
+      id: word.id,
+      wordToTranslate: word.wordToTranslate,
+      mode: word.mode,
+      category: word.category,
+      difficulty: word.difficulty,
+    }));
+  },
+
   getAllWords: async (_: unknown, __: unknown, ctx: GraphQLContext) => {
     const result = await ctx.getAllWords.execute();
     return handleResult(result).words;

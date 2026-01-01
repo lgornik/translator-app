@@ -4,7 +4,7 @@ import type { WordChallenge, TranslationResult } from '@/shared/types';
 
 export type QuizState = 
   | 'setup'
-  | 'collectingPool'
+  | 'loadingPool'  // NOWY - zastępuje collectingPool
   | 'loading'
   | 'playing'
   | 'playing.waitingForInput'
@@ -20,7 +20,7 @@ interface UseQuizMachineReturn {
   state: QuizState;
   is: {
     setup: boolean;
-    collectingPool: boolean;
+    loadingPool: boolean;  // NOWY
     loading: boolean;
     playing: boolean;
     waitingForInput: boolean;
@@ -33,6 +33,7 @@ interface UseQuizMachineReturn {
     start: (settings: Partial<QuizContext>) => void;
     startWithReinforce: (settings: Partial<QuizContext>) => void;
     wordLoaded: (word: WordChallenge) => void;
+    poolLoaded: (words: WordChallenge[]) => void;  // NOWY
     noMoreWords: () => void;
     wordError: (error: string) => void;
     updateInput: (value: string) => void;
@@ -55,7 +56,7 @@ export function useQuizMachine(): UseQuizMachineReturn {
 
   const is = {
     setup: state.matches('setup'),
-    collectingPool: state.matches('collectingPool'),
+    loadingPool: state.matches('loadingPool'),
     loading: state.matches('loading'),
     playing: state.matches('playing'),
     waitingForInput: state.matches({ playing: 'waitingForInput' }),
@@ -74,6 +75,10 @@ export function useQuizMachine(): UseQuizMachineReturn {
     
     wordLoaded: (word: WordChallenge) => 
       send({ type: 'WORD_LOADED', word }),
+    
+    // NOWY - batch loading
+    poolLoaded: (words: WordChallenge[]) => 
+      send({ type: 'POOL_LOADED', words }),
     
     noMoreWords: () => 
       send({ type: 'NO_MORE_WORDS' }),

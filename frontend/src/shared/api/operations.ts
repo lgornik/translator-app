@@ -33,6 +33,15 @@ export const GET_RANDOM_WORD = gql`
   }
 `;
 
+export const GET_RANDOM_WORDS = gql`
+  ${WORD_CHALLENGE_FRAGMENT}
+  query GetRandomWords($mode: TranslationMode!, $limit: Int!, $category: String, $difficulty: Int) {
+    getRandomWords(mode: $mode, limit: $limit, category: $category, difficulty: $difficulty) {
+      ...WordChallengeFields
+    }
+  }
+`;
+
 export const GET_CATEGORIES = gql`
   query GetCategories {
     getCategories
@@ -96,6 +105,16 @@ export interface GetRandomWordData {
   };
 }
 
+export interface GetRandomWordsData {
+  getRandomWords: Array<{
+    id: string;
+    wordToTranslate: string;
+    mode: 'EN_TO_PL' | 'PL_TO_EN';
+    category: string;
+    difficulty: number;
+  }>;
+}
+
 export interface GetCategoriesData {
   getCategories: string[];
 }
@@ -127,6 +146,13 @@ export interface ResetSessionData {
  */
 export interface GetRandomWordVariables {
   mode: 'EN_TO_PL' | 'PL_TO_EN';
+  category?: string | null;
+  difficulty?: number | null;
+}
+
+export interface GetRandomWordsVariables {
+  mode: 'EN_TO_PL' | 'PL_TO_EN';
+  limit: number;
   category?: string | null;
   difficulty?: number | null;
 }

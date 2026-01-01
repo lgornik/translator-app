@@ -1,4 +1,5 @@
 import { GetRandomWordUseCase } from '../../application/use-cases/GetRandomWordUseCase.js';
+import { GetRandomWordsUseCase } from '../../application/use-cases/GetRandomWordsUseCase.js';
 import { CheckTranslationUseCase } from '../../application/use-cases/CheckTranslationUseCase.js';
 import { GetWordCountUseCase } from '../../application/use-cases/GetWordCountUseCase.js';
 import { GetCategoriesUseCase } from '../../application/use-cases/GetCategoriesUseCase.js';
@@ -22,6 +23,7 @@ export interface GraphQLContext {
 
   // Use Cases
   getRandomWord: GetRandomWordUseCase;
+  getRandomWords: GetRandomWordsUseCase;
   checkTranslation: CheckTranslationUseCase;
   getWordCount: GetWordCountUseCase;
   getCategories: GetCategoriesUseCase;
@@ -72,6 +74,12 @@ export function createContext(
     sessionId,
 
     getRandomWord: new GetRandomWordUseCase(
+      wordRepository,
+      sessionRepository,
+      randomPicker,
+      requestLogger
+    ),
+    getRandomWords: new GetRandomWordsUseCase(
       wordRepository,
       sessionRepository,
       randomPicker,

@@ -109,6 +109,17 @@ export const typeDefs = `#graphql
     ): WordChallenge!
 
     """
+    Get multiple random words for translation (for quiz pool)
+    Returns up to 'limit' words, may return fewer if not enough available
+    """
+    getRandomWords(
+      mode: TranslationMode!
+      limit: Int!
+      category: String
+      difficulty: Int
+    ): [WordChallenge!]!
+
+    """
     Get all words in the dictionary
     """
     getAllWords: [DictionaryWord!]!

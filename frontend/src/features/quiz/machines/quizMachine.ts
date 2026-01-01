@@ -30,7 +30,6 @@ export interface QuizContext {
   wordsToRepeat: WordChallenge[];   // Słowa do powtórki (błędne odpowiedzi)
   masteredCount: number;
   shuffledQueue: WordChallenge[];   // Aktualna kolejka do przejścia
-  poolCollectionComplete: boolean;  // Czy zakończono zbieranie puli
   
   // Error state
   error: string | null;
@@ -44,6 +43,7 @@ export type QuizEvent =
   | { type: 'START'; settings: Partial<QuizContext> }
   | { type: 'START_REINFORCE'; settings: Partial<QuizContext> }
   | { type: 'WORD_LOADED'; word: WordChallenge }
+  | { type: 'POOL_LOADED'; words: WordChallenge[] }  // NOWY - batch loading
   | { type: 'WORD_LOAD_ERROR'; error: string }
   | { type: 'NO_MORE_WORDS' }
   | { type: 'INPUT_CHANGE'; value: string }
@@ -76,7 +76,6 @@ const initialContext: QuizContext = {
   wordsToRepeat: [],
   masteredCount: 0,
   shuffledQueue: [],
-  poolCollectionComplete: false,
   error: null,
   noMoreWords: false,
 };
@@ -108,7 +107,6 @@ export const quizMachine = setup({
         wordsToRepeat: [],
         masteredCount: 0,
         shuffledQueue: [],
-        poolCollectionComplete: false,
         error: null,
         noMoreWords: false,
         timeRemaining: timeLimit,
@@ -128,42 +126,25 @@ export const quizMachine = setup({
       };
     }),
     
-    // Dodanie słowa do puli w trybie zbierania
-    addWordToPool: assign(({ context, event }) => {
-      if (event.type !== 'WORD_LOADED') return {};
-      const newUsedIds = new Set(context.usedWordIds);
-      newUsedIds.add(event.word.id);
-      return {
-        wordPool: [...context.wordPool, event.word],
-        usedWordIds: newUsedIds,
-      };
-    }),
-    
-    // Rozpoczęcie quizu z zebraną pulą
-    startWithCollectedPool: assign(({ context }) => {
-      const shuffled = shuffleArray([...context.wordPool]);
+    // NOWY - załadowanie całej puli naraz
+    setPoolAndStart: assign(({ event }) => {
+      if (event.type !== 'POOL_LOADED') return {};
+      
+      const words = event.words;
+      if (words.length === 0) {
+        return { noMoreWords: true };
+      }
+      
+      const shuffled = shuffleArray([...words]);
       const [first, ...rest] = shuffled;
+      
       return {
-        poolCollectionComplete: true,
+        wordPool: words,
         shuffledQueue: rest,
         currentWord: first ?? null,
         result: null,
         userInput: '',
-        noMoreWords: shuffled.length === 0,
-      };
-    }),
-    
-    // Oznaczenie zakończenia zbierania (gdy brak więcej słów)
-    markPoolCollectionComplete: assign(({ context }) => {
-      const shuffled = shuffleArray([...context.wordPool]);
-      const [first, ...rest] = shuffled;
-      return {
-        poolCollectionComplete: true,
-        shuffledQueue: rest,
-        currentWord: first ?? null,
-        result: null,
-        userInput: '',
-        noMoreWords: shuffled.length === 0,
+        noMoreWords: words.length === 0,
       };
     }),
     
@@ -315,16 +296,16 @@ export const quizMachine = setup({
     // Czy to tryb czasowy i skończyły się słowa (trzeba zresetować)
     isTimedModeAndNoWords: ({ context }) => context.timeLimit > 0,
     
-    // Czy po dodaniu bieżącego słowa pula będzie kompletna
-    // (sprawdzane PRZED dodaniem słowa, więc używamy >= wordLimit - 1)
-    isPoolComplete: ({ context }) => 
-      context.wordPool.length >= context.wordLimit - 1,
-    
-    // Czy pula jest pusta (brak słów dla filtrów)
-    isPoolEmpty: ({ context }) => context.wordPool.length === 0,
-    
-    // Czy mamy jakiekolwiek słowa w puli
+    // Czy pula ma słowa
     hasWordsInPool: ({ context }) => context.wordPool.length > 0,
+    
+    // Czy pula jest pusta (event POOL_LOADED z pustą tablicą)
+    isPoolEmpty: ({ context, event }) => {
+      if (event.type === 'POOL_LOADED') {
+        return event.words.length === 0;
+      }
+      return context.wordPool.length === 0;
+    },
   },
 }).createMachine({
   id: 'quiz',
@@ -338,7 +319,7 @@ export const quizMachine = setup({
           actions: ['applySettings'],
         },
         START_REINFORCE: {
-          target: 'collectingPool',
+          target: 'loadingPool',
           actions: ['applySettings'],
         },
         TOGGLE_MODE: {
@@ -347,33 +328,20 @@ export const quizMachine = setup({
       },
     },
     
-    // Nowy stan: zbieranie puli słów dla trybu reinforce
-    collectingPool: {
+    // NOWY UPROSZCZONY STAN - ładowanie całej puli w jednym urzędzie
+    loadingPool: {
       on: {
-        WORD_LOADED: [
+        POOL_LOADED: [
           {
-            // Pula kompletna - rozpocznij quiz
-            target: 'playing.waitingForInput',
-            guard: 'isPoolComplete',
-            actions: ['addWordToPool', 'startWithCollectedPool'],
-          },
-          {
-            // Kontynuuj zbieranie
-            target: 'collectingPool',
-            actions: ['addWordToPool'],
-          },
-        ],
-        NO_MORE_WORDS: [
-          {
-            // Mamy jakieś słowa - rozpocznij z tym co mamy
-            target: 'playing.waitingForInput',
-            guard: 'hasWordsInPool',
-            actions: ['markPoolCollectionComplete'],
-          },
-          {
-            // Brak słów w ogóle
+            // Pusta pula - zakończ
             target: 'finished',
+            guard: 'isPoolEmpty',
             actions: ['setNoMoreWords'],
+          },
+          {
+            // Mamy słowa - rozpocznij quiz
+            target: 'playing.waitingForInput',
+            actions: ['setPoolAndStart'],
           },
         ],
         WORD_LOAD_ERROR: {

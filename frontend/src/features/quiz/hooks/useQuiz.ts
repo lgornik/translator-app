@@ -32,11 +32,11 @@ export interface UseQuizReturn {
   isSetup: boolean;
   isPlaying: boolean;
   isLoading: boolean;
+  isLoadingPool: boolean;
   isFinished: boolean;
   isError: boolean;
   isWaitingForInput: boolean;
   isShowingResult: boolean;
-  isCollectingPool: boolean;
   
   // Timer
   timerDisplay: string;
@@ -65,31 +65,6 @@ export interface UseQuizReturn {
 
 /**
  * Main quiz hook - orchestrates all quiz functionality
- * 
- * This hook composes smaller, focused hooks:
- * - useQuizMachine: State management
- * - useQuizTimer: Timer logic
- * - useQuizGraphQL: API operations
- * - useQuizCategories: Categories & word count
- * 
- * @example
- * function QuizPage() {
- *   const quiz = useQuiz();
- *   
- *   if (quiz.isSetup) {
- *     return <QuizSetup {...quiz} />;
- *   }
- *   
- *   if (quiz.isCollectingPool) {
- *     return <QuizCollectingPool {...quiz} />;
- *   }
- *   
- *   if (quiz.isPlaying) {
- *     return <QuizPlaying {...quiz} />;
- *   }
- *   
- *   return <QuizFinished {...quiz} />;
- * }
  */
 export function useQuiz(): UseQuizReturn {
   // Core state management
@@ -108,11 +83,14 @@ export function useQuiz(): UseQuizReturn {
   // GraphQL operations with machine integration
   const { 
     fetchWord, 
+    fetchWords,  // NOWY
     checkAnswer, 
-    isLoadingWord, 
+    isLoadingWord,
+    isLoadingWords,  // NOWY
     isCheckingAnswer 
   } = useQuizGraphQL({
     onWordLoaded: (word: WordChallenge) => actions.wordLoaded(word),
+    onPoolLoaded: (words: WordChallenge[]) => actions.poolLoaded(words),  // NOWY
     onNoMoreWords: () => actions.noMoreWords(),
     onWordError: (error: string) => actions.wordError(error),
     onResultReceived: (result: TranslationResult) => actions.resultReceived(result),
@@ -127,7 +105,7 @@ export function useQuiz(): UseQuizReturn {
     onEnd: actions.timerEnd,
   });
 
-  // Fetch word when entering loading state (normalny tryb i tryb czasowy)
+  // Fetch single word when entering loading state (normalny tryb i tryb czasowy)
   useEffect(() => {
     if (is.loading) {
       fetchWord({
@@ -138,24 +116,17 @@ export function useQuiz(): UseQuizReturn {
     }
   }, [is.loading, context.mode, context.category, context.difficulty, fetchWord]);
 
-  // Fetch words when collecting pool (tryb utrwalania)
+  // NOWY - Fetch całej puli naraz (tryb utrwalania)
   useEffect(() => {
-    if (is.collectingPool && !isLoadingWord) {
-      fetchWord({
+    if (is.loadingPool) {
+      fetchWords({
         mode: context.mode,
+        limit: context.wordLimit,
         category: context.category,
         difficulty: context.difficulty,
       });
     }
-  }, [
-    is.collectingPool, 
-    isLoadingWord, 
-    context.wordPool.length,
-    context.mode, 
-    context.category, 
-    context.difficulty, 
-    fetchWord
-  ]);
+  }, [is.loadingPool, context.mode, context.wordLimit, context.category, context.difficulty, fetchWords]);
 
   // Public actions with default values
   const startQuiz = useCallback((settings: QuizStartSettings) => {
@@ -206,11 +177,11 @@ export function useQuiz(): UseQuizReturn {
     isSetup: is.setup,
     isPlaying: is.playing,
     isLoading: is.loading,
+    isLoadingPool: is.loadingPool,
     isFinished: is.finished,
     isError: is.error,
     isWaitingForInput: is.waitingForInput,
     isShowingResult: is.showingResult,
-    isCollectingPool: is.collectingPool,
     
     // Timer
     timerDisplay,
@@ -237,7 +208,7 @@ export function useQuiz(): UseQuizReturn {
     },
     
     // Loading states
-    loadingWord: isLoadingWord,
+    loadingWord: isLoadingWord || isLoadingWords,
     checkingAnswer: is.checking || isCheckingAnswer,
   };
 }

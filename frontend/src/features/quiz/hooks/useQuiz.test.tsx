@@ -1,11 +1,11 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { MockedProvider, MockedResponse } from '@apollo/client/testing';
 import { useQuiz } from './useQuiz';
-import { GET_RANDOM_WORD } from '@/shared/api/operations';
+import { GET_RANDOM_WORD, GET_RANDOM_WORDS } from '@/shared/api/operations';
 import type { ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
 
-// Helper do tworzenia mocka słowa
+// Helper do tworzenia mocka pojedynczego słowa (tryb standardowy/czasowy)
 const createWordMock = (id: string): MockedResponse => ({
   request: {
     query: GET_RANDOM_WORD,
@@ -16,7 +16,7 @@ const createWordMock = (id: string): MockedResponse => ({
       getRandomWord: {
         id,
         wordToTranslate: `word-${id}`,
-        correctTranslation: `translation-${id}`,
+        mode: 'EN_TO_PL',
         category: 'test',
         difficulty: 1,
       },
@@ -24,7 +24,7 @@ const createWordMock = (id: string): MockedResponse => ({
   },
 });
 
-// Helper do mocka "brak więcej słów"
+// Helper do mocka "brak więcej słów" (tryb standardowy)
 const createNoMoreWordsMock = (): MockedResponse => ({
   request: {
     query: GET_RANDOM_WORD,
@@ -32,6 +32,36 @@ const createNoMoreWordsMock = (): MockedResponse => ({
   },
   result: {
     data: { getRandomWord: null },
+  },
+});
+
+// Helper do tworzenia mocka wielu słów (tryb utrwalania - batch)
+const createWordsMock = (count: number, limit: number): MockedResponse => ({
+  request: {
+    query: GET_RANDOM_WORDS,
+    variables: { mode: 'EN_TO_PL', limit, category: null, difficulty: null },
+  },
+  result: {
+    data: {
+      getRandomWords: Array.from({ length: count }, (_, i) => ({
+        id: String(i + 1),
+        wordToTranslate: `word-${i + 1}`,
+        mode: 'EN_TO_PL',
+        category: 'test',
+        difficulty: 1,
+      })),
+    },
+  },
+});
+
+// Helper do mocka pustej puli (tryb utrwalania)
+const createEmptyPoolMock = (limit: number): MockedResponse => ({
+  request: {
+    query: GET_RANDOM_WORDS,
+    variables: { mode: 'EN_TO_PL', limit, category: null, difficulty: null },
+  },
+  result: {
+    data: { getRandomWords: [] },
   },
 });
 
@@ -46,13 +76,10 @@ const createWrapper = (mocks: MockedResponse[]) => {
   };
 };
 
-describe('useQuiz - Reinforce Mode', () => {
-  describe('Pool Collection (Zbieranie puli)', () => {
-    it('should set isCollectingPool to true after startQuizWithReinforce', async () => {
-      const mocks = [
-        createWordMock('1'),
-        createWordMock('2'),
-      ];
+describe('useQuiz - Reinforce Mode (Batch Loading)', () => {
+  describe('Pool Loading', () => {
+    it('should set isLoadingPool to true after startQuizWithReinforce', async () => {
+      const mocks = [createWordsMock(2, 2)];
 
       const { result } = renderHook(() => useQuiz(), {
         wrapper: createWrapper(mocks),
@@ -62,37 +89,32 @@ describe('useQuiz - Reinforce Mode', () => {
         result.current.startQuizWithReinforce({ wordLimit: 2 });
       });
 
-      expect(result.current.isCollectingPool).toBe(true);
+      expect(result.current.isLoadingPool).toBe(true);
       expect(result.current.context.reinforceMode).toBe(true);
     });
 
-    it('should collect words and transition to playing', async () => {
-      const mocks = [
-        createWordMock('1'),
-        createWordMock('2'),
-      ];
+    it('should load all words in single request and transition to playing', async () => {
+      const mocks = [createWordsMock(3, 3)];
 
       const { result } = renderHook(() => useQuiz(), {
         wrapper: createWrapper(mocks),
       });
 
       act(() => {
-        result.current.startQuizWithReinforce({ wordLimit: 2 });
+        result.current.startQuizWithReinforce({ wordLimit: 3 });
       });
 
       await waitFor(() => {
         expect(result.current.isPlaying).toBe(true);
       }, { timeout: 5000 });
 
-      expect(result.current.context.wordPool).toHaveLength(2);
-      expect(result.current.isCollectingPool).toBe(false);
+      expect(result.current.context.wordPool).toHaveLength(3);
+      expect(result.current.isLoadingPool).toBe(false);
     });
 
-    it('should start with fewer words if not enough available', async () => {
-      const mocks = [
-        createWordMock('1'),
-        createNoMoreWordsMock(),
-      ];
+    it('should handle fewer words than requested', async () => {
+      // Request 5 words but only 2 available
+      const mocks = [createWordsMock(2, 5)];
 
       const { result } = renderHook(() => useQuiz(), {
         wrapper: createWrapper(mocks),
@@ -106,11 +128,11 @@ describe('useQuiz - Reinforce Mode', () => {
         expect(result.current.isPlaying).toBe(true);
       }, { timeout: 5000 });
 
-      expect(result.current.context.wordPool).toHaveLength(1);
+      expect(result.current.context.wordPool).toHaveLength(2);
     });
 
     it('should go to finished if no words available', async () => {
-      const mocks = [createNoMoreWordsMock()];
+      const mocks = [createEmptyPoolMock(5)];
 
       const { result } = renderHook(() => useQuiz(), {
         wrapper: createWrapper(mocks),
@@ -126,10 +148,28 @@ describe('useQuiz - Reinforce Mode', () => {
 
       expect(result.current.context.noMoreWords).toBe(true);
     });
+
+    it('should set first word as currentWord after pool loaded', async () => {
+      const mocks = [createWordsMock(3, 3)];
+
+      const { result } = renderHook(() => useQuiz(), {
+        wrapper: createWrapper(mocks),
+      });
+
+      act(() => {
+        result.current.startQuizWithReinforce({ wordLimit: 3 });
+      });
+
+      await waitFor(() => {
+        expect(result.current.isPlaying).toBe(true);
+      }, { timeout: 5000 });
+
+      expect(result.current.context.currentWord).not.toBeNull();
+    });
   });
 
   describe('Standard Mode vs Reinforce Mode', () => {
-    it('should NOT go to collectingPool in standard mode', async () => {
+    it('should NOT go to loadingPool in standard mode', async () => {
       const mocks = [createWordMock('1')];
 
       const { result } = renderHook(() => useQuiz(), {
@@ -140,7 +180,7 @@ describe('useQuiz - Reinforce Mode', () => {
         result.current.startQuiz({ wordLimit: 3 });
       });
 
-      expect(result.current.isCollectingPool).toBe(false);
+      expect(result.current.isLoadingPool).toBe(false);
       expect(result.current.isLoading).toBe(true);
     });
 
@@ -157,11 +197,31 @@ describe('useQuiz - Reinforce Mode', () => {
 
       expect(result.current.context.reinforceMode).toBe(false);
     });
+
+    it('should use GET_RANDOM_WORD in standard mode', async () => {
+      const mocks = [createWordMock('1')];
+
+      const { result } = renderHook(() => useQuiz(), {
+        wrapper: createWrapper(mocks),
+      });
+
+      act(() => {
+        result.current.startQuiz({ wordLimit: 3 });
+      });
+
+      await waitFor(() => {
+        expect(result.current.isPlaying).toBe(true);
+      }, { timeout: 5000 });
+
+      // Should have loaded single word, not pool
+      expect(result.current.context.wordPool).toHaveLength(0);
+      expect(result.current.context.currentWord).not.toBeNull();
+    });
   });
 
   describe('Reinforce Mode Settings', () => {
     it('should set timeLimit to 0 in reinforce mode', async () => {
-      const mocks = [createWordMock('1')];
+      const mocks = [createWordsMock(1, 5)];
 
       const { result } = renderHook(() => useQuiz(), {
         wrapper: createWrapper(mocks),
@@ -175,11 +235,7 @@ describe('useQuiz - Reinforce Mode', () => {
     });
 
     it('should preserve wordLimit setting', async () => {
-      const mocks = [
-        createWordMock('1'),
-        createWordMock('2'),
-        createWordMock('3'),
-      ];
+      const mocks = [createWordsMock(3, 3)];
 
       const { result } = renderHook(() => useQuiz(), {
         wrapper: createWrapper(mocks),
