@@ -24,17 +24,6 @@ const createWordMock = (id: string): MockedResponse => ({
   },
 });
 
-// Helper do mocka "brak więcej słów" (tryb standardowy)
-const createNoMoreWordsMock = (): MockedResponse => ({
-  request: {
-    query: GET_RANDOM_WORD,
-    variables: { mode: 'EN_TO_PL', category: null, difficulty: null },
-  },
-  result: {
-    data: { getRandomWord: null },
-  },
-});
-
 // Helper do tworzenia mocka wielu słów (tryb utrwalania - batch)
 const createWordsMock = (count: number, limit: number): MockedResponse => ({
   request: {

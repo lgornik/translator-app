@@ -1,7 +1,6 @@
 import { Result } from '../../shared/core/Result.js';
 import {
-  DomainError,
-  NoWordsAvailableError,
+  DomainError
 } from '../../shared/errors/DomainErrors.js';
 import { IWordRepository, WordFilters } from '../../domain/repositories/IWordRepository.js';
 import { ISessionRepository } from '../../domain/repositories/ISessionRepository.js';
