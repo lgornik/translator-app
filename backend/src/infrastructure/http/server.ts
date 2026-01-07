@@ -16,11 +16,18 @@ import {
   notFoundHandler,
   createErrorHandler,
   createHealthHandler,
+  createLivenessHandler,
+  createReadinessHandler,
+  createCacheStatsHandler,
+  createCacheInvalidateHandler,
+  CacheStats,
+  HealthCheckDependencies,
 } from './middleware.js';
 import { createRateLimiter, createGraphQLRateLimiter, RateLimitPresets } from './rateLimiter.js';
 import { ILogger } from '../../application/interfaces/ILogger.js';
 import { IWordRepository } from '../../domain/repositories/IWordRepository.js';
 import { ISessionRepository } from '../../domain/repositories/ISessionRepository.js';
+import { DatabaseHealthCheck } from '../persistence/repositoryFactory.js';
 
 /**
  * Server dependencies
@@ -29,6 +36,14 @@ export interface ServerDependencies {
   wordRepository: IWordRepository;
   sessionRepository: ISessionRepository;
   logger: ILogger;
+  /** Check database connectivity */
+  checkDatabase: () => Promise<DatabaseHealthCheck>;
+  /** Get session count */
+  getSessionCount: () => Promise<number>;
+  /** Get cache statistics (optional) */
+  getCacheStats?: (() => CacheStats) | undefined;
+  /** Invalidate caches (optional) */
+  invalidateCaches?: (() => void) | undefined;
 }
 
 /**
@@ -41,12 +56,20 @@ export class HttpServer {
   private readonly logger: ILogger;
   private readonly startTime: number;
   private readonly contextDeps: ContextDependencies;
+  private readonly checkDatabase: () => Promise<DatabaseHealthCheck>;
+  private readonly getSessionCount: () => Promise<number>;
+  private readonly getCacheStats?: (() => CacheStats) | undefined;
+  private readonly invalidateCaches?: (() => void) | undefined;
 
   private isShuttingDown = false;
 
   constructor(deps: ServerDependencies) {
     this.startTime = Date.now();
     this.logger = deps.logger;
+    this.checkDatabase = deps.checkDatabase;
+    this.getSessionCount = deps.getSessionCount;
+    this.getCacheStats = deps.getCacheStats;
+    this.invalidateCaches = deps.invalidateCaches;
 
     this.contextDeps = {
       wordRepository: deps.wordRepository,
@@ -132,10 +155,10 @@ export class HttpServer {
   }
 
   private setupMiddleware(): void {
-    // Request ID
+    // Request ID (correlation ID)
     this.app.use(requestIdMiddleware);
 
-    // Request logging
+    // Request logging with correlation ID
     this.app.use(createRequestLogger(this.logger));
 
     // Global rate limiter (for all routes)
@@ -146,6 +169,7 @@ export class HttpServer {
       cors({
         origin: config.server.corsOrigin,
         credentials: true,
+        exposedHeaders: ['x-correlation-id', 'x-request-id'],
       })
     );
 
@@ -154,13 +178,37 @@ export class HttpServer {
   }
 
   private setupRoutes(): void {
-    // Health check
+    // Liveness probe (for Kubernetes) - fast, simple
+    this.app.get('/livez', createLivenessHandler());
+
+    // Readiness probe (for Kubernetes) - checks DB
+    this.app.get('/readyz', createReadinessHandler(this.checkDatabase));
+
+    // Full health check with details
+    const healthDeps: HealthCheckDependencies = {
+      startTime: this.startTime,
+      version: config.api.version,
+      wordRepository: this.contextDeps.wordRepository,
+      checkDatabase: this.checkDatabase,
+      getSessionCount: this.getSessionCount,
+    };
+    
+    if (this.getCacheStats) {
+      healthDeps.getCacheStats = this.getCacheStats;
+    }
+
+    this.app.get('/health', createHealthHandler(healthDeps));
+
+    // Cache statistics endpoint
     this.app.get(
-      '/health',
-      createHealthHandler(
-        this.startTime,
-        this.contextDeps.wordRepository
-      )
+      '/cache/stats',
+      createCacheStatsHandler(this.getCacheStats)
+    );
+
+    // Cache invalidation endpoint (POST, requires admin key)
+    this.app.post(
+      '/cache/invalidate',
+      createCacheInvalidateHandler(this.invalidateCaches, this.logger)
     );
 
     // API info
@@ -171,6 +219,10 @@ export class HttpServer {
         endpoints: {
           graphql: config.graphql.path,
           health: '/health',
+          liveness: '/livez',
+          readiness: '/readyz',
+          cacheStats: '/cache/stats',
+          cacheInvalidate: '/cache/invalidate (POST)',
         },
       });
     });
@@ -181,10 +233,10 @@ export class HttpServer {
       createGraphQLRateLimiter({}, this.logger),
       expressMiddleware(this.apollo, {
         context: async ({ req }) => {
-          const requestId = req.headers['x-request-id'] as string;
+          const correlationId = req.headers['x-correlation-id'] as string;
           const sessionId = (req.headers['x-session-id'] as string) || 'default';
 
-          return createContext(this.contextDeps, requestId, sessionId);
+          return createContext(this.contextDeps, correlationId, sessionId);
         },
       })
     );
@@ -227,11 +279,13 @@ export class HttpServer {
     const logger = this.logger;
 
     return {
-      async requestDidStart() {
+      async requestDidStart({ contextValue }: { contextValue: GraphQLContext }) {
+        const correlationId = contextValue.requestId;
+        
         return {
           async didEncounterErrors({ errors }: { errors: readonly Error[] }) {
             for (const error of errors) {
-              logger.error('GraphQL error', error as Error);
+              logger.error('GraphQL error', error as Error, { correlationId });
             }
           },
         };
@@ -249,9 +303,12 @@ export class HttpServer {
     Port:      ${config.server.port}
   ----------------------------------------------------
     Endpoints:
-    • GraphQL:  http://localhost:${config.server.port}${config.graphql.path}
-    • Health:   http://localhost:${config.server.port}/health
-    • Info:     http://localhost:${config.server.port}/
+    • GraphQL:     http://localhost:${config.server.port}${config.graphql.path}
+    • Health:      http://localhost:${config.server.port}/health
+    • Liveness:    http://localhost:${config.server.port}/livez
+    • Readiness:   http://localhost:${config.server.port}/readyz
+    • Cache Stats: http://localhost:${config.server.port}/cache/stats
+    • Info:        http://localhost:${config.server.port}/
   ====================================================
     `);
   }

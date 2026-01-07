@@ -1,19 +1,23 @@
-import { ILogger, LogContext, LogLevel } from '../../application/interfaces/ILogger.js';
+import { ILogger, LogContext, LogLevel, LogEntry, LoggerConfig } from '../../application/interfaces/ILogger.js';
 
 /**
- * Console Logger Implementation
- * Structured JSON logging for production
- * In production, replace with Pino or Winston
+ * Structured Console Logger
+ * Production-ready JSON logging with correlation ID support
  */
 export class ConsoleLogger implements ILogger {
+  private readonly config: LoggerConfig;
   private readonly baseContext: LogContext;
-  private readonly level: LogLevel;
 
   constructor(
-    level: LogLevel = LogLevel.INFO,
+    config: Partial<LoggerConfig> & { level?: LogLevel } = {},
     baseContext: LogContext = {}
   ) {
-    this.level = level;
+    this.config = {
+      service: config.service ?? 'translator-api',
+      version: config.version ?? '1.0.0',
+      environment: config.environment ?? process.env.NODE_ENV ?? 'development',
+      level: config.level ?? LogLevel.INFO,
+    };
     this.baseContext = baseContext;
   }
 
@@ -37,39 +41,74 @@ export class ConsoleLogger implements ILogger {
 
   error(message: string, error?: Error, context?: LogContext): void {
     if (this.shouldLog(LogLevel.ERROR)) {
-      this.log(LogLevel.ERROR, message, {
-        ...context,
-        ...(error && {
-          error: {
-            name: error.name,
-            message: error.message,
-            stack: error.stack,
-          },
-        }),
-      });
+      this.log(LogLevel.ERROR, message, context, error);
     }
   }
 
   child(context: LogContext): ILogger {
-    return new ConsoleLogger(this.level, {
+    // Inherit correlationId if not provided
+    const mergedContext: LogContext = {
       ...this.baseContext,
       ...context,
-    });
+    };
+    
+    // If parent has correlationId and child doesn't, inherit it
+    if (this.baseContext.correlationId && !context.correlationId) {
+      mergedContext.correlationId = this.baseContext.correlationId;
+    }
+    
+    // requestId can serve as correlationId if not set
+    if (!mergedContext.correlationId && mergedContext.requestId) {
+      mergedContext.correlationId = mergedContext.requestId;
+    }
+
+    return new ConsoleLogger(this.config, mergedContext);
+  }
+
+  getCorrelationId(): string | undefined {
+    return this.baseContext.correlationId ?? this.baseContext.requestId;
   }
 
   private shouldLog(level: LogLevel): boolean {
     const levels = [LogLevel.DEBUG, LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR];
-    return levels.indexOf(level) >= levels.indexOf(this.level);
+    return levels.indexOf(level) >= levels.indexOf(this.config.level);
   }
 
-  private log(level: LogLevel, message: string, context?: LogContext): void {
-    const entry = {
+  private log(level: LogLevel, message: string, context?: LogContext, error?: Error): void {
+    const mergedContext = { ...this.baseContext, ...context };
+    
+    const entry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
       message,
-      ...this.baseContext,
-      ...context,
+      service: this.config.service,
+      version: this.config.version,
+      environment: this.config.environment,
     };
+
+    // Add correlation/request ID at top level for easy filtering
+    if (mergedContext.correlationId) {
+      entry.correlationId = mergedContext.correlationId;
+    }
+    if (mergedContext.requestId) {
+      entry.requestId = mergedContext.requestId;
+    }
+
+    // Add remaining context
+    const { correlationId, requestId, ...restContext } = mergedContext;
+    if (Object.keys(restContext).length > 0) {
+      entry.context = restContext;
+    }
+
+    // Add error details
+    if (error) {
+      entry.error = {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        code: (error as Error & { code?: string }).code,
+      };
+    }
 
     const output = JSON.stringify(entry);
 
@@ -88,56 +127,85 @@ export class ConsoleLogger implements ILogger {
 
 /**
  * Development Logger
- * Pretty-printed output for development
+ * Pretty-printed output with colors for development
  */
 export class DevLogger implements ILogger {
   private readonly baseContext: LogContext;
+
+  private static readonly COLORS = {
+    reset: '\x1b[0m',
+    dim: '\x1b[2m',
+    blue: '\x1b[34m',
+    green: '\x1b[32m',
+    yellow: '\x1b[33m',
+    red: '\x1b[31m',
+    cyan: '\x1b[36m',
+  };
 
   constructor(baseContext: LogContext = {}) {
     this.baseContext = baseContext;
   }
 
   debug(message: string, context?: LogContext): void {
-    console.debug(
-      `[DEBUG] ${message}`,
-      this.formatContext(context)
-    );
+    this.log('DEBUG', DevLogger.COLORS.dim, message, context);
   }
 
   info(message: string, context?: LogContext): void {
-    console.info(
-      `[INFO]  ${message}`,
-      this.formatContext(context)
-    );
+    this.log('INFO ', DevLogger.COLORS.green, message, context);
   }
 
   warn(message: string, context?: LogContext): void {
-    console.warn(
-      `[WARN]  ${message}`,
-      this.formatContext(context)
-    );
+    this.log('WARN ', DevLogger.COLORS.yellow, message, context);
   }
 
   error(message: string, error?: Error, context?: LogContext): void {
-    console.error(
-      `[ERROR] ${message}`,
-      this.formatContext(context)
-    );
+    this.log('ERROR', DevLogger.COLORS.red, message, context);
     if (error) {
       console.error(error);
     }
   }
 
   child(context: LogContext): ILogger {
-    return new DevLogger({ ...this.baseContext, ...context });
+    const mergedContext: LogContext = {
+      ...this.baseContext,
+      ...context,
+    };
+    
+    if (this.baseContext.correlationId && !context.correlationId) {
+      mergedContext.correlationId = this.baseContext.correlationId;
+    }
+    
+    if (!mergedContext.correlationId && mergedContext.requestId) {
+      mergedContext.correlationId = mergedContext.requestId;
+    }
+
+    return new DevLogger(mergedContext);
   }
 
-  private formatContext(context?: LogContext): string {
+  getCorrelationId(): string | undefined {
+    return this.baseContext.correlationId ?? this.baseContext.requestId;
+  }
+
+  private log(level: string, color: string, message: string, context?: LogContext): void {
+    const { reset, dim, cyan } = DevLogger.COLORS;
     const merged = { ...this.baseContext, ...context };
-    if (Object.keys(merged).length === 0) {
-      return '';
+    const time = new Date().toISOString().split('T')[1]?.slice(0, 12) ?? '';
+    
+    // Build prefix with correlation ID if present
+    const correlationId = merged.correlationId ?? merged.requestId;
+    const corrIdStr = correlationId 
+      ? `${cyan}[${correlationId.slice(0, 8)}]${reset} ` 
+      : '';
+
+    console.log(
+      `${dim}${time}${reset} ${color}[${level}]${reset} ${corrIdStr}${message}`
+    );
+
+    // Print context if present (excluding correlationId/requestId already shown)
+    const { correlationId: _, requestId: __, ...restContext } = merged;
+    if (Object.keys(restContext).length > 0) {
+      console.log(`${dim}         └─ ${JSON.stringify(restContext)}${reset}`);
     }
-    return JSON.stringify(merged, null, 2);
   }
 }
 
@@ -151,5 +219,8 @@ export class NullLogger implements ILogger {
   error(): void {}
   child(): ILogger {
     return this;
+  }
+  getCorrelationId(): string | undefined {
+    return undefined;
   }
 }

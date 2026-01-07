@@ -4,7 +4,7 @@
  */
 
 import { config } from './infrastructure/config/Config.js';
-import { HttpServer } from './infrastructure/http/server.js';
+import { HttpServer, ServerDependencies } from './infrastructure/http/server.js';
 import { createRepositories } from './infrastructure/persistence/repositoryFactory.js';
 import { ConsoleLogger, DevLogger } from './infrastructure/logging/Logger.js';
 import { LogLevel } from './application/interfaces/ILogger.js';
@@ -13,10 +13,15 @@ import { LogLevel } from './application/interfaces/ILogger.js';
  * Bootstrap the application
  */
 async function bootstrap(): Promise<void> {
-  // Create logger based on environment
+  // Create logger based on environment with service metadata
   const logger = config.isDevelopment
     ? new DevLogger()
-    : new ConsoleLogger(config.logging.level as LogLevel);
+    : new ConsoleLogger({
+        service: 'translator-api',
+        version: config.api.version,
+        environment: config.nodeEnv,
+        level: config.logging.level as LogLevel,
+      });
 
   logger.info('Starting application...', {
     environment: config.nodeEnv,
@@ -25,24 +30,65 @@ async function bootstrap(): Promise<void> {
   });
 
   try {
-    // Create repositories (PostgreSQL if DATABASE_URL is set, otherwise InMemory)
-    const { wordRepository, sessionRepository, cleanup } = createRepositories(
-      config.database.url
-    );
+    // Create repositories with caching enabled
+    const { 
+      wordRepository, 
+      sessionRepository, 
+      cleanup,
+      warmUp,
+      invalidateCaches,
+      getCacheStats,
+      checkDatabase,
+      getSessionCount,
+    } = createRepositories(config.database.url, {
+      logger,
+      enableCache: true,
+      cacheConfig: {
+        ttlMs: config.isDevelopment ? 60 * 1000 : 5 * 60 * 1000,
+        maxSize: 10000,
+        enableStats: true,
+      },
+    });
+
+    // Check database connectivity on startup
+    const dbHealth = await checkDatabase();
+    if (!dbHealth.ok) {
+      logger.error('Database connection failed', new Error(dbHealth.error ?? 'Unknown error'));
+      process.exit(1);
+    }
+    logger.info('Database connected', { latency: dbHealth.latency });
+
+    // Warm up cache on startup
+    if (warmUp) {
+      logger.info('Warming up cache...');
+      await warmUp();
+    }
 
     logger.info('Repositories initialized', {
       type: config.database.isConfigured ? 'PostgreSQL' : 'InMemory',
+      cacheEnabled: true,
       wordCount: await wordRepository.count(),
       categories: (await wordRepository.getCategories()).map((c) => c.name),
     });
 
-    // Create and start server
-    const server = new HttpServer({
+    // Create server dependencies
+    const serverDeps: ServerDependencies = {
       wordRepository,
       sessionRepository,
       logger,
-    });
+      checkDatabase,
+      getSessionCount,
+    };
 
+    if (getCacheStats) {
+      serverDeps.getCacheStats = getCacheStats;
+    }
+    if (invalidateCaches) {
+      serverDeps.invalidateCaches = invalidateCaches;
+    }
+
+    // Create and start server
+    const server = new HttpServer(serverDeps);
     await server.start();
 
     // Schedule session cleanup (every hour)
@@ -57,6 +103,11 @@ async function bootstrap(): Promise<void> {
     const shutdown = async (signal: string) => {
       logger.info(`Received ${signal}, shutting down...`);
       clearInterval(cleanupInterval);
+      
+      if (invalidateCaches) {
+        invalidateCaches();
+      }
+      
       await server.stop();
       if (cleanup) {
         await cleanup();
