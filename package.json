@@ -6,23 +6,26 @@
   "author": "Developer",
   "license": "MIT",
   "workspaces": [
-    "packages/*"
+    "backend",
+    "frontend",
+    "shared"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:web\"",
-    "dev:backend": "npm run dev --workspace=@translator-app/backend",
-    "dev:web": "npm run dev --workspace=@translator-app/web",
-    "dev:mobile": "npm run start --workspace=@translator-app/mobile",
+    "dev": "npm run dev --workspace=backend & npm run dev --workspace=frontend",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
     "build": "npm run build --workspaces --if-present",
-    "build:backend": "npm run build --workspace=@translator-app/backend",
-    "build:web": "npm run build --workspace=@translator-app/web",
+    "build:backend": "npm run build --workspace=backend",
+    "build:frontend": "npm run build --workspace=frontend",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "clean": "rimraf node_modules packages/*/node_modules packages/*/dist",
-    "codegen": "graphql-codegen --config codegen.ts"
+    "test:e2e:headed": "playwright test --headed",
+    "clean": "rm -rf node_modules backend/node_modules frontend/node_modules backend/dist frontend/dist",
+    "codegen": "graphql-codegen --config codegen.ts",
+    "codegen:watch": "graphql-codegen --config codegen.ts --watch"
   },
   "engines": {
     "node": ">=18.0.0",
@@ -35,8 +38,19 @@
     "@graphql-codegen/typescript-operations": "^4.0.0",
     "@graphql-codegen/typescript-react-apollo": "^4.0.0",
     "@playwright/test": "^1.57.0",
-    "concurrently": "^8.2.0",
-    "rimraf": "^5.0.0",
-    "typescript": "^5.3.0"
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^19.0.0",
+    "@vitest/coverage-v8": "^4.0.16",
+    "@vitest/ui": "^4.0.16",
+    "drizzle-kit": "^0.31.8",
+    "jsdom": "^27.4.0",
+    "prettier": "^3.2.0"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.1",
+    "postgres": "^3.4.7",
+    "react": "^19.2.3"
   }
 }
