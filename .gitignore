@@ -31,3 +31,8 @@ frontend/dist
 frontend/coverage
 playwright-report
 test-results
+
+# Environment files
+.env
+backend/.env
+frontend/.env
