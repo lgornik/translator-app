@@ -1,4 +1,4 @@
-{
+﻿{
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
@@ -7,8 +7,13 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "declaration": true,
-    "declarationMap": true,
-    "outDir": "./dist"
+    "declarationMap": true
   },
-  "include": ["types/**/*"]
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./packages/backend" },
+    { "path": "./packages/web" }
+  ],
+  "include": [],
+  "exclude": ["node_modules"]
 }

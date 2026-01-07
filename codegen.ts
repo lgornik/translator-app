@@ -1,11 +1,11 @@
-import type { CodegenConfig } from '@graphql-codegen/cli';
+﻿import type { CodegenConfig } from '@graphql-codegen/cli';
 
 const config: CodegenConfig = {
-  schema: './backend/src/infrastructure/graphql/schema.ts',
+  schema: './packages/backend/src/infrastructure/graphql/schema.ts',
   documents: ['frontend/src/**/*.ts', 'frontend/src/**/*.tsx'],
   generates: {
     // Generate types for frontend
-    './frontend/src/shared/generated/graphql.ts': {
+    './packages/web/src/shared/generated/graphql.ts': {
       plugins: [
         'typescript',
         'typescript-operations',
@@ -47,3 +47,5 @@ const config: CodegenConfig = {
 };
 
 export default config;
+
+

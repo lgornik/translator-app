@@ -1,4 +1,4 @@
-version: '3.8'
+﻿version: '3.8'
 
 services:
   # PostgreSQL Database
@@ -22,7 +22,7 @@ services:
   # Backend API
   backend:
     build:
-      context: ./backend
+      context: ./packages/backend
       dockerfile: Dockerfile
     container_name: translator-backend
     command: npm run start
@@ -40,7 +40,7 @@ services:
   # Frontend (development)
   frontend:
     build:
-      context: ./frontend
+      context: ./packages/web
       dockerfile: Dockerfile.dev
     container_name: translator-frontend
     environment:
@@ -48,9 +48,11 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./frontend/src:/app/src:ro
+      - ./packages/web/src:/app/src:ro
     depends_on:
       - backend
 
 volumes:
   pgdata:
+
+
