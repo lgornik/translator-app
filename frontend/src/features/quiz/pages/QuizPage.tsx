@@ -55,8 +55,6 @@ export function QuizPage() {
 
   // Render based on state
   const renderContent = () => {
-    console.log('[QuizPage] Current state:', state, { isSetup, isPlaying, isFinished, isError });
-    
     if (isError) {
       return (
         <ErrorMessage

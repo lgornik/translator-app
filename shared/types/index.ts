@@ -100,6 +100,70 @@ export interface WordCount {
 }
 
 // ============================================================================
+// Quiz Types
+// ============================================================================
+
+/**
+ * Quiz mode selection
+ */
+export const QuizMode = {
+  STANDARD: 'STANDARD',
+  TIMED: 'TIMED',
+  CUSTOM: 'CUSTOM',
+} as const;
+
+export type QuizMode = (typeof QuizMode)[keyof typeof QuizMode];
+
+/**
+ * Game state
+ */
+export const GameState = {
+  SETUP: 'SETUP',
+  PLAYING: 'PLAYING',
+  FINISHED: 'FINISHED',
+} as const;
+
+export type GameState = (typeof GameState)[keyof typeof GameState];
+
+/**
+ * Quiz settings
+ */
+export interface QuizSettings {
+  mode: TranslationMode;
+  quizMode: QuizMode;
+  wordLimit: number;
+  timeLimit: number;
+  reinforceMode: boolean;
+  category: string | null;
+  difficulty: Difficulty | null;
+}
+
+/**
+ * Quiz filters
+ */
+export interface QuizFilters {
+  category: string | null;
+  difficulty: Difficulty | null;
+}
+
+/**
+ * Quiz progress tracking
+ */
+export interface QuizProgress {
+  currentWord: number;
+  totalWords: number;
+  round: number;
+}
+
+/**
+ * Quiz statistics
+ */
+export interface QuizStats {
+  correct: number;
+  incorrect: number;
+}
+
+// ============================================================================
 // Error Codes
 // ============================================================================
 

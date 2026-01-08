@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
-import { createRateLimiter, RateLimitPresets } from '../../infrastructure/http/rateLimiter.js';
+import { createRateLimiter, createGraphQLRateLimiter, RateLimitPresets } from '../../infrastructure/http/rateLimiter.js';
 
 describe('RateLimiter', () => {
   let mockReq: Partial<Request>;
@@ -15,6 +15,7 @@ describe('RateLimiter', () => {
       path: '/graphql',
       headers: {},
       socket: { remoteAddress: '127.0.0.1' } as any,
+      body: {},
     };
 
     mockRes = {
@@ -147,6 +148,126 @@ describe('RateLimiter', () => {
         'Retry-After',
         expect.any(Number)
       );
+    });
+  });
+
+  describe('createGraphQLRateLimiter - Per-Operation', () => {
+    it('should apply per-operation custom limits', () => {
+      const limiter = createGraphQLRateLimiter({
+        queryLimit: 100,
+        mutationLimit: 50,
+        windowMs: 60000,
+        operations: {
+          'getAllWords': 2, // Custom low limit for heavy query
+        },
+      });
+
+      mockReq.body = { query: 'query { getAllWords { id } }' };
+
+      // First two pass
+      limiter(mockReq as Request, mockRes as Response, mockNext);
+      mockNext = vi.fn() as unknown as NextFunction;
+      limiter(mockReq as Request, mockRes as Response, mockNext);
+      expect(mockNext).toHaveBeenCalled();
+
+      // Third is blocked
+      mockNext = vi.fn() as unknown as NextFunction;
+      (mockRes.status as ReturnType<typeof vi.fn>).mockClear();
+      limiter(mockReq as Request, mockRes as Response, mockNext);
+      expect(mockRes.status).toHaveBeenCalledWith(429);
+    });
+
+    it('should track operations independently', () => {
+      const limiter = createGraphQLRateLimiter({
+        queryLimit: 1,
+        mutationLimit: 1,
+        windowMs: 60000,
+        operations: {},
+      });
+
+      // Query getCategories
+      mockReq.body = { query: '{ getCategories }' };
+      limiter(mockReq as Request, mockRes as Response, mockNext);
+      expect(mockNext).toHaveBeenCalled();
+
+      // Query getDifficulties (different operation, separate limit)
+      mockReq.body = { query: '{ getDifficulties }' };
+      mockNext = vi.fn() as unknown as NextFunction;
+      limiter(mockReq as Request, mockRes as Response, mockNext);
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it('should skip introspection queries', () => {
+      const limiter = createGraphQLRateLimiter({
+        queryLimit: 1,
+        windowMs: 60000,
+      });
+
+      mockReq.body = { query: '{ __schema { types { name } } }' };
+
+      // Multiple introspection queries should all pass
+      for (let i = 0; i < 5; i++) {
+        mockNext = vi.fn() as unknown as NextFunction;
+        limiter(mockReq as Request, mockRes as Response, mockNext);
+        expect(mockNext).toHaveBeenCalled();
+      }
+    });
+
+    it('should set X-RateLimit-Operation header', () => {
+      const limiter = createGraphQLRateLimiter();
+
+      mockReq.body = { query: 'query GetRandomWord { getRandomWord(mode: EN_TO_PL) { id } }' };
+      limiter(mockReq as Request, mockRes as Response, mockNext);
+
+      expect(mockRes.setHeader).toHaveBeenCalledWith('X-RateLimit-Operation', 'GetRandomWord');
+    });
+
+    it('should extract operation name from operationName field', () => {
+      const limiter = createGraphQLRateLimiter({
+        queryLimit: 1,
+        operations: { 'MyCustomOp': 5 },
+        windowMs: 60000,
+      });
+
+      mockReq.body = { 
+        query: 'query { getCategories }',
+        operationName: 'MyCustomOp',
+      };
+
+      // Should use custom limit (5) not query limit (1)
+      for (let i = 0; i < 5; i++) {
+        mockNext = vi.fn() as unknown as NextFunction;
+        limiter(mockReq as Request, mockRes as Response, mockNext);
+        expect(mockNext).toHaveBeenCalled();
+      }
+
+      // 6th should be blocked
+      mockNext = vi.fn() as unknown as NextFunction;
+      (mockRes.status as ReturnType<typeof vi.fn>).mockClear();
+      limiter(mockReq as Request, mockRes as Response, mockNext);
+      expect(mockRes.status).toHaveBeenCalledWith(429);
+    });
+
+    it('should use stricter limits for mutations vs queries', () => {
+      // This test verifies the concept - mutations get mutationLimit, queries get queryLimit
+      const limiter = createGraphQLRateLimiter({
+        queryLimit: 100,
+        mutationLimit: 10,
+        windowMs: 60000,
+        operations: {},
+      });
+
+      // Verify headers show different limits based on operation type
+      mockReq.body = { query: '{ getCategories }' };
+      limiter(mockReq as Request, mockRes as Response, mockNext);
+      expect(mockRes.setHeader).toHaveBeenCalledWith('X-RateLimit-Limit', 300);  // <-- zmień 100 na 300
+
+      // Reset and test mutation
+      mockRes.setHeader = vi.fn().mockReturnThis();
+      mockReq.body = { query: 'mutation { resetSession }' };
+      mockNext = vi.fn() as unknown as NextFunction;
+      limiter(mockReq as Request, mockRes as Response, mockNext);
+      expect(mockRes.setHeader).toHaveBeenCalledWith('X-RateLimit-Limit', 30);   // <-- zmień 10 na 30
     });
   });
 

@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@apollo/client": "^3.9.0",
+    "@translator-app/shared": "*",
     "@xstate/react": "^4.0.0",
     "graphql": "^16.8.1",
     "react": "^19.0.0",
