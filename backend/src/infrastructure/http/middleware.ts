@@ -1,8 +1,8 @@
-import { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
-import { randomUUID } from 'crypto';
-import { isDomainError } from '../../shared/errors/DomainErrors.js';
-import { ILogger } from '../../application/interfaces/ILogger.js';
-import { IWordRepository } from '../../domain/repositories/IWordRepository.js';
+﻿import { Request, Response, NextFunction, ErrorRequestHandler } from "express";
+import { randomUUID } from "crypto";
+import { isDomainError } from "../../shared/errors/DomainErrors.js";
+import { ILogger } from "../../application/interfaces/ILogger.js";
+import { IWordRepository } from "../../domain/repositories/IWordRepository.js";
 
 /**
  * Request ID middleware
@@ -11,21 +11,21 @@ import { IWordRepository } from '../../domain/repositories/IWordRepository.js';
 export function requestIdMiddleware(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   // Support various correlation ID headers
-  const correlationId = 
-    (req.headers['x-correlation-id'] as string) ||
-    (req.headers['x-request-id'] as string) ||
+  const correlationId =
+    (req.headers["x-correlation-id"] as string) ||
+    (req.headers["x-request-id"] as string) ||
     randomUUID();
-  
+
   // Set both headers for compatibility
-  req.headers['x-correlation-id'] = correlationId;
-  req.headers['x-request-id'] = correlationId;
-  
-  res.setHeader('x-correlation-id', correlationId);
-  res.setHeader('x-request-id', correlationId);
-  
+  req.headers["x-correlation-id"] = correlationId;
+  req.headers["x-request-id"] = correlationId;
+
+  res.setHeader("x-correlation-id", correlationId);
+  res.setHeader("x-request-id", correlationId);
+
   next();
 }
 
@@ -35,34 +35,34 @@ export function requestIdMiddleware(
 export function createRequestLogger(logger: ILogger) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const startTime = Date.now();
-    const correlationId = req.headers['x-correlation-id'] as string;
+    const correlationId = req.headers["x-correlation-id"] as string;
 
     // Create child logger with correlation ID
-    const requestLogger = logger.child({ 
+    const requestLogger = logger.child({
       correlationId,
       requestId: correlationId,
     });
 
     // Log request start
-    requestLogger.info('Request started', {
+    requestLogger.info("Request started", {
       method: req.method,
       path: req.path,
       query: Object.keys(req.query).length > 0 ? req.query : undefined,
-      userAgent: req.headers['user-agent'],
+      userAgent: req.headers["user-agent"],
       ip: req.ip || req.socket.remoteAddress,
     });
 
     // Log response when finished
-    res.on('finish', () => {
+    res.on("finish", () => {
       const duration = Date.now() - startTime;
-      const level = res.statusCode >= 400 ? 'warn' : 'info';
+      const level = res.statusCode >= 400 ? "warn" : "info";
 
-      requestLogger[level]('Request completed', {
+      requestLogger[level]("Request completed", {
         method: req.method,
         path: req.path,
         statusCode: res.statusCode,
         duration,
-        contentLength: res.get('content-length'),
+        contentLength: res.get("content-length"),
       });
     });
 
@@ -76,12 +76,12 @@ export function createRequestLogger(logger: ILogger) {
 export function notFoundHandler(
   req: Request,
   res: Response,
-  _next: NextFunction
+  _next: NextFunction,
 ): void {
-  const correlationId = req.headers['x-correlation-id'] as string;
-  
+  const correlationId = req.headers["x-correlation-id"] as string;
+
   res.status(404).json({
-    code: 'NOT_FOUND',
+    code: "NOT_FOUND",
     message: `Route ${req.method} ${req.path} not found`,
     correlationId,
   });
@@ -95,12 +95,12 @@ export function createErrorHandler(logger: ILogger): ErrorRequestHandler {
     error: Error,
     req: Request,
     res: Response,
-    _next: NextFunction
+    _next: NextFunction,
   ): void => {
-    const correlationId = req.headers['x-correlation-id'] as string;
+    const correlationId = req.headers["x-correlation-id"] as string;
 
     // Log error with correlation ID
-    logger.error('Unhandled error', error, { 
+    logger.error("Unhandled error", error, {
       correlationId,
       path: req.path,
       method: req.method,
@@ -116,10 +116,10 @@ export function createErrorHandler(logger: ILogger): ErrorRequestHandler {
     }
 
     // Generic error
-    const isProduction = process.env.NODE_ENV === 'production';
+    const isProduction = process.env.NODE_ENV === "production";
     res.status(500).json({
-      code: 'INTERNAL_ERROR',
-      message: isProduction ? 'Internal server error' : error.message,
+      code: "INTERNAL_ERROR",
+      message: isProduction ? "Internal server error" : error.message,
       correlationId,
       ...(isProduction ? {} : { stack: error.stack }),
     });
@@ -130,18 +130,18 @@ export function createErrorHandler(logger: ILogger): ErrorRequestHandler {
  * Health check status
  */
 export interface HealthStatus {
-  status: 'ok' | 'degraded' | 'unhealthy';
+  status: "ok" | "degraded" | "unhealthy";
   timestamp: string;
   uptime: number;
   version: string;
   checks: {
     database: {
-      status: 'ok' | 'error';
+      status: "ok" | "error";
       latency?: number;
       error?: string;
     };
     cache?: {
-      status: 'ok';
+      status: "ok";
       hitRate: string;
       size: number;
     };
@@ -159,7 +159,11 @@ export interface HealthCheckDependencies {
   startTime: number;
   version: string;
   wordRepository: IWordRepository;
-  checkDatabase: () => Promise<{ ok: boolean; latency: number; error?: string }>;
+  checkDatabase: () => Promise<{
+    ok: boolean;
+    latency?: number;
+    error?: string;
+  }>;
   getCacheStats?: (() => { hitRate: string; size: number }) | undefined;
   getSessionCount?: (() => Promise<number>) | undefined;
 }
@@ -169,7 +173,7 @@ export interface HealthCheckDependencies {
  */
 export function createHealthHandler(deps: HealthCheckDependencies) {
   return async (req: Request, res: Response): Promise<void> => {
-    const correlationId = req.headers['x-correlation-id'] as string;
+    const correlationId = req.headers["x-correlation-id"] as string;
     const startTime = Date.now();
 
     // Check database connectivity
@@ -197,7 +201,7 @@ export function createHealthHandler(deps: HealthCheckDependencies) {
 
     // Determine overall status
     const isDbHealthy = dbCheck.ok && dbReadOk;
-    const status: HealthStatus['status'] = isDbHealthy ? 'ok' : 'unhealthy';
+    const status: HealthStatus["status"] = isDbHealthy ? "ok" : "unhealthy";
 
     const health: HealthStatus = {
       status,
@@ -206,7 +210,7 @@ export function createHealthHandler(deps: HealthCheckDependencies) {
       version: deps.version,
       checks: {
         database: {
-          status: isDbHealthy ? 'ok' : 'error',
+          status: isDbHealthy ? "ok" : "error",
           latency: dbCheck.latency,
           ...(dbCheck.error && { error: dbCheck.error }),
         },
@@ -221,15 +225,15 @@ export function createHealthHandler(deps: HealthCheckDependencies) {
     if (deps.getCacheStats) {
       const cacheStats = deps.getCacheStats();
       health.checks.cache = {
-        status: 'ok',
+        status: "ok",
         hitRate: cacheStats.hitRate,
         size: cacheStats.size,
       };
     }
 
     // Return appropriate status code
-    const httpStatus = status === 'ok' ? 200 : 503;
-    
+    const httpStatus = status === "ok" ? 200 : 503;
+
     res.status(httpStatus).json({
       ...health,
       correlationId,
@@ -243,7 +247,7 @@ export function createHealthHandler(deps: HealthCheckDependencies) {
  */
 export function createLivenessHandler() {
   return (_req: Request, res: Response): void => {
-    res.status(200).json({ status: 'ok' });
+    res.status(200).json({ status: "ok" });
   };
 }
 
@@ -251,15 +255,17 @@ export function createLivenessHandler() {
  * Readiness check (for Kubernetes - checks if ready to serve traffic)
  */
 export function createReadinessHandler(
-  checkDatabase: () => Promise<{ ok: boolean }>
+  checkDatabase: () => Promise<{ ok: boolean }>,
 ) {
   return async (_req: Request, res: Response): Promise<void> => {
     const dbCheck = await checkDatabase();
-    
+
     if (dbCheck.ok) {
-      res.status(200).json({ status: 'ready' });
+      res.status(200).json({ status: "ready" });
     } else {
-      res.status(503).json({ status: 'not ready', reason: 'database unavailable' });
+      res
+        .status(503)
+        .json({ status: "not ready", reason: "database unavailable" });
     }
   };
 }
@@ -280,12 +286,12 @@ export interface CacheStats {
  */
 export function createCacheStatsHandler(getCacheStats?: () => CacheStats) {
   return (req: Request, res: Response): void => {
-    const correlationId = req.headers['x-correlation-id'] as string;
+    const correlationId = req.headers["x-correlation-id"] as string;
 
     if (!getCacheStats) {
       res.status(404).json({
-        code: 'CACHE_DISABLED',
-        message: 'Cache is not enabled',
+        code: "CACHE_DISABLED",
+        message: "Cache is not enabled",
         correlationId,
       });
       return;
@@ -293,7 +299,7 @@ export function createCacheStatsHandler(getCacheStats?: () => CacheStats) {
 
     const stats = getCacheStats();
     res.json({
-      status: 'ok',
+      status: "ok",
       cache: stats,
       timestamp: new Date().toISOString(),
       correlationId,
@@ -306,17 +312,17 @@ export function createCacheStatsHandler(getCacheStats?: () => CacheStats) {
  */
 export function createCacheInvalidateHandler(
   invalidateCaches?: () => void,
-  logger?: ILogger
+  logger?: ILogger,
 ) {
   return (req: Request, res: Response): void => {
-    const correlationId = req.headers['x-correlation-id'] as string;
-    const apiKey = req.headers['x-admin-key'];
+    const correlationId = req.headers["x-correlation-id"] as string;
+    const apiKey = req.headers["x-admin-key"];
     const expectedKey = process.env.ADMIN_API_KEY;
 
     if (expectedKey && apiKey !== expectedKey) {
       res.status(401).json({
-        code: 'UNAUTHORIZED',
-        message: 'Invalid admin API key',
+        code: "UNAUTHORIZED",
+        message: "Invalid admin API key",
         correlationId,
       });
       return;
@@ -324,19 +330,19 @@ export function createCacheInvalidateHandler(
 
     if (!invalidateCaches) {
       res.status(404).json({
-        code: 'CACHE_DISABLED',
-        message: 'Cache is not enabled',
+        code: "CACHE_DISABLED",
+        message: "Cache is not enabled",
         correlationId,
       });
       return;
     }
 
     invalidateCaches();
-    logger?.info('Cache invalidated via admin endpoint', { correlationId });
+    logger?.info("Cache invalidated via admin endpoint", { correlationId });
 
     res.json({
-      status: 'ok',
-      message: 'Cache invalidated successfully',
+      status: "ok",
+      message: "Cache invalidated successfully",
       timestamp: new Date().toISOString(),
       correlationId,
     });

@@ -1,4 +1,4 @@
-import postgres from "postgres";
+﻿import postgres from "postgres";
 import { drizzle, PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { sql } from "drizzle-orm";
 import { IWordRepository } from "../../domain/repositories/IWordRepository.js";
@@ -29,7 +29,7 @@ export interface CacheStats {
  */
 export interface DatabaseHealthCheck {
   ok: boolean;
-  latency: number;
+  latency?: number;
   error?: string;
 }
 

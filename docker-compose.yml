@@ -1,7 +1,4 @@
-version: '3.8'
-
-services:
-  # PostgreSQL Database
+﻿services:
   postgres:
     image: postgres:16-alpine
     container_name: translator-db
@@ -19,11 +16,10 @@ services:
       timeout: 5s
       retries: 5
 
-  # Backend API
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: translator-backend
     command: npm run start
     environment:
@@ -33,22 +29,25 @@ services:
       CORS_ORIGIN: http://localhost:3000
     ports:
       - "4000:4000"
+    volumes:
+      - ./backend/src:/app/backend/src:ro
+      - ./shared:/app/shared:ro
     depends_on:
       postgres:
         condition: service_healthy
 
-  # Frontend (development)
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile.dev
+      context: .
+      dockerfile: frontend/Dockerfile.dev
     container_name: translator-frontend
     environment:
       VITE_GRAPHQL_URL: http://localhost:4000/graphql
     ports:
       - "3000:3000"
     volumes:
-      - ./frontend/src:/app/src:ro
+      - ./frontend/src:/app/frontend/src:ro
+      - ./shared:/app/shared:ro
     depends_on:
       - backend
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { InMemorySessionMutex } from "../../infrastructure/persistence/SessionMutex.js";
 
 describe("InMemorySessionMutex", () => {
@@ -8,35 +8,38 @@ describe("InMemorySessionMutex", () => {
     mutex = new InMemorySessionMutex();
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   describe("acquire", () => {
     it("should acquire lock for new session", async () => {
       const result = await mutex.acquire("session-1");
 
       expect(result.acquired).toBe(true);
       expect(result.release).toBeDefined();
+
+      await result.release();
     });
 
     it("should not acquire lock if already held", async () => {
-      await mutex.acquire("session-1");
+      const first = await mutex.acquire("session-1");
+      expect(first.acquired).toBe(true);
 
-      // Try to acquire immediately (with 0 timeout)
-      const result = await mutex.acquire("session-1", 0);
+      // Try to acquire immediately (with very short timeout)
+      const result = await mutex.acquire("session-1", 50);
 
       expect(result.acquired).toBe(false);
+
+      await first.release();
     });
 
     it("should release lock and allow re-acquisition", async () => {
       const first = await mutex.acquire("session-1");
       expect(first.acquired).toBe(true);
 
-      first.release();
+      await first.release();
 
       const second = await mutex.acquire("session-1");
       expect(second.acquired).toBe(true);
+
+      await second.release();
     });
 
     it("should allow different sessions to acquire locks simultaneously", async () => {
@@ -45,44 +48,44 @@ describe("InMemorySessionMutex", () => {
 
       expect(lock1.acquired).toBe(true);
       expect(lock2.acquired).toBe(true);
+
+      await lock1.release();
+      await lock2.release();
     });
 
-    it("should wait and retry when lock is held", async () => {
-      vi.useFakeTimers();
-
+    it("should wait and acquire when lock is released", async () => {
       const lock1 = await mutex.acquire("session-1");
       expect(lock1.acquired).toBe(true);
 
       // Start acquiring second lock (will wait)
-      const acquirePromise = mutex.acquire("session-1", 1000);
+      const acquirePromise = mutex.acquire("session-1", 500);
 
-      // Advance time a bit
-      await vi.advanceTimersByTimeAsync(100);
-
-      // Release first lock
-      lock1.release();
+      // Release first lock after small delay
+      setTimeout(() => lock1.release(), 50);
 
       // Now the second acquire should succeed
       const lock2 = await acquirePromise;
       expect(lock2.acquired).toBe(true);
+
+      await lock2.release();
     });
 
-    it("should timeout if lock cannot be acquired", async () => {
-      vi.useFakeTimers();
+    it("should timeout if lock cannot be acquired in time", async () => {
+      const lock1 = await mutex.acquire("session-1");
+      expect(lock1.acquired).toBe(true);
 
-      await mutex.acquire("session-1");
+      // Try to acquire with short timeout - lock won't be released
+      const result = await mutex.acquire("session-1", 50);
 
-      const acquirePromise = mutex.acquire("session-1", 100);
-
-      await vi.advanceTimersByTimeAsync(150);
-
-      const result = await acquirePromise;
       expect(result.acquired).toBe(false);
+
+      await lock1.release();
     });
 
     it("should use default timeout", async () => {
       const lock = await mutex.acquire("session-1");
       expect(lock.acquired).toBe(true);
+      await lock.release();
     });
   });
 
@@ -99,9 +102,10 @@ describe("InMemorySessionMutex", () => {
     it("should release lock after function completes", async () => {
       await mutex.withLock("session-1", async () => "done");
 
-      // Should be able to acquire lock again
-      const lock = await mutex.acquire("session-1", 0);
+      // Should be able to acquire lock again immediately
+      const lock = await mutex.acquire("session-1", 50);
       expect(lock.acquired).toBe(true);
+      await lock.release();
     });
 
     it("should release lock even if function throws", async () => {
@@ -111,9 +115,10 @@ describe("InMemorySessionMutex", () => {
         }),
       ).rejects.toThrow("Test error");
 
-      // Should be able to acquire lock again
-      const lock = await mutex.acquire("session-1", 0);
+      // Should be able to acquire lock again immediately
+      const lock = await mutex.acquire("session-1", 50);
       expect(lock.acquired).toBe(true);
+      await lock.release();
     });
 
     it("should serialize concurrent operations on same session", async () => {
@@ -121,7 +126,7 @@ describe("InMemorySessionMutex", () => {
 
       const op1 = mutex.withLock("session-1", async () => {
         order.push(1);
-        await new Promise((r) => setTimeout(r, 50));
+        await new Promise((r) => setTimeout(r, 30));
         order.push(2);
         return "op1";
       });
@@ -161,10 +166,10 @@ describe("InMemorySessionMutex", () => {
 
       // Try withLock with very short timeout
       await expect(
-        mutex.withLock("session-1", async () => "never", 0),
+        mutex.withLock("session-1", async () => "never", 50),
       ).rejects.toThrow("Failed to acquire lock");
 
-      lock.release();
+      await lock.release();
     });
   });
 
@@ -174,7 +179,7 @@ describe("InMemorySessionMutex", () => {
       const operations = Array.from({ length: 10 }, (_, i) =>
         mutex.withLock("session-1", async () => {
           const current = counter;
-          await new Promise((r) => setTimeout(r, 10));
+          await new Promise((r) => setTimeout(r, 5));
           counter = current + 1;
           return i;
         }),

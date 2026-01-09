@@ -11,6 +11,8 @@ import { Word } from "../../domain/entities/Word.js";
 import { Session } from "../../domain/entities/Session.js";
 import { WordId } from "../../domain/value-objects/WordId.js";
 import { SessionId } from "../../domain/value-objects/SessionId.js";
+import { Category } from "../../domain/value-objects/Category.js";
+import { Difficulty } from "../../domain/value-objects/Difficulty.js";
 import { IWordRepository } from "../../domain/repositories/IWordRepository.js";
 import { ISessionRepository } from "../../domain/repositories/ISessionRepository.js";
 import { RandomWordPicker } from "../../domain/services/RandomWordPicker.js";
@@ -53,8 +55,8 @@ function createMockWordRepository(words: Word[] = []): IWordRepository {
     ),
     findByFilters: vi.fn(
       async (filters?: {
-        category?: { name: string } | null;
-        difficulty?: { value: number } | null;
+        category?: Category | null;
+        difficulty?: Difficulty | null;
       }) => {
         let filtered = words;
         if (filters?.category) {
@@ -73,8 +75,8 @@ function createMockWordRepository(words: Word[] = []): IWordRepository {
     findAll: vi.fn(async () => words),
     count: vi.fn(
       async (filters?: {
-        category?: { name: string } | null;
-        difficulty?: { value: number } | null;
+        category?: Category | null;
+        difficulty?: Difficulty | null;
       }) => {
         let filtered = words;
         if (filters?.category) {
@@ -91,19 +93,16 @@ function createMockWordRepository(words: Word[] = []): IWordRepository {
       },
     ),
     getCategories: vi.fn(async () => {
-      const categories = [...new Set(words.map((w) => w.category.name))];
-      return categories.map((name) => ({
-        name,
-        count: words.filter((w) => w.category.name === name).length,
-      }));
+      const categoryNames = [...new Set(words.map((w) => w.category.name))];
+      return categoryNames.map((name) => Category.fromTrusted(name));
     }),
     getDifficulties: vi.fn(async () => {
-      const difficulties = [...new Set(words.map((w) => w.difficulty.value))];
-      return difficulties.map((value) => ({
-        value,
-        count: words.filter((w) => w.difficulty.value === value).length,
-      }));
+      const difficultyValues = [
+        ...new Set(words.map((w) => w.difficulty.value)),
+      ];
+      return difficultyValues.map((value) => Difficulty.fromTrusted(value));
     }),
+    isEmpty: vi.fn(async () => words.length === 0),
   };
 }
 
@@ -127,10 +126,13 @@ function createMockSessionRepository(session?: Session): ISessionRepository {
       sessions.set(s.id.value, s);
     }),
     delete: vi.fn(async (id: SessionId) => {
+      const existed = sessions.has(id.value);
       sessions.delete(id.value);
+      return existed;
     }),
     count: vi.fn(async () => sessions.size),
     deleteExpired: vi.fn(async () => 0),
+    exists: vi.fn(async (id: SessionId) => sessions.has(id.value)),
   };
 }
 
@@ -142,7 +144,9 @@ function createMockMutex(): ISessionMutex {
         release: vi.fn(),
       }),
     ),
-    withLock: vi.fn(async <T>(sessionId: string, fn: () => Promise<T>) => fn()),
+    withLock: vi.fn(async <T>(_sessionId: string, fn: () => Promise<T>) =>
+      fn(),
+    ),
   };
 }
 
@@ -376,6 +380,8 @@ describe("GetRandomWordsUseCase", () => {
       mode: "EN_TO_PL",
       sessionId: "session-123",
       limit: 3,
+      category: null,
+      difficulty: null,
     });
 
     expect(result.ok).toBe(true);
@@ -389,6 +395,8 @@ describe("GetRandomWordsUseCase", () => {
       mode: "EN_TO_PL",
       sessionId: "session-123",
       limit: 10, // More than available
+      category: null,
+      difficulty: null,
     });
 
     expect(result.ok).toBe(true);
@@ -402,6 +410,8 @@ describe("GetRandomWordsUseCase", () => {
       mode: "EN_TO_PL",
       sessionId: "session-123",
       limit: 5,
+      category: null,
+      difficulty: null,
     });
 
     expect(result.ok).toBe(true);
@@ -417,6 +427,8 @@ describe("GetRandomWordsUseCase", () => {
       mode: "EN_TO_PL",
       sessionId: "session-123",
       limit: 0,
+      category: null,
+      difficulty: null,
     });
 
     // Limit 0 gets capped to 1, so it should succeed
@@ -435,6 +447,8 @@ describe("GetRandomWordsUseCase", () => {
       mode: "EN_TO_PL",
       sessionId: "session-123",
       limit: 5,
+      category: null,
+      difficulty: null,
     });
 
     // Returns empty array instead of error

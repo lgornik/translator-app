@@ -1,38 +1,50 @@
-/**
+﻿/**
  * Result Pattern - Functional error handling
  * Eliminates throwing exceptions for expected failures
  */
 
-export type Result<T, E = Error> =
-  | { readonly ok: true; readonly value: T }
-  | { readonly ok: false; readonly error: E };
+// Success result type
+interface OkResult<T> {
+  readonly ok: true;
+  readonly value: T;
+  readonly error?: never;
+}
+
+// Failure result type
+interface FailResult<E> {
+  readonly ok: false;
+  readonly error: E;
+  readonly value?: never;
+}
+
+export type Result<T, E = Error> = OkResult<T> | FailResult<E>;
 
 export const Result = {
   /**
    * Create a success result
    */
   ok<T>(value: T): Result<T, never> {
-    return { ok: true, value };
+    return { ok: true, value } as const;
   },
 
   /**
    * Create a failure result
    */
   fail<E>(error: E): Result<never, E> {
-    return { ok: false, error };
+    return { ok: false, error } as const;
   },
 
   /**
    * Check if result is success
    */
-  isOk<T, E>(result: Result<T, E>): result is { ok: true; value: T } {
+  isOk<T, E>(result: Result<T, E>): result is OkResult<T> {
     return result.ok === true;
   },
 
   /**
    * Check if result is failure
    */
-  isFail<T, E>(result: Result<T, E>): result is { ok: false; error: E } {
+  isFail<T, E>(result: Result<T, E>): result is FailResult<E> {
     return result.ok === false;
   },
 
@@ -43,7 +55,7 @@ export const Result = {
     if (result.ok) {
       return Result.ok(fn(result.value));
     }
-    return result;
+    return Result.fail(result.error);
   },
 
   /**
@@ -51,12 +63,12 @@ export const Result = {
    */
   flatMap<T, U, E>(
     result: Result<T, E>,
-    fn: (value: T) => Result<U, E>
+    fn: (value: T) => Result<U, E>,
   ): Result<U, E> {
     if (result.ok) {
       return fn(result.value);
     }
-    return result;
+    return Result.fail(result.error);
   },
 
   /**
@@ -87,7 +99,7 @@ export const Result = {
 
     for (const result of results) {
       if (!result.ok) {
-        return result;
+        return Result.fail(result.error);
       }
       values.push(result.value);
     }
@@ -102,7 +114,9 @@ export const Result = {
     try {
       return Result.ok(fn());
     } catch (error) {
-      return Result.fail(error instanceof Error ? error : new Error(String(error)));
+      return Result.fail(
+        error instanceof Error ? error : new Error(String(error)),
+      );
     }
   },
 
@@ -114,7 +128,9 @@ export const Result = {
       const value = await fn();
       return Result.ok(value);
     } catch (error) {
-      return Result.fail(error instanceof Error ? error : new Error(String(error)));
+      return Result.fail(
+        error instanceof Error ? error : new Error(String(error)),
+      );
     }
   },
 } as const;

@@ -53,16 +53,44 @@ export class InMemorySessionMutex implements ISessionMutex {
 
     // Wait for existing lock to be released
     while (this.locks.has(sessionId)) {
-      if (Date.now() - startTime > timeoutMs) {
+      const elapsed = Date.now() - startTime;
+      if (elapsed >= timeoutMs) {
         return {
           acquired: false,
           release: async () => {},
         };
       }
 
-      // Wait for the current lock to be released
-      await this.locks.get(sessionId);
-      await new Promise((resolve) => setTimeout(resolve, 10)); // Small delay to prevent tight loop
+      const remainingTime = timeoutMs - elapsed;
+      const currentLock = this.locks.get(sessionId);
+
+      if (currentLock) {
+        // Race between lock release and timeout
+        const timeoutPromise = new Promise<"timeout">((resolve) =>
+          setTimeout(() => resolve("timeout"), Math.min(remainingTime, 10)),
+        );
+
+        const result = await Promise.race([
+          currentLock.then(() => "released" as const),
+          timeoutPromise,
+        ]);
+
+        // If we timed out and lock is still held, check total elapsed time
+        if (result === "timeout" && Date.now() - startTime >= timeoutMs) {
+          return {
+            acquired: false,
+            release: async () => {},
+          };
+        }
+      }
+    }
+
+    // Final timeout check before acquiring
+    if (Date.now() - startTime >= timeoutMs) {
+      return {
+        acquired: false,
+        release: async () => {},
+      };
     }
 
     // Create new lock
@@ -125,10 +153,12 @@ export class RedisSessionMutex implements ISessionMutex {
     try {
       // Dynamic import to avoid requiring redis when not used
       const { createClient } = await import("redis");
-      this.client = createClient({ url: this.redisUrl });
+      this.client = createClient({
+        url: this.redisUrl,
+      }) as unknown as RedisClient;
 
       this.client.on("error", (err) => {
-        this.logger.error("Redis client error", err);
+        this.logger.error("Redis client error", err as Error);
       });
 
       await this.client.connect();

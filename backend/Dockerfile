@@ -1,16 +1,20 @@
-FROM node:20-alpine
-
+﻿FROM node:20-alpine
 WORKDIR /app
 
-# Install dependencies
+# Copy root package.json and workspace configs
 COPY package*.json ./
+COPY backend/package*.json ./backend/
+COPY shared/package*.json ./shared/
+
+# Install all workspace dependencies
 RUN npm install
 
 # Copy source code
-COPY . .
+COPY backend/ ./backend/
+COPY shared/ ./shared/
 
-# Expose port
+WORKDIR /app/backend
+
 EXPOSE 4000
 
-# Development command (will be overridden by docker-compose)
 CMD ["npm", "run", "dev"]

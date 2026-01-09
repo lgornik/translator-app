@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Frontend types
  * Re-exports shared types and adds frontend-specific types
  */
@@ -21,7 +21,7 @@ export {
   type QuizFilters,
   type QuizProgress,
   type QuizStats,
-} from '@translator-app/shared';
+} from "@translator-app/shared";
 
 // ============================================================================
 // Frontend-specific types (UI only, not shared with backend)
@@ -92,7 +92,7 @@ export interface AsyncState<T> {
   error: Error | null;
 }
 
-export type ToastType = 'success' | 'error' | 'warning' | 'info';
+export type ToastType = "success" | "error" | "warning" | "info";
 
 export interface Toast {
   id: string;
@@ -101,7 +101,7 @@ export interface Toast {
   duration?: number;
 }
 
-export type Theme = 'light' | 'dark' | 'system';
+export type Theme = "light" | "dark" | "system";
 
 export interface TimerState {
   remaining: number;
@@ -110,7 +110,8 @@ export interface TimerState {
 }
 
 export interface WordQueue {
-  current: WordChallenge | null;
-  toRepeat: WordChallenge[];
+  // Uses WordChallenge from above
+  current: import("@translator-app/shared").WordChallenge | null;
+  toRepeat: import("@translator-app/shared").WordChallenge[];
   mastered: string[];
 }

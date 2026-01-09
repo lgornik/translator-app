@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Redis Session Repository
  * Distributed session storage using Redis
  * Suitable for production multi-instance deployments
@@ -68,7 +68,9 @@ export class RedisSessionRepository implements ISessionRepository {
 
     try {
       const { createClient } = await import("redis");
-      this.client = createClient({ url: this.redisUrl }) as RedisClient;
+      this.client = createClient({
+        url: this.redisUrl,
+      }) as unknown as RedisClient;
 
       this.client.on("error", (err) => {
         this.logger.error("Redis session repository error", err as Error);
