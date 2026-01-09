@@ -36,3 +36,7 @@ test-results
 .env
 backend/.env
 frontend/.env
+
+# Coverage reports
+coverage/
+*.lcov
