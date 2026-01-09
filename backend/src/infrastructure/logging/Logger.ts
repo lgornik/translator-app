@@ -1,4 +1,22 @@
-import { ILogger, LogContext, LogLevel, LogEntry, LoggerConfig } from '../../application/interfaces/ILogger.js';
+﻿import {
+  ILogger,
+  LogContext,
+  LogLevel,
+  LogEntry,
+  LoggerConfig,
+} from "../../application/interfaces/ILogger.js";
+
+// Helper to omit keys from object
+function omitKeys<T extends Record<string, unknown>>(
+  obj: T,
+  keys: string[],
+): Partial<T> {
+  const result = { ...obj };
+  for (const key of keys) {
+    delete result[key];
+  }
+  return result;
+}
 
 /**
  * Structured Console Logger
@@ -10,12 +28,12 @@ export class ConsoleLogger implements ILogger {
 
   constructor(
     config: Partial<LoggerConfig> & { level?: LogLevel } = {},
-    baseContext: LogContext = {}
+    baseContext: LogContext = {},
   ) {
     this.config = {
-      service: config.service ?? 'translator-api',
-      version: config.version ?? '1.0.0',
-      environment: config.environment ?? process.env.NODE_ENV ?? 'development',
+      service: config.service ?? "translator-api",
+      version: config.version ?? "1.0.0",
+      environment: config.environment ?? process.env.NODE_ENV ?? "development",
       level: config.level ?? LogLevel.INFO,
     };
     this.baseContext = baseContext;
@@ -46,18 +64,15 @@ export class ConsoleLogger implements ILogger {
   }
 
   child(context: LogContext): ILogger {
-    // Inherit correlationId if not provided
     const mergedContext: LogContext = {
       ...this.baseContext,
       ...context,
     };
-    
-    // If parent has correlationId and child doesn't, inherit it
+
     if (this.baseContext.correlationId && !context.correlationId) {
       mergedContext.correlationId = this.baseContext.correlationId;
     }
-    
-    // requestId can serve as correlationId if not set
+
     if (!mergedContext.correlationId && mergedContext.requestId) {
       mergedContext.correlationId = mergedContext.requestId;
     }
@@ -70,13 +85,23 @@ export class ConsoleLogger implements ILogger {
   }
 
   private shouldLog(level: LogLevel): boolean {
-    const levels = [LogLevel.DEBUG, LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR];
+    const levels = [
+      LogLevel.DEBUG,
+      LogLevel.INFO,
+      LogLevel.WARN,
+      LogLevel.ERROR,
+    ];
     return levels.indexOf(level) >= levels.indexOf(this.config.level);
   }
 
-  private log(level: LogLevel, message: string, context?: LogContext, error?: Error): void {
+  private log(
+    level: LogLevel,
+    message: string,
+    context?: LogContext,
+    error?: Error,
+  ): void {
     const mergedContext = { ...this.baseContext, ...context };
-    
+
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
@@ -86,7 +111,6 @@ export class ConsoleLogger implements ILogger {
       environment: this.config.environment,
     };
 
-    // Add correlation/request ID at top level for easy filtering
     if (mergedContext.correlationId) {
       entry.correlationId = mergedContext.correlationId;
     }
@@ -94,13 +118,11 @@ export class ConsoleLogger implements ILogger {
       entry.requestId = mergedContext.requestId;
     }
 
-    // Add remaining context
-    const { correlationId, requestId, ...restContext } = mergedContext;
+    const restContext = omitKeys(mergedContext, ["correlationId", "requestId"]);
     if (Object.keys(restContext).length > 0) {
-      entry.context = restContext;
+      entry.context = restContext as LogContext;
     }
 
-    // Add error details
     if (error) {
       entry.error = {
         name: error.name,
@@ -133,13 +155,13 @@ export class DevLogger implements ILogger {
   private readonly baseContext: LogContext;
 
   private static readonly COLORS = {
-    reset: '\x1b[0m',
-    dim: '\x1b[2m',
-    blue: '\x1b[34m',
-    green: '\x1b[32m',
-    yellow: '\x1b[33m',
-    red: '\x1b[31m',
-    cyan: '\x1b[36m',
+    reset: "\x1b[0m",
+    dim: "\x1b[2m",
+    blue: "\x1b[34m",
+    green: "\x1b[32m",
+    yellow: "\x1b[33m",
+    red: "\x1b[31m",
+    cyan: "\x1b[36m",
   };
 
   constructor(baseContext: LogContext = {}) {
@@ -147,19 +169,19 @@ export class DevLogger implements ILogger {
   }
 
   debug(message: string, context?: LogContext): void {
-    this.log('DEBUG', DevLogger.COLORS.dim, message, context);
+    this.log("DEBUG", DevLogger.COLORS.dim, message, context);
   }
 
   info(message: string, context?: LogContext): void {
-    this.log('INFO ', DevLogger.COLORS.green, message, context);
+    this.log("INFO ", DevLogger.COLORS.green, message, context);
   }
 
   warn(message: string, context?: LogContext): void {
-    this.log('WARN ', DevLogger.COLORS.yellow, message, context);
+    this.log("WARN ", DevLogger.COLORS.yellow, message, context);
   }
 
   error(message: string, error?: Error, context?: LogContext): void {
-    this.log('ERROR', DevLogger.COLORS.red, message, context);
+    this.log("ERROR", DevLogger.COLORS.red, message, context);
     if (error) {
       console.error(error);
     }
@@ -170,11 +192,11 @@ export class DevLogger implements ILogger {
       ...this.baseContext,
       ...context,
     };
-    
+
     if (this.baseContext.correlationId && !context.correlationId) {
       mergedContext.correlationId = this.baseContext.correlationId;
     }
-    
+
     if (!mergedContext.correlationId && mergedContext.requestId) {
       mergedContext.correlationId = mergedContext.requestId;
     }
@@ -186,23 +208,26 @@ export class DevLogger implements ILogger {
     return this.baseContext.correlationId ?? this.baseContext.requestId;
   }
 
-  private log(level: string, color: string, message: string, context?: LogContext): void {
+  private log(
+    level: string,
+    color: string,
+    message: string,
+    context?: LogContext,
+  ): void {
     const { reset, dim, cyan } = DevLogger.COLORS;
     const merged = { ...this.baseContext, ...context };
-    const time = new Date().toISOString().split('T')[1]?.slice(0, 12) ?? '';
-    
-    // Build prefix with correlation ID if present
+    const time = new Date().toISOString().split("T")[1]?.slice(0, 12) ?? "";
+
     const correlationId = merged.correlationId ?? merged.requestId;
-    const corrIdStr = correlationId 
-      ? `${cyan}[${correlationId.slice(0, 8)}]${reset} ` 
-      : '';
+    const corrIdStr = correlationId
+      ? `${cyan}[${correlationId.slice(0, 8)}]${reset} `
+      : "";
 
     console.log(
-      `${dim}${time}${reset} ${color}[${level}]${reset} ${corrIdStr}${message}`
+      `${dim}${time}${reset} ${color}[${level}]${reset} ${corrIdStr}${message}`,
     );
 
-    // Print context if present (excluding correlationId/requestId already shown)
-    const { correlationId: _, requestId: __, ...restContext } = merged;
+    const restContext = omitKeys(merged, ["correlationId", "requestId"]);
     if (Object.keys(restContext).length > 0) {
       console.log(`${dim}         └─ ${JSON.stringify(restContext)}${reset}`);
     }
@@ -217,7 +242,7 @@ export class NullLogger implements ILogger {
   info(): void {}
   warn(): void {}
   error(): void {}
-  child(): ILogger {
+  child(_context?: LogContext): ILogger {
     return this;
   }
   getCorrelationId(): string | undefined {

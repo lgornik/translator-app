@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+﻿import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Request, Response, NextFunction } from "express";
 import {
   createPerUserRateLimiter,
@@ -29,7 +29,7 @@ describe("createPerUserRateLimiter", () => {
   let next: NextFunction;
 
   beforeEach(() => {
-    next = vi.fn();
+    next = vi.fn() as unknown as NextFunction;
   });
 
   describe("Basic Rate Limiting", () => {

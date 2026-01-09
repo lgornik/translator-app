@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+﻿import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import {
   ConsoleLogger,
   DevLogger,
@@ -30,7 +30,7 @@ describe("ConsoleLogger", () => {
     logger.info("Test message");
 
     expect(consoleSpy.log).toHaveBeenCalledTimes(1);
-    const output = JSON.parse(consoleSpy.log.mock.calls[0][0]);
+    const output = JSON.parse(consoleSpy.log.mock.calls[0]?.[0] as string);
     expect(output.level).toBe("info");
     expect(output.message).toBe("Test message");
   });
@@ -40,7 +40,7 @@ describe("ConsoleLogger", () => {
     logger.error("Error message", new Error("Test error"));
 
     expect(consoleSpy.error).toHaveBeenCalledTimes(1);
-    const output = JSON.parse(consoleSpy.error.mock.calls[0][0]);
+    const output = JSON.parse(consoleSpy.error.mock.calls[0]?.[0] as string);
     expect(output.level).toBe("error");
     expect(output.error).toBeDefined();
     expect(output.error.message).toBe("Test error");
@@ -51,7 +51,7 @@ describe("ConsoleLogger", () => {
     logger.warn("Warning message");
 
     expect(consoleSpy.warn).toHaveBeenCalledTimes(1);
-    const output = JSON.parse(consoleSpy.warn.mock.calls[0][0]);
+    const output = JSON.parse(consoleSpy.warn.mock.calls[0]?.[0] as string);
     expect(output.level).toBe("warn");
   });
 
@@ -59,7 +59,7 @@ describe("ConsoleLogger", () => {
     const logger = new ConsoleLogger({ level: LogLevel.INFO });
     logger.info("Test message", { userId: "123", action: "test" });
 
-    const output = JSON.parse(consoleSpy.log.mock.calls[0][0]);
+    const output = JSON.parse(consoleSpy.log.mock.calls[0]?.[0] as string);
     expect(output.context).toEqual({ userId: "123", action: "test" });
   });
 
@@ -67,7 +67,7 @@ describe("ConsoleLogger", () => {
     const logger = new ConsoleLogger({ level: LogLevel.INFO });
     logger.info("Test message", { correlationId: "corr-123" });
 
-    const output = JSON.parse(consoleSpy.log.mock.calls[0][0]);
+    const output = JSON.parse(consoleSpy.log.mock.calls[0]?.[0] as string);
     expect(output.correlationId).toBe("corr-123");
   });
 
@@ -75,7 +75,7 @@ describe("ConsoleLogger", () => {
     const logger = new ConsoleLogger({ level: LogLevel.INFO });
     logger.info("Test message", { requestId: "req-456" });
 
-    const output = JSON.parse(consoleSpy.log.mock.calls[0][0]);
+    const output = JSON.parse(consoleSpy.log.mock.calls[0]?.[0] as string);
     expect(output.requestId).toBe("req-456");
   });
 
@@ -101,7 +101,7 @@ describe("ConsoleLogger", () => {
     });
     logger.info("Test");
 
-    const output = JSON.parse(consoleSpy.log.mock.calls[0][0]);
+    const output = JSON.parse(consoleSpy.log.mock.calls[0]?.[0] as string);
     expect(output.service).toBe("test-service");
     expect(output.version).toBe("2.0.0");
   });
@@ -110,7 +110,7 @@ describe("ConsoleLogger", () => {
     const logger = new ConsoleLogger({ level: LogLevel.INFO });
     logger.info("Test");
 
-    const output = JSON.parse(consoleSpy.log.mock.calls[0][0]);
+    const output = JSON.parse(consoleSpy.log.mock.calls[0]?.[0] as string);
     expect(output.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
   });
 
@@ -124,7 +124,7 @@ describe("ConsoleLogger", () => {
 
       child.info("Child message");
 
-      const output = JSON.parse(consoleSpy.log.mock.calls[0][0]);
+      const output = JSON.parse(consoleSpy.log.mock.calls[0]?.[0] as string);
       expect(output.context.service).toBe("parent");
       expect(output.context.component).toBe("child-component");
     });
@@ -138,7 +138,7 @@ describe("ConsoleLogger", () => {
 
       child.info("Child message");
 
-      const output = JSON.parse(consoleSpy.log.mock.calls[0][0]);
+      const output = JSON.parse(consoleSpy.log.mock.calls[0]?.[0] as string);
       expect(output.correlationId).toBe("parent-corr");
     });
 
@@ -179,7 +179,7 @@ describe("ConsoleLogger", () => {
       const error = new Error("Something went wrong");
       logger.error("Error occurred", error);
 
-      const output = JSON.parse(consoleSpy.error.mock.calls[0][0]);
+      const output = JSON.parse(consoleSpy.error.mock.calls[0]?.[0] as string);
       expect(output.error.name).toBe("Error");
       expect(output.error.message).toBe("Something went wrong");
     });
@@ -189,7 +189,7 @@ describe("ConsoleLogger", () => {
       const error = new Error("Stack trace test");
       logger.error("Error", error);
 
-      const output = JSON.parse(consoleSpy.error.mock.calls[0][0]);
+      const output = JSON.parse(consoleSpy.error.mock.calls[0]?.[0] as string);
       expect(output.error.stack).toContain("Stack trace test");
     });
 
@@ -199,7 +199,7 @@ describe("ConsoleLogger", () => {
       error.code = "CUSTOM_CODE";
       logger.error("Error", error);
 
-      const output = JSON.parse(consoleSpy.error.mock.calls[0][0]);
+      const output = JSON.parse(consoleSpy.error.mock.calls[0]?.[0] as string);
       expect(output.error.code).toBe("CUSTOM_CODE");
     });
   });
@@ -227,7 +227,7 @@ describe("DevLogger", () => {
     logger.info("Test message");
 
     expect(consoleSpy.log).toHaveBeenCalled();
-    const output = consoleSpy.log.mock.calls[0][0];
+    const output = consoleSpy.log.mock.calls[0]?.[0] as string;
     expect(output).toContain("[INFO ]");
     expect(output).toContain("Test message");
   });
@@ -237,7 +237,7 @@ describe("DevLogger", () => {
     logger.debug("Debug message");
 
     expect(consoleSpy.log).toHaveBeenCalled();
-    const output = consoleSpy.log.mock.calls[0][0];
+    const output = consoleSpy.log.mock.calls[0]?.[0] as string;
     expect(output).toContain("[DEBUG]");
   });
 
@@ -246,7 +246,7 @@ describe("DevLogger", () => {
     logger.warn("Warning message");
 
     expect(consoleSpy.log).toHaveBeenCalled();
-    const output = consoleSpy.log.mock.calls[0][0];
+    const output = consoleSpy.log.mock.calls[0]?.[0] as string;
     expect(output).toContain("[WARN ]");
   });
 
@@ -257,7 +257,7 @@ describe("DevLogger", () => {
 
     expect(consoleSpy.log).toHaveBeenCalled();
     expect(consoleSpy.error).toHaveBeenCalledWith(error);
-    const output = consoleSpy.log.mock.calls[0][0];
+    const output = consoleSpy.log.mock.calls[0]?.[0] as string;
     expect(output).toContain("[ERROR]");
   });
 
@@ -265,7 +265,7 @@ describe("DevLogger", () => {
     const logger = new DevLogger({ correlationId: "corr-123" });
     logger.info("Test");
 
-    const output = consoleSpy.log.mock.calls[0][0];
+    const output = consoleSpy.log.mock.calls[0]?.[0] as string;
     expect(output).toContain("[corr-123");
   });
 
@@ -273,9 +273,8 @@ describe("DevLogger", () => {
     const logger = new DevLogger();
     logger.info("Test", { userId: "123" });
 
-    // Should have 2 calls - message and context
     expect(consoleSpy.log).toHaveBeenCalledTimes(2);
-    const contextOutput = consoleSpy.log.mock.calls[1][0];
+    const contextOutput = consoleSpy.log.mock.calls[1]?.[0] as string;
     expect(contextOutput).toContain("userId");
   });
 
@@ -300,10 +299,10 @@ describe("NullLogger", () => {
   it("should not throw on any method", () => {
     const logger = new NullLogger();
 
-    expect(() => logger.debug("test")).not.toThrow();
-    expect(() => logger.info("test")).not.toThrow();
-    expect(() => logger.warn("test")).not.toThrow();
-    expect(() => logger.error("test", new Error())).not.toThrow();
+    expect(() => logger.debug()).not.toThrow();
+    expect(() => logger.info()).not.toThrow();
+    expect(() => logger.warn()).not.toThrow();
+    expect(() => logger.error()).not.toThrow();
   });
 
   it("should return itself on child()", () => {
