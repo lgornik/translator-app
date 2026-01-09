@@ -1,4 +1,4 @@
-import { test as base, expect } from '@playwright/test';
+﻿import { test as base, expect } from '@playwright/test';
 
 /**
  * Extended test fixtures for Quiz App
@@ -37,19 +37,25 @@ class QuizPage {
   }
 
   async startTestQuiz() {
-    await this.page.locator('button').filter({ hasText: 'TEST' }).click();
+    const testButton = this.page.locator('button').filter({ hasText: 'TEST' });
+    await expect(testButton).toBeEnabled({ timeout: 15000 });
+    await testButton.click();
   }
 
   async startTimedQuiz(minutes: number) {
     const section = this.page.locator('.quiz-option').filter({ hasText: 'Na czas' });
     await section.getByRole('spinbutton').fill(String(minutes));
-    await section.getByText('Start').click();
+    const startButton = section.getByText('Start');
+    await expect(startButton).toBeEnabled({ timeout: 15000 });
+    await startButton.click();
   }
 
   async startCustomQuiz(wordCount: number) {
     const section = this.page.locator('.quiz-option').filter({ hasText: 'Własna liczba' });
     await section.getByRole('spinbutton').fill(String(wordCount));
-    await section.getByText('Start').click();
+    const startButton = section.getByText('Start');
+    await expect(startButton).toBeEnabled({ timeout: 15000 });
+    await startButton.click();
   }
 
   // Playing page actions
@@ -150,7 +156,7 @@ class QuizPage {
   }
 
   async isReinforceMode() {
-    return await this.page.getByText(/✓/).isVisible().catch(() => false);
+    return await this.page.getByText(/✔/).isVisible().catch(() => false);
   }
 
   async hasRepeatIndicator() {
@@ -159,7 +165,7 @@ class QuizPage {
 
   // Assertions
   async expectReinforceProgress(mastered: number, total: number) {
-    await expect(this.page.getByText(new RegExp(`✓.*${mastered}.*\\/.*${total}`))).toBeVisible();
+    await expect(this.page.getByText(new RegExp(`✔.*${mastered}.*\\/.*${total}`))).toBeVisible();
   }
 
   async expectRepeatIndicator(count?: number) {
