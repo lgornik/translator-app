@@ -1,0 +1,2 @@
+# Run lint-staged for staged files only
+npx lint-staged

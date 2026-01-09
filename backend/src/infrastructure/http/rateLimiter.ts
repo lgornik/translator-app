@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import { ILogger } from '../../application/interfaces/ILogger.js';
+import { Request, Response, NextFunction } from "express";
+import { ILogger } from "../../application/interfaces/ILogger.js";
 
 /**
  * Rate limit configuration
@@ -15,6 +15,24 @@ export interface RateLimitConfig {
   skip?: (req: Request) => boolean;
   /** Key generator for identifying clients */
   keyGenerator?: (req: Request) => string;
+}
+
+/**
+ * Per-user/session rate limit configuration
+ */
+export interface PerUserRateLimitConfig extends RateLimitConfig {
+  /** Header name containing session/user ID */
+  sessionHeader?: string;
+  /** Use session ID from header as primary key */
+  useSessionId?: boolean;
+  /** Tier-based limits (optional) */
+  tiers?: {
+    default: number;
+    authenticated?: number;
+    premium?: number;
+  };
+  /** Function to determine user tier */
+  getTier?: (req: Request) => "default" | "authenticated" | "premium";
 }
 
 /**
@@ -42,7 +60,10 @@ class RateLimitStore {
    * Increment counter for a key
    * Returns the current count and whether the limit is exceeded
    */
-  increment(key: string, maxRequests: number): { count: number; isLimited: boolean; resetTime: number } {
+  increment(
+    key: string,
+    maxRequests: number,
+  ): { count: number; isLimited: boolean; resetTime: number } {
     const now = Date.now();
     const entry = this.store.get(key);
 
@@ -113,18 +134,20 @@ class RateLimitStore {
  */
 function defaultKeyGenerator(req: Request): string {
   // Try various headers for real IP (when behind proxy)
-  const forwardedFor = req.headers['x-forwarded-for'];
+  const forwardedFor = req.headers["x-forwarded-for"];
   if (forwardedFor) {
-    const ips = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor.split(',')[0];
-    return ips?.trim() || 'unknown';
+    const ips = Array.isArray(forwardedFor)
+      ? forwardedFor[0]
+      : forwardedFor.split(",")[0];
+    return ips?.trim() || "unknown";
   }
 
-  const realIp = req.headers['x-real-ip'];
+  const realIp = req.headers["x-real-ip"];
   if (realIp) {
-    return Array.isArray(realIp) ? realIp[0] || 'unknown' : realIp;
+    return Array.isArray(realIp) ? realIp[0] || "unknown" : realIp;
   }
 
-  return req.ip || req.socket.remoteAddress || 'unknown';
+  return req.ip || req.socket.remoteAddress || "unknown";
 }
 
 /**
@@ -134,7 +157,7 @@ export function createRateLimiter(config: RateLimitConfig, logger?: ILogger) {
   const {
     windowMs,
     maxRequests,
-    message = 'Too many requests, please try again later.',
+    message = "Too many requests, please try again later.",
     skip,
     keyGenerator = defaultKeyGenerator,
   } = config;
@@ -151,21 +174,21 @@ export function createRateLimiter(config: RateLimitConfig, logger?: ILogger) {
     const { count, isLimited, resetTime } = store.increment(key, maxRequests);
 
     // Set rate limit headers
-    res.setHeader('X-RateLimit-Limit', maxRequests);
-    res.setHeader('X-RateLimit-Remaining', Math.max(0, maxRequests - count));
-    res.setHeader('X-RateLimit-Reset', Math.ceil(resetTime / 1000));
+    res.setHeader("X-RateLimit-Limit", maxRequests);
+    res.setHeader("X-RateLimit-Remaining", Math.max(0, maxRequests - count));
+    res.setHeader("X-RateLimit-Reset", Math.ceil(resetTime / 1000));
 
     if (isLimited) {
-      logger?.warn('Rate limit exceeded', {
+      logger?.warn("Rate limit exceeded", {
         key,
         count,
         maxRequests,
         path: req.path,
       });
 
-      res.setHeader('Retry-After', Math.ceil((resetTime - Date.now()) / 1000));
+      res.setHeader("Retry-After", Math.ceil((resetTime - Date.now()) / 1000));
       res.status(429).json({
-        code: 'RATE_LIMIT_EXCEEDED',
+        code: "RATE_LIMIT_EXCEEDED",
         message,
         retryAfter: Math.ceil((resetTime - Date.now()) / 1000),
       });
@@ -186,7 +209,7 @@ export const RateLimitPresets = {
   standard: {
     windowMs: 60 * 1000, // 1 minute
     maxRequests: 100,
-    message: 'Too many requests. Please wait a moment and try again.',
+    message: "Too many requests. Please wait a moment and try again.",
   } satisfies RateLimitConfig,
 
   /**
@@ -195,7 +218,7 @@ export const RateLimitPresets = {
   strict: {
     windowMs: 60 * 1000,
     maxRequests: 30,
-    message: 'Rate limit exceeded. Please slow down.',
+    message: "Rate limit exceeded. Please slow down.",
   } satisfies RateLimitConfig,
 
   /**
@@ -204,7 +227,7 @@ export const RateLimitPresets = {
   lenient: {
     windowMs: 60 * 1000,
     maxRequests: 300,
-    message: 'Too many requests. Please try again shortly.',
+    message: "Too many requests. Please try again shortly.",
   } satisfies RateLimitConfig,
 
   /**
@@ -213,7 +236,7 @@ export const RateLimitPresets = {
   graphql: {
     windowMs: 60 * 1000,
     maxRequests: 200,
-    message: 'Too many GraphQL requests. Please try again in a moment.',
+    message: "Too many GraphQL requests. Please try again in a moment.",
   } satisfies RateLimitConfig,
 } as const;
 
@@ -236,21 +259,21 @@ export interface OperationRateLimitConfig {
 }
 
 const DEFAULT_OPERATION_CONFIG: OperationRateLimitConfig = {
-  queryLimit: 300,      // Queries are read-only, more lenient
-  mutationLimit: 60,    // Mutations modify state, stricter
-  windowMs: 60 * 1000,  // 1 minute
+  queryLimit: 300, // Queries are read-only, more lenient
+  mutationLimit: 60, // Mutations modify state, stricter
+  windowMs: 60 * 1000, // 1 minute
   operations: {
     // High-frequency queries
-    'getRandomWord': 200,
-    'getRandomWords': 100,
-    'getWordCount': 300,
-    'getCategories': 300,
-    'getDifficulties': 300,
-    'getAllWords': 50,    // Heavy query, more restricted
-    
+    getRandomWord: 200,
+    getRandomWords: 100,
+    getWordCount: 300,
+    getCategories: 300,
+    getDifficulties: 300,
+    getAllWords: 50, // Heavy query, more restricted
+
     // Mutations (stricter limits)
-    'checkTranslation': 120,  // Core gameplay action
-    'resetSession': 30,       // Infrequent action
+    checkTranslation: 120, // Core gameplay action
+    resetSession: 30, // Infrequent action
   },
 };
 
@@ -277,13 +300,13 @@ class OperationRateLimitStore {
    * Increment counter for a key and operation
    */
   increment(
-    clientKey: string, 
-    operation: string, 
-    maxRequests: number
+    clientKey: string,
+    operation: string,
+    maxRequests: number,
   ): { count: number; isLimited: boolean; resetTime: number } {
     const now = Date.now();
     const compositeKey = `${clientKey}:${operation}`;
-    
+
     const entry = this.store.get(compositeKey);
 
     if (!entry || now > entry.resetTime) {
@@ -324,8 +347,11 @@ class OperationRateLimitStore {
 /**
  * Extract GraphQL operation name and type from request body
  */
-function extractGraphQLOperation(body: unknown): { name: string | null; type: 'query' | 'mutation' | null } {
-  if (!body || typeof body !== 'object' || !('query' in body)) {
+function extractGraphQLOperation(body: unknown): {
+  name: string | null;
+  type: "query" | "mutation" | null;
+} {
+  if (!body || typeof body !== "object" || !("query" in body)) {
     return { name: null, type: null };
   }
 
@@ -333,8 +359,9 @@ function extractGraphQLOperation(body: unknown): { name: string | null; type: 'q
   const operationName = (body as { operationName?: string }).operationName;
 
   // Determine operation type
-  const isMutation = query.trim().startsWith('mutation') || query.includes('mutation ');
-  const type: 'query' | 'mutation' = isMutation ? 'mutation' : 'query';
+  const isMutation =
+    query.trim().startsWith("mutation") || query.includes("mutation ");
+  const type: "query" | "mutation" = isMutation ? "mutation" : "query";
 
   // Try to get operation name from explicit operationName
   if (operationName) {
@@ -358,16 +385,16 @@ function extractGraphQLOperation(body: unknown): { name: string | null; type: 'q
 
 /**
  * Create a GraphQL rate limiter with per-operation limits
- * 
+ *
  * This provides granular rate limiting based on:
  * 1. Operation type (queries are more lenient than mutations)
  * 2. Specific operation names (custom limits per operation)
- * 
+ *
  * @example
  * ```typescript
  * // Default configuration
  * app.use('/graphql', createGraphQLRateLimiter({}, logger));
- * 
+ *
  * // Custom per-operation limits
  * app.use('/graphql', createGraphQLRateLimiter({
  *   queryLimit: 500,
@@ -380,14 +407,18 @@ function extractGraphQLOperation(body: unknown): { name: string | null; type: 'q
  * ```
  */
 export function createGraphQLRateLimiter(
-  config: Partial<RateLimitConfig & OperationRateLimitConfig> = {}, 
-  logger?: ILogger
+  config: Partial<RateLimitConfig & OperationRateLimitConfig> = {},
+  logger?: ILogger,
 ) {
   const opConfig: OperationRateLimitConfig = {
     queryLimit: config.queryLimit ?? DEFAULT_OPERATION_CONFIG.queryLimit,
-    mutationLimit: config.mutationLimit ?? DEFAULT_OPERATION_CONFIG.mutationLimit,
+    mutationLimit:
+      config.mutationLimit ?? DEFAULT_OPERATION_CONFIG.mutationLimit,
     windowMs: config.windowMs ?? DEFAULT_OPERATION_CONFIG.windowMs,
-    operations: { ...DEFAULT_OPERATION_CONFIG.operations, ...config.operations },
+    operations: {
+      ...DEFAULT_OPERATION_CONFIG.operations,
+      ...config.operations,
+    },
   };
 
   const store = new OperationRateLimitStore(opConfig.windowMs);
@@ -396,37 +427,42 @@ export function createGraphQLRateLimiter(
   return (req: Request, res: Response, next: NextFunction): void => {
     // Skip introspection queries (useful for GraphQL tooling)
     const body = req.body;
-    if (body && typeof body === 'object' && 'query' in body) {
+    if (body && typeof body === "object" && "query" in body) {
       const query = (body as { query: string }).query;
-      if (query?.includes('__schema') || query?.includes('__type')) {
+      if (query?.includes("__schema") || query?.includes("__type")) {
         return next();
       }
     }
 
-    const { name: operationName, type: operationType } = extractGraphQLOperation(body);
+    const { name: operationName, type: operationType } =
+      extractGraphQLOperation(body);
     const clientKey = keyGenerator(req);
 
     // Determine rate limit for this operation
     let maxRequests: number;
     if (operationName && opConfig.operations?.[operationName] !== undefined) {
       maxRequests = opConfig.operations[operationName];
-    } else if (operationType === 'mutation') {
+    } else if (operationType === "mutation") {
       maxRequests = opConfig.mutationLimit;
     } else {
       maxRequests = opConfig.queryLimit;
     }
 
-    const operationKey = operationName || operationType || 'unknown';
-    const { count, isLimited, resetTime } = store.increment(clientKey, operationKey, maxRequests);
+    const operationKey = operationName || operationType || "unknown";
+    const { count, isLimited, resetTime } = store.increment(
+      clientKey,
+      operationKey,
+      maxRequests,
+    );
 
     // Set rate limit headers
-    res.setHeader('X-RateLimit-Limit', maxRequests);
-    res.setHeader('X-RateLimit-Remaining', Math.max(0, maxRequests - count));
-    res.setHeader('X-RateLimit-Reset', Math.ceil(resetTime / 1000));
-    res.setHeader('X-RateLimit-Operation', operationKey);
+    res.setHeader("X-RateLimit-Limit", maxRequests);
+    res.setHeader("X-RateLimit-Remaining", Math.max(0, maxRequests - count));
+    res.setHeader("X-RateLimit-Reset", Math.ceil(resetTime / 1000));
+    res.setHeader("X-RateLimit-Operation", operationKey);
 
     if (isLimited) {
-      logger?.warn('GraphQL rate limit exceeded', {
+      logger?.warn("GraphQL rate limit exceeded", {
         clientKey,
         operation: operationKey,
         operationType,
@@ -434,16 +470,18 @@ export function createGraphQLRateLimiter(
         maxRequests,
       });
 
-      res.setHeader('Retry-After', Math.ceil((resetTime - Date.now()) / 1000));
+      res.setHeader("Retry-After", Math.ceil((resetTime - Date.now()) / 1000));
       res.status(429).json({
-        errors: [{
-          message: `Rate limit exceeded for operation '${operationKey}'. Please try again later.`,
-          extensions: {
-            code: 'RATE_LIMIT_EXCEEDED',
-            operation: operationKey,
-            retryAfter: Math.ceil((resetTime - Date.now()) / 1000),
+        errors: [
+          {
+            message: `Rate limit exceeded for operation '${operationKey}'. Please try again later.`,
+            extensions: {
+              code: "RATE_LIMIT_EXCEEDED",
+              operation: operationKey,
+              retryAfter: Math.ceil((resetTime - Date.now()) / 1000),
+            },
           },
-        }],
+        ],
       });
       return;
     }
@@ -451,3 +489,172 @@ export function createGraphQLRateLimiter(
     next();
   };
 }
+
+// ============================================================================
+// Per-User/Session Rate Limiting
+// ============================================================================
+
+/**
+ * Extract session ID from request
+ */
+function extractSessionId(
+  req: Request,
+  headerName: string = "x-session-id",
+): string | null {
+  const sessionId = req.headers[headerName];
+  if (typeof sessionId === "string" && sessionId.length > 0) {
+    return sessionId;
+  }
+  return null;
+}
+
+/**
+ * Combined key generator that uses session ID if available, falls back to IP
+ */
+function sessionAwareKeyGenerator(
+  req: Request,
+  sessionHeader: string = "x-session-id",
+): string {
+  const sessionId = extractSessionId(req, sessionHeader);
+  if (sessionId) {
+    return `session:${sessionId}`;
+  }
+
+  // Fall back to IP-based identification
+  const forwardedFor = req.headers["x-forwarded-for"];
+  if (forwardedFor) {
+    const ips = Array.isArray(forwardedFor)
+      ? forwardedFor[0]
+      : forwardedFor.split(",")[0];
+    return `ip:${ips?.trim() || "unknown"}`;
+  }
+
+  const realIp = req.headers["x-real-ip"];
+  if (realIp) {
+    return `ip:${Array.isArray(realIp) ? realIp[0] || "unknown" : realIp}`;
+  }
+
+  return `ip:${req.ip || req.socket.remoteAddress || "unknown"}`;
+}
+
+/**
+ * Per-user/session rate limiter with tier support
+ */
+export function createPerUserRateLimiter(
+  config: PerUserRateLimitConfig,
+  logger?: ILogger,
+) {
+  const {
+    windowMs,
+    maxRequests,
+    message = "Too many requests from this user/session. Please try again later.",
+    skip,
+    sessionHeader = "x-session-id",
+    tiers,
+    getTier,
+  } = config;
+
+  const store = new RateLimitStore(windowMs);
+
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (skip && skip(req)) {
+      return next();
+    }
+
+    const key = sessionAwareKeyGenerator(req, sessionHeader);
+
+    let effectiveMaxRequests = maxRequests;
+    let userTier: string = "default";
+
+    if (tiers && getTier) {
+      userTier = getTier(req);
+      effectiveMaxRequests =
+        tiers[userTier as keyof typeof tiers] ?? maxRequests;
+    }
+
+    const { count, isLimited, resetTime } = store.increment(
+      key,
+      effectiveMaxRequests,
+    );
+
+    res.setHeader("X-RateLimit-Limit", effectiveMaxRequests);
+    res.setHeader(
+      "X-RateLimit-Remaining",
+      Math.max(0, effectiveMaxRequests - count),
+    );
+    res.setHeader("X-RateLimit-Reset", Math.ceil(resetTime / 1000));
+    res.setHeader(
+      "X-RateLimit-Policy",
+      `${effectiveMaxRequests};w=${Math.ceil(windowMs / 1000)}`,
+    );
+
+    if (userTier !== "default") {
+      res.setHeader("X-RateLimit-Tier", userTier);
+    }
+
+    if (isLimited) {
+      const retryAfter = Math.ceil((resetTime - Date.now()) / 1000);
+
+      logger?.warn("Per-user rate limit exceeded", {
+        key,
+        userTier,
+        count,
+        maxRequests: effectiveMaxRequests,
+        path: req.path,
+        method: req.method,
+      });
+
+      res.setHeader("Retry-After", retryAfter);
+      res.status(429).json({
+        code: "RATE_LIMIT_EXCEEDED",
+        message,
+        retryAfter,
+        tier: userTier,
+      });
+      return;
+    }
+
+    next();
+  };
+}
+
+/**
+ * Presets for per-user rate limiting
+ */
+export const PerUserRateLimitPresets = {
+  standard: {
+    windowMs: 60 * 1000,
+    maxRequests: 100,
+    sessionHeader: "x-session-id",
+    message: "Too many requests. Please wait a moment.",
+  } satisfies PerUserRateLimitConfig,
+
+  quiz: {
+    windowMs: 60 * 1000,
+    maxRequests: 60,
+    sessionHeader: "x-session-id",
+    tiers: {
+      default: 60,
+      authenticated: 200,
+      premium: 1000,
+    },
+    getTier: (req: Request) => {
+      const sessionId = req.headers["x-session-id"];
+      if (sessionId) return "authenticated";
+      return "default";
+    },
+    message: "Rate limit exceeded. Please slow down.",
+  } satisfies PerUserRateLimitConfig,
+
+  api: {
+    windowMs: 60 * 1000,
+    maxRequests: 30,
+    sessionHeader: "x-api-key",
+    tiers: {
+      default: 30,
+      authenticated: 100,
+      premium: 500,
+    },
+    message: "API rate limit exceeded.",
+  } satisfies PerUserRateLimitConfig,
+} as const;

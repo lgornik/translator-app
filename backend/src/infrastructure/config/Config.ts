@@ -1,41 +1,44 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * Environment schema with validation
  */
 const envSchema = z.object({
   NODE_ENV: z
-    .enum(['development', 'production', 'test'])
-    .default('development'),
+    .enum(["development", "production", "test"])
+    .default("development"),
   PORT: z
     .string()
     .transform(Number)
     .pipe(z.number().int().min(1).max(65535))
-    .default('4000'),
-  CORS_ORIGIN: z.string().default('*'),
-  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+    .default("4000"),
+  CORS_ORIGIN: z.string().default("*"),
+  LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 
   // Database (optional - if not provided, uses InMemory)
   DATABASE_URL: z.string().optional(),
+
+  // Redis (optional - if not provided, uses InMemory sessions)
+  REDIS_URL: z.string().optional(),
 
   // Session settings
   SESSION_MAX_AGE_HOURS: z
     .string()
     .transform(Number)
     .pipe(z.number().int().min(1))
-    .default('24'),
+    .default("24"),
   SESSION_MAX_COUNT: z
     .string()
     .transform(Number)
     .pipe(z.number().int().min(100))
-    .default('10000'),
+    .default("10000"),
 
   // Graceful shutdown
   SHUTDOWN_TIMEOUT_MS: z
     .string()
     .transform(Number)
     .pipe(z.number().int().min(1000))
-    .default('10000'),
+    .default("10000"),
 });
 
 type EnvConfig = z.infer<typeof envSchema>;
@@ -47,9 +50,9 @@ function parseEnv(): EnvConfig {
   const result = envSchema.safeParse(process.env);
 
   if (!result.success) {
-    console.error('❌ Invalid environment configuration:');
+    console.error("❌ Invalid environment configuration:");
     for (const error of result.error.errors) {
-      console.error(`   ${error.path.join('.')}: ${error.message}`);
+      console.error(`   ${error.path.join(".")}: ${error.message}`);
     }
     process.exit(1);
   }
@@ -69,20 +72,20 @@ class Config {
   }
 
   // Environment
-  get nodeEnv(): 'development' | 'production' | 'test' {
+  get nodeEnv(): "development" | "production" | "test" {
     return this.env.NODE_ENV;
   }
 
   get isDevelopment(): boolean {
-    return this.env.NODE_ENV === 'development';
+    return this.env.NODE_ENV === "development";
   }
 
   get isProduction(): boolean {
-    return this.env.NODE_ENV === 'production';
+    return this.env.NODE_ENV === "production";
   }
 
   get isTest(): boolean {
-    return this.env.NODE_ENV === 'test';
+    return this.env.NODE_ENV === "test";
   }
 
   // Server
@@ -102,10 +105,18 @@ class Config {
     } as const;
   }
 
+  // Redis
+  get redis() {
+    return {
+      url: this.env.REDIS_URL,
+      isConfigured: !!this.env.REDIS_URL,
+    } as const;
+  }
+
   // GraphQL
   get graphql() {
     return {
-      path: '/graphql',
+      path: "/graphql",
       introspection: !this.isProduction,
       playground: this.isDevelopment,
     } as const;
@@ -129,8 +140,8 @@ class Config {
   // API Info
   get api() {
     return {
-      name: 'Translator API',
-      version: '2.0.0',
+      name: "Translator API",
+      version: "2.1.0",
     } as const;
   }
 }

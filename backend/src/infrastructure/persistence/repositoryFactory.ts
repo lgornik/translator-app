@@ -1,16 +1,17 @@
-﻿import postgres from 'postgres';
-import { drizzle, PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import { sql } from 'drizzle-orm';
-import { IWordRepository } from '../../domain/repositories/IWordRepository.js';
-import { ISessionRepository } from '../../domain/repositories/ISessionRepository.js';
-import { ILogger } from '../../application/interfaces/ILogger.js';
-import { InMemoryWordRepository } from './InMemoryWordRepository.js';
-import { InMemorySessionRepository } from './InMemorySessionRepository.js';
-import { PostgresWordRepository } from './postgres/PostgresWordRepository.js';
-import { PostgresSessionRepository } from './postgres/PostgresSessionRepository.js';
-import { CachedWordRepository, CacheConfig } from './CachedWordRepository.js';
-import { dictionaryData } from '../data/dictionary.js';
-import { NullLogger } from '../logging/Logger.js';
+import postgres from "postgres";
+import { drizzle, PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import { sql } from "drizzle-orm";
+import { IWordRepository } from "../../domain/repositories/IWordRepository.js";
+import { ISessionRepository } from "../../domain/repositories/ISessionRepository.js";
+import { ILogger } from "../../application/interfaces/ILogger.js";
+import { InMemoryWordRepository } from "./InMemoryWordRepository.js";
+import { InMemorySessionRepository } from "./InMemorySessionRepository.js";
+import { PostgresWordRepository } from "./postgres/PostgresWordRepository.js";
+import { PostgresSessionRepository } from "./postgres/PostgresSessionRepository.js";
+import { CachedWordRepository, CacheConfig } from "./CachedWordRepository.js";
+import { RedisSessionRepository } from "./RedisSessionRepository.js";
+import { dictionaryData } from "../data/dictionary.js";
+import { NullLogger } from "../logging/Logger.js";
 
 /**
  * Cache statistics
@@ -61,6 +62,8 @@ export interface RepositoryOptions {
   cacheConfig?: Partial<CacheConfig>;
   /** Logger instance */
   logger?: ILogger;
+  /** Redis URL for session storage (optional - uses InMemory if not provided) */
+  redisUrl?: string;
 }
 
 const DEFAULT_OPTIONS: RepositoryOptions = {
@@ -77,7 +80,7 @@ const DEFAULT_OPTIONS: RepositoryOptions = {
  */
 export function createRepositories(
   databaseUrl?: string,
-  options: RepositoryOptions = {}
+  options: RepositoryOptions = {},
 ): Repositories {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const logger = opts.logger ?? new NullLogger();
@@ -87,15 +90,28 @@ export function createRepositories(
   let cleanup: (() => Promise<void>) | undefined;
   let checkDatabase: () => Promise<DatabaseHealthCheck>;
   let db: PostgresJsDatabase | undefined;
+  let redisSessionRepo: RedisSessionRepository | undefined;
 
   if (databaseUrl) {
     const client = postgres(databaseUrl);
     db = drizzle(client);
 
     baseWordRepository = new PostgresWordRepository(db);
-    sessionRepository = new PostgresSessionRepository(db);
-    
+
+    // Use Redis for sessions if URL provided, otherwise PostgreSQL
+    if (opts.redisUrl) {
+      redisSessionRepo = new RedisSessionRepository(opts.redisUrl, logger);
+      sessionRepository = redisSessionRepo;
+      logger.info("Using Redis for session storage");
+    } else {
+      sessionRepository = new PostgresSessionRepository(db);
+      logger.info("Using PostgreSQL for session storage");
+    }
+
     cleanup = async () => {
+      if (redisSessionRepo) {
+        await redisSessionRepo.disconnect();
+      }
       await client.end();
     };
 
@@ -112,15 +128,31 @@ export function createRepositories(
         return {
           ok: false,
           latency: Date.now() - startTime,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : "Unknown error",
         };
       }
     };
   } else {
     // InMemory repositories
     baseWordRepository = new InMemoryWordRepository(dictionaryData);
-    sessionRepository = new InMemorySessionRepository();
-    
+
+    // Use Redis for sessions if URL provided, otherwise InMemory
+    if (opts.redisUrl) {
+      redisSessionRepo = new RedisSessionRepository(opts.redisUrl, logger);
+      sessionRepository = redisSessionRepo;
+      logger.info(
+        "Using Redis for session storage (with InMemory word repository)",
+      );
+
+      cleanup = async () => {
+        if (redisSessionRepo) {
+          await redisSessionRepo.disconnect();
+        }
+      };
+    } else {
+      sessionRepository = new InMemorySessionRepository();
+    }
+
     // InMemory is always "healthy"
     checkDatabase = async (): Promise<DatabaseHealthCheck> => ({
       ok: true,
@@ -138,12 +170,23 @@ export function createRepositories(
     const cachedRepo = new CachedWordRepository(
       baseWordRepository,
       logger,
-      opts.cacheConfig
+      opts.cacheConfig,
     );
     wordRepository = cachedRepo;
-    warmUp = () => cachedRepo.warmUp();
+    warmUp = async () => {
+      // Connect Redis if needed
+      if (redisSessionRepo) {
+        await redisSessionRepo.connect();
+      }
+      await cachedRepo.warmUp();
+    };
     invalidateCaches = () => cachedRepo.invalidateAll();
     getCacheStats = () => cachedRepo.getStats();
+  } else if (redisSessionRepo) {
+    // Still need to connect Redis even without cache
+    warmUp = async () => {
+      await redisSessionRepo!.connect();
+    };
   }
 
   // Build result object (handling exactOptionalPropertyTypes)

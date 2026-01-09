@@ -1,0 +1,164 @@
+{
+  "result": [
+    {
+      "scriptId": "486",
+      "url": "file:///C:/Users/lukas/TransApp/files/translator-app-git/backend/src/__tests__/unit/translation-checker.test.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 10514, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 10514, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 498, "endOffset": 3860, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 614, "endOffset": 2931, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 692, "endOffset": 967, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1029, "endOffset": 1300, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1358, "endOffset": 1551, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1619, "endOffset": 1744, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1825, "endOffset": 2048, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 2124, "endOffset": 2402, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 2469, "endOffset": 2595, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 2674, "endOffset": 2925, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 2990, "endOffset": 3856, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 3068, "endOffset": 3168, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 3252, "endOffset": 3362, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 3447, "endOffset": 3598, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 3667, "endOffset": 3850, "count": 1 }],
+          "isBlockCoverage": true
+        }
+      ]
+    },
+    {
+      "scriptId": "488",
+      "url": "file:///C:/Users/lukas/TransApp/files/translator-app-git/backend/src/domain/services/TranslationChecker.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 10521, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 10521, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "check",
+          "ranges": [{ "startOffset": 286, "endOffset": 628, "count": 13 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "generateValidVariants",
+          "ranges": [
+            { "startOffset": 749, "endOffset": 1376, "count": 13 },
+            { "startOffset": 904, "endOffset": 1337, "count": 15 },
+            { "startOffset": 1280, "endOffset": 1331, "count": 2 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 848, "endOffset": 867, "count": 15 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "normalizeAnswer",
+          "ranges": [{ "startOffset": 1528, "endOffset": 1618, "count": 23 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "calculateSimilarity",
+          "ranges": [
+            { "startOffset": 1760, "endOffset": 2112, "count": 5 },
+            { "startOffset": 1899, "endOffset": 1908, "count": 1 },
+            { "startOffset": 1908, "endOffset": 1933, "count": 4 },
+            { "startOffset": 1933, "endOffset": 1951, "count": 3 },
+            { "startOffset": 1953, "endOffset": 2111, "count": 2 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "levenshteinDistance",
+          "ranges": [
+            { "startOffset": 2183, "endOffset": 2747, "count": 2 },
+            { "startOffset": 2283, "endOffset": 2313, "count": 8 },
+            { "startOffset": 2357, "endOffset": 2388, "count": 9 },
+            { "startOffset": 2432, "endOffset": 2698, "count": 6 },
+            { "startOffset": 2479, "endOffset": 2692, "count": 21 },
+            { "startOffset": 2530, "endOffset": 2533, "count": 4 },
+            { "startOffset": 2534, "endOffset": 2537, "count": 17 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 2856, "endOffset": 2890, "count": 1 }],
+          "isBlockCoverage": true
+        }
+      ]
+    }
+  ]
+}

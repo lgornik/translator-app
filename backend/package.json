@@ -1,7 +1,7 @@
 {
   "name": "@translator-app/backend",
-  "version": "2.0.0",
-  "description": "Clean Architecture Translator API",
+  "version": "2.2.0",
+  "description": "Clean Architecture Translator API with DI Container, Monitoring, and Full Test Coverage",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -10,7 +10,8 @@
     "build": "tsc",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest --coverage",
+    "test:coverage": "vitest run --coverage",
+    "test:contract": "vitest run src/__tests__/contract/",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "typecheck": "tsc --noEmit",
@@ -30,6 +31,9 @@
     "graphql": "^16.8.1",
     "graphql-tag": "^2.12.6",
     "postgres": "^3.4.7",
+    "redis": "^4.6.12",
+    "reflect-metadata": "^0.2.1",
+    "tsyringe": "^4.8.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {

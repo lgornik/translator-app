@@ -1,31 +1,39 @@
-import { Result } from '../../shared/core/Result.js';
+import { Result } from "../../shared/core/Result.js";
 import {
   DomainError,
   NoWordsAvailableError,
-} from '../../shared/errors/DomainErrors.js';
-import { IWordRepository, WordFilters } from '../../domain/repositories/IWordRepository.js';
-import { ISessionRepository } from '../../domain/repositories/ISessionRepository.js';
-import { TranslationMode } from '../../domain/value-objects/TranslationMode.js';
-import { Difficulty } from '../../domain/value-objects/Difficulty.js';
-import { Category } from '../../domain/value-objects/Category.js';
-import { SessionId } from '../../domain/value-objects/SessionId.js';
-import { RandomWordPicker } from '../../domain/services/RandomWordPicker.js';
-import { ILogger } from '../interfaces/ILogger.js';
-import { GetRandomWordInput, GetRandomWordOutput } from '../dtos/index.js';
+} from "../../shared/errors/DomainErrors.js";
+import {
+  IWordRepository,
+  WordFilters,
+} from "../../domain/repositories/IWordRepository.js";
+import { ISessionRepository } from "../../domain/repositories/ISessionRepository.js";
+import { TranslationMode } from "../../domain/value-objects/TranslationMode.js";
+import { Difficulty } from "../../domain/value-objects/Difficulty.js";
+import { Category } from "../../domain/value-objects/Category.js";
+import { SessionId } from "../../domain/value-objects/SessionId.js";
+import { RandomWordPicker } from "../../domain/services/RandomWordPicker.js";
+import { ILogger } from "../interfaces/ILogger.js";
+import { GetRandomWordInput, GetRandomWordOutput } from "../dtos/index.js";
+import { ISessionMutex } from "../../infrastructure/persistence/SessionMutex.js";
 
 /**
  * Get Random Word Use Case
  * Fetches a random word for translation, tracking used words per session
+ * Uses mutex to prevent race conditions when accessing session data
  */
 export class GetRandomWordUseCase {
   constructor(
     private readonly wordRepository: IWordRepository,
     private readonly sessionRepository: ISessionRepository,
     private readonly randomPicker: RandomWordPicker,
-    private readonly logger: ILogger
+    private readonly logger: ILogger,
+    private readonly sessionMutex?: ISessionMutex,
   ) {}
 
-  async execute(input: GetRandomWordInput): Promise<Result<GetRandomWordOutput, DomainError>> {
+  async execute(
+    input: GetRandomWordInput,
+  ): Promise<Result<GetRandomWordOutput, DomainError>> {
     const startTime = Date.now();
 
     // 1. Validate and parse input
@@ -65,62 +73,77 @@ export class GetRandomWordUseCase {
     const availableWords = await this.wordRepository.findByFilters(filters);
 
     if (availableWords.length === 0) {
-      const errorFilters: { category?: string | undefined; difficulty?: number | undefined } = {};
+      const errorFilters: {
+        category?: string | undefined;
+        difficulty?: number | undefined;
+      } = {};
       if (category) errorFilters.category = category.name;
       if (difficulty) errorFilters.difficulty = difficulty.value;
-      
+
       return Result.fail(new NoWordsAvailableError(errorFilters));
     }
 
-    // 3. Get or create session
-    const session = await this.sessionRepository.findOrCreate(sessionId);
+    // 3. Execute session operations with mutex lock to prevent race conditions
+    const executeWithSession = async (): Promise<
+      Result<GetRandomWordOutput, DomainError>
+    > => {
+      // Get or create session
+      const session = await this.sessionRepository.findOrCreate(sessionId);
 
-    // 4. Filter out used words
-    const unusedWords = availableWords.filter(
-      (word) => !session.hasUsedWord(word.id)
-    );
+      // Filter out used words
+      const unusedWords = availableWords.filter(
+        (word) => !session.hasUsedWord(word.id),
+      );
 
-    // 5. Reset session if all words used
-    if (unusedWords.length === 0) {
-      this.logger.debug('All words used, resetting session for filters', {
-        sessionId: sessionId.value,
-        wordCount: availableWords.length,
-      });
+      // Reset session if all words used
+      if (unusedWords.length === 0) {
+        this.logger.debug("All words used, resetting session for filters", {
+          sessionId: sessionId.value,
+          wordCount: availableWords.length,
+        });
 
-      // Reset only words matching current filters
-      session.resetWords(availableWords.map((w) => w.id));
+        // Reset only words matching current filters
+        session.resetWords(availableWords.map((w) => w.id));
+        await this.sessionRepository.save(session);
+
+        // Recursive call with fresh session (outside mutex to avoid deadlock)
+        return this.execute(input);
+      }
+
+      // Pick random word
+      const selectedWord = this.randomPicker.pick(unusedWords);
+      if (!selectedWord) {
+        return Result.fail(new NoWordsAvailableError());
+      }
+
+      // Mark word as used
+      session.markWordAsUsed(selectedWord.id);
       await this.sessionRepository.save(session);
 
-      // Recursive call with fresh session
-      return this.execute(input);
+      // Log and return
+      const duration = Date.now() - startTime;
+      this.logger.info("Random word selected", {
+        operation: "GetRandomWord",
+        sessionId: sessionId.value,
+        wordId: selectedWord.id.value,
+        duration,
+      });
+
+      return Result.ok({
+        id: selectedWord.id.value,
+        wordToTranslate: selectedWord.getWordToTranslate(mode),
+        correctTranslation: selectedWord.getCorrectTranslation(mode),
+        mode: mode.toString(),
+        category: selectedWord.category.name,
+        difficulty: selectedWord.difficulty.value,
+      });
+    };
+
+    // Use mutex if available, otherwise execute directly
+    if (this.sessionMutex) {
+      return this.sessionMutex.withLock(sessionId.value, executeWithSession);
     }
 
-    // 6. Pick random word
-    const selectedWord = this.randomPicker.pick(unusedWords);
-    if (!selectedWord) {
-      return Result.fail(new NoWordsAvailableError());
-    }
-
-    // 7. Mark word as used
-    session.markWordAsUsed(selectedWord.id);
-    await this.sessionRepository.save(session);
-
-    // 8. Log and return
-    const duration = Date.now() - startTime;
-    this.logger.info('Random word selected', {
-      operation: 'GetRandomWord',
-      sessionId: sessionId.value,
-      wordId: selectedWord.id.value,
-      duration,
-    });
-
-    return Result.ok({
-      id: selectedWord.id.value,
-      wordToTranslate: selectedWord.getWordToTranslate(mode),
-      correctTranslation: selectedWord.getCorrectTranslation(mode),
-      mode: mode.toString(),
-      category: selectedWord.category.name,
-      difficulty: selectedWord.difficulty.value,
-    });
+    return executeWithSession();
   }
 }

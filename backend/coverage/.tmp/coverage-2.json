@@ -1,0 +1,304 @@
+{
+  "result": [
+    {
+      "scriptId": "486",
+      "url": "file:///C:/Users/lukas/TransApp/files/translator-app-git/backend/src/__tests__/unit/per-user-rate-limiter.test.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 22228, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 22228, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "createMockRequest",
+          "ranges": [{ "startOffset": 492, "endOffset": 691, "count": 9 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "createMockResponse",
+          "ranges": [{ "startOffset": 692, "endOffset": 923, "count": 8 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 983, "endOffset": 7730, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1038, "endOffset": 1091, "count": 11 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1150, "endOffset": 2962, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1228, "endOffset": 1611, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 1683, "endOffset": 2267, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 2332, "endOffset": 2956, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 3029, "endOffset": 4235, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 3103, "endOffset": 3713, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 3787, "endOffset": 4229, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 4299, "endOffset": 5829, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 4383, "endOffset": 5154, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "getTier",
+          "ranges": [
+            { "startOffset": 4626, "endOffset": 4799, "count": 3 },
+            { "startOffset": 4677, "endOffset": 4694, "count": 0 },
+            { "startOffset": 4761, "endOffset": 4798, "count": 0 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 5237, "endOffset": 5823, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "getTier",
+          "ranges": [
+            { "startOffset": 5461, "endOffset": 5527, "count": 1 },
+            { "startOffset": 5516, "endOffset": 5527, "count": 0 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 5882, "endOffset": 6446, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 5971, "endOffset": 6440, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "skip",
+          "ranges": [{ "startOffset": 6111, "endOffset": 6142, "count": 3 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 6493, "endOffset": 7726, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 6561, "endOffset": 6905, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 6975, "endOffset": 7429, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 7487, "endOffset": 7720, "count": 1 }],
+          "isBlockCoverage": true
+        }
+      ]
+    },
+    {
+      "scriptId": "488",
+      "url": "file:///C:/Users/lukas/TransApp/files/translator-app-git/backend/src/infrastructure/http/rateLimiter.ts",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 0, "endOffset": 47815, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 13, "endOffset": 47815, "count": 1 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "<instance_members_initializer>",
+          "ranges": [{ "startOffset": 206, "endOffset": 1749, "count": 8 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "RateLimitStore",
+          "ranges": [{ "startOffset": 210, "endOffset": 334, "count": 8 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [{ "startOffset": 303, "endOffset": 323, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "increment",
+          "ranges": [
+            { "startOffset": 510, "endOffset": 1005, "count": 16 },
+            { "startOffset": 622, "endOffset": 646, "count": 8 },
+            { "startOffset": 648, "endOffset": 1004, "count": 8 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 1053, "endOffset": 1230, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "cleanup",
+          "ranges": [{ "startOffset": 1274, "endOffset": 1443, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "destroy",
+          "ranges": [{ "startOffset": 1496, "endOffset": 1651, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "get size",
+          "ranges": [{ "startOffset": 1703, "endOffset": 1747, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "defaultKeyGenerator",
+          "ranges": [{ "startOffset": 1750, "endOffset": 2186, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "createRateLimiter",
+          "ranges": [{ "startOffset": 2187, "endOffset": 3261, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 3367, "endOffset": 3400, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 4360, "endOffset": 4392, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "<instance_members_initializer>",
+          "ranges": [{ "startOffset": 5000, "endOffset": 6169, "count": 0 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "extractGraphQLOperation",
+          "ranges": [{ "startOffset": 6170, "endOffset": 6859, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "createGraphQLRateLimiter",
+          "ranges": [{ "startOffset": 6860, "endOffset": 9157, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 9270, "endOffset": 9310, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "extractSessionId",
+          "ranges": [
+            { "startOffset": 9314, "endOffset": 9526, "count": 16 },
+            { "startOffset": 9457, "endOffset": 9480, "count": 8 },
+            { "startOffset": 9482, "endOffset": 9525, "count": 8 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "sessionAwareKeyGenerator",
+          "ranges": [
+            { "startOffset": 9527, "endOffset": 10140, "count": 16 },
+            { "startOffset": 9675, "endOffset": 9791, "count": 8 },
+            { "startOffset": 9791, "endOffset": 9933, "count": 0 },
+            { "startOffset": 9933, "endOffset": 9991, "count": 8 },
+            { "startOffset": 9991, "endOffset": 10072, "count": 0 },
+            { "startOffset": 10072, "endOffset": 10095, "count": 8 },
+            { "startOffset": 10095, "endOffset": 10122, "count": 0 },
+            { "startOffset": 10123, "endOffset": 10135, "count": 0 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "createPerUserRateLimiter",
+          "ranges": [{ "startOffset": 10141, "endOffset": 11804, "count": 8 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "",
+          "ranges": [
+            { "startOffset": 10455, "endOffset": 11801, "count": 19 },
+            { "startOffset": 10490, "endOffset": 10502, "count": 3 },
+            { "startOffset": 10504, "endOffset": 10532, "count": 3 },
+            { "startOffset": 10532, "endOffset": 10683, "count": 16 },
+            { "startOffset": 10683, "endOffset": 10693, "count": 4 },
+            { "startOffset": 10695, "endOffset": 10794, "count": 4 },
+            { "startOffset": 10773, "endOffset": 10787, "count": 0 },
+            { "startOffset": 10794, "endOffset": 11231, "count": 16 },
+            { "startOffset": 11231, "endOffset": 11289, "count": 4 },
+            { "startOffset": 11289, "endOffset": 11309, "count": 16 },
+            { "startOffset": 11309, "endOffset": 11785, "count": 2 },
+            { "startOffset": 11391, "endOffset": 11397, "count": 0 },
+            { "startOffset": 11785, "endOffset": 11800, "count": 14 }
+          ],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 11917, "endOffset": 11957, "count": 8 }],
+          "isBlockCoverage": true
+        },
+        {
+          "functionName": "getTier",
+          "ranges": [{ "startOffset": 12338, "endOffset": 12476, "count": 0 }],
+          "isBlockCoverage": false
+        },
+        {
+          "functionName": "get",
+          "ranges": [{ "startOffset": 12865, "endOffset": 12904, "count": 9 }],
+          "isBlockCoverage": true
+        }
+      ]
+    }
+  ]
+}
