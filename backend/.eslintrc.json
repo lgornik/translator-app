@@ -33,5 +33,12 @@
     "@typescript-eslint/no-unnecessary-type-assertion": "off",
     "no-console": "off"
   },
-  "ignorePatterns": ["dist", "node_modules", "*.js"]
+  "ignorePatterns": [
+    "dist",
+    "node_modules",
+    "*.js",
+    "vitest.config.ts",
+    "drizzle.config.ts",
+    "seed.ts"
+  ]
 }
