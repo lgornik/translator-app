@@ -4,7 +4,7 @@
     "prettier --write"
   ],
   "frontend/**/*.{ts,tsx}": [
-    "eslint --fix --config frontend/.eslintrc.json",
+    "eslint --fix --config frontend/.eslintrc.cjs",
     "prettier --write"
   ],
   "*.{json,md,yml,yaml}": ["prettier --write"],

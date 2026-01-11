@@ -12,7 +12,8 @@
     }
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "echo No lint configured for shared"
   },
   "devDependencies": {
     "typescript": "^5.3.3"
