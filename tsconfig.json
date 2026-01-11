@@ -1,0 +1,4 @@
+{
+  "references": [{ "path": "./backend" }, { "path": "./frontend" }],
+  "include": ["backend/src/**/*", "frontend/src/**/*"]
+}

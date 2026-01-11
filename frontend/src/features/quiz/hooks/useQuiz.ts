@@ -100,11 +100,13 @@ export function useQuiz(): UseQuizReturn {
   });
 
   // Timer management
+  // Timer should run in all active quiz states, not just 'playing'
+  const isQuizActive = is.playing || is.loading || is.loadingPool;
   const { isRunning: isTimerRunning, formattedTime: timerDisplay } =
     useQuizTimer({
       timeLimit: context.timeLimit,
       timeRemaining: context.timeRemaining,
-      isActive: is.playing,
+      isActive: isQuizActive,
       onTick: actions.timerTick,
       onEnd: actions.timerEnd,
     });

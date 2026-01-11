@@ -3,6 +3,7 @@
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "project": "./tsconfig.json",
+    "tsconfigRootDir": "./frontend",
     "ecmaVersion": 2022,
     "sourceType": "module",
     "ecmaFeatures": {

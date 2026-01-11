@@ -374,6 +374,12 @@ export const quizMachine = setup({
           target: "finished",
           actions: ["setNoMoreWords"],
         },
+        TIMER_TICK: {
+          actions: ["decrementTimer"],
+        },
+        TIMER_END: {
+          target: "finished",
+        },
       },
     },
 
@@ -399,6 +405,10 @@ export const quizMachine = setup({
               target: "showingResult",
               actions: ["processResult"],
             },
+            TIMER_TICK: {
+              actions: ["decrementTimer"],
+            },
+            TIMER_END: "#quiz.finished",
           },
         },
 
@@ -438,6 +448,12 @@ export const quizMachine = setup({
 
         repeatWord: {
           entry: ["setWordFromQueue"],
+          on: {
+            TIMER_TICK: {
+              actions: ["decrementTimer"],
+            },
+            TIMER_END: "#quiz.finished",
+          },
           always: [
             {
               target: "#quiz.finished",
