@@ -14,6 +14,9 @@ export interface GetRandomWordInput {
   sessionId: string;
 }
 
+/**
+ * Internal output with all word data (used within application layer)
+ */
 export interface GetRandomWordOutput {
   id: string;
   wordToTranslate: string;
@@ -21,6 +24,34 @@ export interface GetRandomWordOutput {
   mode: string;
   category: string;
   difficulty: number;
+}
+
+/**
+ * Public API response - correctTranslation is hidden for security
+ * This prevents users from seeing the answer before submitting
+ */
+export interface GetRandomWordApiResponse {
+  id: string;
+  wordToTranslate: string;
+  mode: string;
+  category: string;
+  difficulty: number;
+}
+
+/**
+ * Converts internal output to public API response
+ * Strips correctTranslation to prevent cheating
+ */
+export function toApiResponse(
+  output: GetRandomWordOutput,
+): GetRandomWordApiResponse {
+  return {
+    id: output.id,
+    wordToTranslate: output.wordToTranslate,
+    mode: output.mode,
+    category: output.category,
+    difficulty: output.difficulty,
+  };
 }
 
 // ============================================================================

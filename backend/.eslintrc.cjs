@@ -1,21 +1,22 @@
-﻿{
-  "root": true,
-  "parser": "@typescript-eslint/parser",
-  "parserOptions": {
-    "ecmaVersion": 2022,
-    "sourceType": "module",
-    "project": "./tsconfig.json"
+module.exports = {
+  root: true,
+  parser: "@typescript-eslint/parser",
+  parserOptions: {
+    ecmaVersion: 2022,
+    sourceType: "module",
+    project: "./tsconfig.json",
+    tsconfigRootDir: __dirname
   },
-  "plugins": ["@typescript-eslint"],
-  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
-  "env": {
-    "node": true,
-    "es2022": true
+  plugins: ["@typescript-eslint"],
+  extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
+  env: {
+    node: true,
+    es2022: true
   },
-  "rules": {
+  rules: {
     "@typescript-eslint/no-unused-vars": [
       "error",
-      { "argsIgnorePattern": "^_" }
+      { argsIgnorePattern: "^_" }
     ],
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/no-explicit-any": "warn",
@@ -33,7 +34,7 @@
     "@typescript-eslint/no-unnecessary-type-assertion": "off",
     "no-console": "off"
   },
-  "ignorePatterns": [
+  ignorePatterns: [
     "dist",
     "node_modules",
     "*.js",
@@ -41,4 +42,4 @@
     "drizzle.config.ts",
     "seed.ts"
   ]
-}
+};

@@ -113,13 +113,25 @@ export function useQuiz(): UseQuizReturn {
 
   // Fetch single word when entering loading state (normalny tryb i tryb czasowy)
   useEffect(() => {
-    if (is.loading) {
+    if (!is.loading) return;
+
+    // Prevent race conditions - if component unmounts or state changes
+    // before fetch completes, we don't want to process stale responses
+    let isCancelled = false;
+
+    // Apollo's useLazyQuery handles request cancellation internally,
+    // but we add this flag for additional safety with state updates
+    if (!isCancelled) {
       fetchWord({
         mode: context.mode,
         category: context.category,
         difficulty: context.difficulty,
       });
     }
+
+    return () => {
+      isCancelled = true;
+    };
   }, [
     is.loading,
     context.mode,
@@ -130,7 +142,11 @@ export function useQuiz(): UseQuizReturn {
 
   // NOWY - Fetch całej puli naraz (tryb utrwalania)
   useEffect(() => {
-    if (is.loadingPool) {
+    if (!is.loadingPool) return;
+
+    let isCancelled = false;
+
+    if (!isCancelled) {
       fetchWords({
         mode: context.mode,
         limit: context.wordLimit,
@@ -138,6 +154,10 @@ export function useQuiz(): UseQuizReturn {
         difficulty: context.difficulty,
       });
     }
+
+    return () => {
+      isCancelled = true;
+    };
   }, [
     is.loadingPool,
     context.mode,

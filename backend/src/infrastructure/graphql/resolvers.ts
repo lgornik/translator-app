@@ -1,8 +1,9 @@
-import { GraphQLContext } from './context.js';
-import { Result } from '../../shared/core/Result.js';
-import { DomainError } from '../../shared/errors/DomainErrors.js';
-import { GraphQLError } from 'graphql';
-import { config } from '../config/Config.js';
+import { GraphQLContext } from "./context.js";
+import { Result } from "../../shared/core/Result.js";
+import { DomainError } from "../../shared/errors/DomainErrors.js";
+import { GraphQLError } from "graphql";
+import { config } from "../config/Config.js";
+import { toApiResponse } from "../../application/dtos/index.js";
 
 /**
  * Helper to convert Result to GraphQL response
@@ -28,12 +29,12 @@ const queryResolvers = {
   info: async (_: unknown, __: unknown, ctx: GraphQLContext) => ({
     name: config.api.name,
     version: config.api.version,
-    status: 'ok',
+    status: "ok",
     uptime: (Date.now() - ctx.startTime) / 1000,
   }),
 
   health: async (_: unknown, __: unknown, ctx: GraphQLContext) => ({
-    status: 'ok',
+    status: "ok",
     timestamp: new Date().toISOString(),
     uptime: (Date.now() - ctx.startTime) / 1000,
     sessionCount: await ctx.sessionRepository.count(),
@@ -43,7 +44,7 @@ const queryResolvers = {
   getRandomWord: async (
     _: unknown,
     args: { mode: string; category?: string; difficulty?: number },
-    ctx: GraphQLContext
+    ctx: GraphQLContext,
   ) => {
     const result = await ctx.getRandomWord.execute({
       mode: args.mode,
@@ -53,22 +54,21 @@ const queryResolvers = {
     });
 
     const output = handleResult(result);
-    
-    // Remove correctTranslation from response for security
-    return {
-      id: output.id,
-      wordToTranslate: output.wordToTranslate,
-      mode: output.mode,
-      category: output.category,
-      difficulty: output.difficulty,
-    };
+
+    // Use DTO function to strip correctTranslation
+    return toApiResponse(output);
   },
 
   // NOWY RESOLVER - pobieranie wielu słów naraz
   getRandomWords: async (
     _: unknown,
-    args: { mode: string; limit: number; category?: string; difficulty?: number },
-    ctx: GraphQLContext
+    args: {
+      mode: string;
+      limit: number;
+      category?: string;
+      difficulty?: number;
+    },
+    ctx: GraphQLContext,
   ) => {
     const result = await ctx.getRandomWords.execute({
       mode: args.mode,
@@ -79,15 +79,9 @@ const queryResolvers = {
     });
 
     const output = handleResult(result);
-    
-    // Remove correctTranslation from each word for security
-    return output.words.map(word => ({
-      id: word.id,
-      wordToTranslate: word.wordToTranslate,
-      mode: word.mode,
-      category: word.category,
-      difficulty: word.difficulty,
-    }));
+
+    // Use DTO function to strip correctTranslation from each word
+    return output.words.map(toApiResponse);
   },
 
   getAllWords: async (_: unknown, __: unknown, ctx: GraphQLContext) => {
@@ -108,7 +102,7 @@ const queryResolvers = {
   getWordCount: async (
     _: unknown,
     args: { category?: string; difficulty?: number },
-    ctx: GraphQLContext
+    ctx: GraphQLContext,
   ) => {
     const result = await ctx.getWordCount.execute({
       category: args.category ?? null,
@@ -126,7 +120,7 @@ const mutationResolvers = {
   checkTranslation: async (
     _: unknown,
     args: { wordId: string; userTranslation: string; mode: string },
-    ctx: GraphQLContext
+    ctx: GraphQLContext,
   ) => {
     const result = await ctx.checkTranslation.execute({
       wordId: args.wordId,
