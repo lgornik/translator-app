@@ -1,7 +1,6 @@
 /**
  * Dependency Injection Module
  */
-
 export {
   DI_TOKENS,
   getContainer,
@@ -12,11 +11,8 @@ export {
   singleton,
   container,
 } from "./container.js";
-
 export type { DITokens } from "./container.js";
-
 export { registerDependencies, resolve } from "./registration.js";
-
 export type {
   RegistrationOptions,
   RegistrationResult,
