@@ -1,13 +1,17 @@
 /**
  * Dependency Registration Module
- * Registers all dependencies in the DI container
  *
- * PRINCIPAL-LEVEL: Use Cases are wrapped with cross-cutting concerns:
- * - Logging (via decorator, not injected)
- * - Metrics collection
- * - Retry with exponential backoff
- * - Circuit breaker for cascade protection
- * - Domain Events publishing
+ * PRINCIPAL PATTERN: Clean separation of concerns.
+ *
+ * Use Cases contain ONLY business logic.
+ * Cross-cutting concerns (logging, metrics, retry, circuit breaker)
+ * are applied via decorators during registration.
+ *
+ * Benefits:
+ * - Use Cases are testable without mocking infrastructure
+ * - Easy to add/remove concerns without changing business code
+ * - Consistent behavior across all use cases
+ * - Configuration in one place
  */
 
 import { container, DI_TOKENS } from "./container.js";
@@ -98,9 +102,9 @@ export interface RegistrationResult {
     error?: string;
   }>;
   getSessionCount: () => Promise<number>;
-  /** NEW: Get metrics from all decorated use cases */
+  /** Get metrics from all decorated use cases */
   getMetrics: () => Record<string, unknown>;
-  /** NEW: Get recent domain events (for debugging/monitoring) */
+  /** Get recent domain events (for debugging/monitoring) */
   getEventLog: () => unknown[];
 }
 
@@ -252,16 +256,19 @@ export async function registerDependencies(
 
   // ============================================================================
   // PRINCIPAL-LEVEL: Register Use Cases with Decorators
+  //
+  // Use Cases are now PURE BUSINESS LOGIC.
+  // All cross-cutting concerns are applied here via decorators.
   // ============================================================================
 
   // GetRandomWordUseCase - most critical, full decoration stack
   container.register(DI_TOKENS.GetRandomWordUseCase, {
     useFactory: (c: DependencyContainer) => {
+      // Pure use case - no logger injected!
       const baseUseCase = new GetRandomWordUseCase(
         c.resolve(DI_TOKENS.WordRepository),
         c.resolve(DI_TOKENS.SessionRepository),
         c.resolve(DI_TOKENS.RandomWordPicker),
-        logger, // Still needed by UseCase internally
         c.resolve(DI_TOKENS.SessionMutex),
       );
 
@@ -310,7 +317,6 @@ export async function registerDependencies(
         c.resolve(DI_TOKENS.WordRepository),
         c.resolve(DI_TOKENS.SessionRepository),
         c.resolve(DI_TOKENS.RandomWordPicker),
-        logger,
         c.resolve(DI_TOKENS.SessionMutex),
       );
 
@@ -334,7 +340,6 @@ export async function registerDependencies(
       const baseUseCase = new CheckTranslationUseCase(
         c.resolve(DI_TOKENS.WordRepository),
         c.resolve(DI_TOKENS.TranslationChecker),
-        logger,
       );
 
       if (!enableResilience) {
@@ -354,7 +359,6 @@ export async function registerDependencies(
     useFactory: (c: DependencyContainer) => {
       const baseUseCase = new ResetSessionUseCase(
         c.resolve(DI_TOKENS.SessionRepository),
-        logger,
       );
 
       if (!enableResilience) {
@@ -456,7 +460,7 @@ export async function registerDependencies(
     getCacheStats,
     checkDatabase,
     getSessionCount,
-    // NEW: Principal-level observability
+    // Principal-level observability
     getMetrics: () => metrics.getMetrics(),
     getEventLog: () => eventBus.getRecentEvents(100),
   };

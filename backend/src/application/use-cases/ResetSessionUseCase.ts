@@ -1,34 +1,34 @@
-import { Result } from '../../shared/core/Result.js';
-import { DomainError } from '../../shared/errors/DomainErrors.js';
-import { ISessionRepository } from '../../domain/repositories/ISessionRepository.js';
-import { SessionId } from '../../domain/value-objects/SessionId.js';
-import { ILogger } from '../interfaces/ILogger.js';
-import { ResetSessionInput, ResetSessionOutput } from '../dtos/index.js';
+import { Result } from "../../shared/core/Result.js";
+import { DomainError } from "../../shared/errors/DomainErrors.js";
+import { ISessionRepository } from "../../domain/repositories/ISessionRepository.js";
+import { SessionId } from "../../domain/value-objects/SessionId.js";
+import { ResetSessionInput, ResetSessionOutput } from "../dtos/index.js";
+import { IUseCase } from "../interfaces/IUseCase.js";
 
 /**
  * Reset Session Use Case
- * Clears all used words from a session
+ *
+ * PRINCIPAL PATTERN: Pure business logic - no cross-cutting concerns.
+ *
+ * Clears all used words from a session.
+ * Logging and metrics are handled by decorators.
  */
-export class ResetSessionUseCase {
-  constructor(
-    private readonly sessionRepository: ISessionRepository,
-    private readonly logger: ILogger
-  ) {}
+export class ResetSessionUseCase implements IUseCase<
+  ResetSessionInput,
+  ResetSessionOutput
+> {
+  constructor(private readonly sessionRepository: ISessionRepository) {}
 
-  async execute(input: ResetSessionInput): Promise<Result<ResetSessionOutput, DomainError>> {
+  async execute(
+    input: ResetSessionInput,
+  ): Promise<Result<ResetSessionOutput, DomainError>> {
     const sessionIdResult = SessionId.create(input.sessionId);
     if (!sessionIdResult.ok) {
       return Result.fail(sessionIdResult.error);
     }
     const sessionId = sessionIdResult.value;
 
-    const deleted = await this.sessionRepository.delete(sessionId);
-
-    this.logger.info('Session reset', {
-      operation: 'ResetSession',
-      sessionId: sessionId.value,
-      existed: deleted,
-    });
+    await this.sessionRepository.delete(sessionId);
 
     return Result.ok({ success: true });
   }

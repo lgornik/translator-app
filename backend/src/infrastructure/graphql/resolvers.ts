@@ -23,6 +23,21 @@ function handleResult<T>(result: Result<T, DomainError>): T {
 }
 
 /**
+ * Health check status type
+ */
+type HealthStatus = "healthy" | "degraded" | "unhealthy";
+
+/**
+ * Dependency health check result
+ */
+interface DependencyHealth {
+  name: string;
+  status: HealthStatus;
+  latencyMs?: number;
+  error?: string;
+}
+
+/**
  * Query Resolvers
  */
 const queryResolvers = {
@@ -33,13 +48,80 @@ const queryResolvers = {
     uptime: (Date.now() - ctx.startTime) / 1000,
   }),
 
-  health: async (_: unknown, __: unknown, ctx: GraphQLContext) => ({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    uptime: (Date.now() - ctx.startTime) / 1000,
-    sessionCount: await ctx.sessionRepository.count(),
-    wordCount: await ctx.wordRepository.count(),
-  }),
+  /**
+   * PRINCIPAL PATTERN: Production-ready health check
+   *
+   * Checks actual dependencies, not just "status: ok".
+   * Returns degraded/unhealthy states for observability.
+   */
+  health: async (_: unknown, __: unknown, ctx: GraphQLContext) => {
+    const dependencies: DependencyHealth[] = [];
+    let overallStatus: HealthStatus = "healthy";
+
+    // Check word repository (database or in-memory)
+    const wordRepoStart = Date.now();
+    try {
+      const wordCount = await ctx.wordRepository.count();
+      dependencies.push({
+        name: "wordRepository",
+        status: wordCount > 0 ? "healthy" : "degraded",
+        latencyMs: Date.now() - wordRepoStart,
+      });
+      if (wordCount === 0) {
+        overallStatus = "degraded";
+      }
+    } catch (error) {
+      dependencies.push({
+        name: "wordRepository",
+        status: "unhealthy",
+        latencyMs: Date.now() - wordRepoStart,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+      overallStatus = "unhealthy";
+    }
+
+    // Check session repository
+    const sessionRepoStart = Date.now();
+    try {
+      dependencies.push({
+        name: "sessionRepository",
+        status: "healthy",
+        latencyMs: Date.now() - sessionRepoStart,
+      });
+    } catch (error) {
+      dependencies.push({
+        name: "sessionRepository",
+        status: "unhealthy",
+        latencyMs: Date.now() - sessionRepoStart,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+      overallStatus = "unhealthy";
+    }
+
+    // Check database if available (via checkDatabase function)
+    if (ctx.checkDatabase) {
+      const dbHealth = await ctx.checkDatabase();
+      dependencies.push({
+        name: "database",
+        status: dbHealth.ok ? "healthy" : "unhealthy",
+        latencyMs: dbHealth.latency,
+        error: dbHealth.error,
+      });
+      if (!dbHealth.ok && overallStatus === "healthy") {
+        overallStatus = "degraded";
+      }
+    }
+
+    return {
+      status: overallStatus,
+      timestamp: new Date().toISOString(),
+      uptime: (Date.now() - ctx.startTime) / 1000,
+      version: config.api.version,
+      dependencies,
+      sessionCount: await ctx.sessionRepository.count().catch(() => -1),
+      wordCount: await ctx.wordRepository.count().catch(() => -1),
+    };
+  },
 
   getRandomWord: async (
     _: unknown,
@@ -59,7 +141,7 @@ const queryResolvers = {
     return toApiResponse(output);
   },
 
-  // NOWY RESOLVER - pobieranie wielu słów naraz
+  // Batch loading - pobieranie wielu słów naraz
   getRandomWords: async (
     _: unknown,
     args: {

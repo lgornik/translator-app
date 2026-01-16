@@ -40,3 +40,9 @@ frontend/.env
 # Coverage reports
 coverage/
 *.lcov
+
+# Archives
+*.zip
+
+# Coverage (już masz coverage/ ale brakuje pojedynczych plików)
+coverage-*.json

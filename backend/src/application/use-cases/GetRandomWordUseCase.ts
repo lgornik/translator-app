@@ -13,29 +13,33 @@ import { Difficulty } from "../../domain/value-objects/Difficulty.js";
 import { Category } from "../../domain/value-objects/Category.js";
 import { SessionId } from "../../domain/value-objects/SessionId.js";
 import { RandomWordPicker } from "../../domain/services/RandomWordPicker.js";
-import { ILogger } from "../interfaces/ILogger.js";
 import { GetRandomWordInput, GetRandomWordOutput } from "../dtos/index.js";
 import { ISessionMutex } from "../../infrastructure/persistence/SessionMutex.js";
+import { IUseCase } from "../interfaces/IUseCase.js";
 
 /**
  * Get Random Word Use Case
- * Fetches a random word for translation, tracking used words per session
- * Uses mutex to prevent race conditions when accessing session data
+ *
+ * PRINCIPAL PATTERN: Pure business logic - no cross-cutting concerns.
+ *
+ * Fetches a random word for translation, tracking used words per session.
+ * Uses mutex to prevent race conditions when accessing session data.
+ * Logging and metrics are handled by decorators.
  */
-export class GetRandomWordUseCase {
+export class GetRandomWordUseCase implements IUseCase<
+  GetRandomWordInput,
+  GetRandomWordOutput
+> {
   constructor(
     private readonly wordRepository: IWordRepository,
     private readonly sessionRepository: ISessionRepository,
     private readonly randomPicker: RandomWordPicker,
-    private readonly logger: ILogger,
     private readonly sessionMutex?: ISessionMutex,
   ) {}
 
   async execute(
     input: GetRandomWordInput,
   ): Promise<Result<GetRandomWordOutput, DomainError>> {
-    const startTime = Date.now();
-
     // 1. Validate and parse input
     const modeResult = TranslationMode.create(input.mode);
     if (!modeResult.ok) {
@@ -97,11 +101,6 @@ export class GetRandomWordUseCase {
 
       // Reset session if all words used
       if (unusedWords.length === 0) {
-        this.logger.debug("All words used, resetting session for filters", {
-          sessionId: sessionId.value,
-          wordCount: availableWords.length,
-        });
-
         // Reset only words matching current filters
         session.resetWords(availableWords.map((w) => w.id));
         await this.sessionRepository.save(session);
@@ -120,17 +119,8 @@ export class GetRandomWordUseCase {
       session.markWordAsUsed(selectedWord.id);
       await this.sessionRepository.save(session);
 
-      // Log and return
-      const duration = Date.now() - startTime;
-      this.logger.info("Random word selected", {
-        operation: "GetRandomWord",
-        sessionId: sessionId.value,
-        wordId: selectedWord.id.value,
-        duration,
-      });
-
       return Result.ok({
-        id: selectedWord.id.value,
+        id: selectedWord.id.toString(),
         wordToTranslate: selectedWord.getWordToTranslate(mode),
         correctTranslation: selectedWord.getCorrectTranslation(mode),
         mode: mode.toString(),
@@ -141,7 +131,10 @@ export class GetRandomWordUseCase {
 
     // Use mutex if available, otherwise execute directly
     if (this.sessionMutex) {
-      return this.sessionMutex.withLock(sessionId.value, executeWithSession);
+      return this.sessionMutex.withLock(
+        sessionId.toString(),
+        executeWithSession,
+      );
     }
 
     return executeWithSession();

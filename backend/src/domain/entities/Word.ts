@@ -1,11 +1,11 @@
-import { Entity } from '../../shared/core/Entity.js';
-import { Result } from '../../shared/core/Result.js';
-import { ValidationError } from '../../shared/errors/DomainErrors.js';
-import { WordId } from '../value-objects/WordId.js';
-import { Difficulty } from '../value-objects/Difficulty.js';
-import { Category } from '../value-objects/Category.js';
-import { TranslationMode } from '../value-objects/TranslationMode.js';
-import { z } from 'zod';
+import { Entity } from "../../shared/core/Entity.js";
+import { Result } from "../../shared/core/Result.js";
+import { ValidationError } from "../../shared/errors/DomainErrors.js";
+import { WordId } from "../value-objects/WordId.js";
+import { Difficulty } from "../value-objects/Difficulty.js";
+import { Category } from "../value-objects/Category.js";
+import { TranslationMode } from "../value-objects/TranslationMode.js";
+import { z } from "zod";
 
 /**
  * Word properties for creation
@@ -92,9 +92,9 @@ export class Word extends Entity<WordId> {
       const firstError = parseResult.error.errors[0];
       return Result.fail(
         new ValidationError(
-          firstError?.message || 'Invalid word data',
-          firstError?.path.join('.') || 'unknown'
-        )
+          firstError?.message || "Invalid word data",
+          firstError?.path.join(".") || "unknown",
+        ),
       );
     }
 
@@ -121,7 +121,7 @@ export class Word extends Entity<WordId> {
         english: english.trim(),
         category: categoryResult.value,
         difficulty: difficultyResult.value,
-      })
+      }),
     );
   }
 
@@ -130,15 +130,12 @@ export class Word extends Entity<WordId> {
    * Skips validation for performance
    */
   static fromTrusted(data: WordData): Word {
-    return new Word(
-      WordId.fromTrusted(data.id),
-      {
-        polish: data.polish,
-        english: data.english,
-        category: Category.fromTrusted(data.category),
-        difficulty: Difficulty.fromTrusted(data.difficulty),
-      }
-    );
+    return new Word(WordId.fromTrusted(data.id), {
+      polish: data.polish,
+      english: data.english,
+      category: Category.fromTrusted(data.category),
+      difficulty: Difficulty.fromTrusted(data.difficulty),
+    });
   }
 
   // ============================================================================
@@ -184,7 +181,7 @@ export class Word extends Entity<WordId> {
    */
   toData(): WordData {
     return {
-      id: this._id.value,
+      id: this._id.toString(),
       polish: this._polish,
       english: this._english,
       category: this._category.name,
@@ -197,7 +194,7 @@ export class Word extends Entity<WordId> {
    */
   toChallenge(mode: TranslationMode): WordChallenge {
     return {
-      id: this._id.value,
+      id: this._id.toString(),
       wordToTranslate: this.getWordToTranslate(mode),
       correctTranslation: this.getCorrectTranslation(mode),
       mode: mode.toString(),

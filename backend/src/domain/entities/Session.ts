@@ -1,6 +1,6 @@
-import { Entity } from '../../shared/core/Entity.js';
-import { SessionId } from '../value-objects/SessionId.js';
-import { WordId } from '../value-objects/WordId.js';
+import { Entity } from "../../shared/core/Entity.js";
+import { SessionId } from "../value-objects/SessionId.js";
+import { WordId } from "../value-objects/WordId.js";
 
 /**
  * Session state data for persistence
@@ -25,7 +25,7 @@ export class Session extends Entity<SessionId> {
     id: SessionId,
     usedWordIds: Set<string>,
     createdAt: Date,
-    lastAccessedAt: Date
+    lastAccessedAt: Date,
   ) {
     super(id);
     this._usedWordIds = usedWordIds;
@@ -73,7 +73,7 @@ export class Session extends Entity<SessionId> {
       SessionId.fromTrusted(data.id),
       new Set(data.usedWordIds),
       new Date(data.createdAt),
-      new Date(data.lastAccessedAt)
+      new Date(data.lastAccessedAt),
     );
   }
 
@@ -138,7 +138,7 @@ export class Session extends Entity<SessionId> {
    */
   toData(): SessionData {
     return {
-      id: this._id.value,
+      id: this._id.toString(),
       usedWordIds: Array.from(this._usedWordIds),
       createdAt: this._createdAt.toISOString(),
       lastAccessedAt: this._lastAccessedAt.toISOString(),

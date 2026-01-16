@@ -1,28 +1,43 @@
-import { ValueObject } from '../../shared/core/ValueObject.js';
-import { Result } from '../../shared/core/Result.js';
-import { ValidationError } from '../../shared/errors/DomainErrors.js';
-import { randomUUID } from 'crypto';
+import { ValueObject } from "../../shared/core/ValueObject.js";
+import { Result } from "../../shared/core/Result.js";
+import { ValidationError } from "../../shared/errors/DomainErrors.js";
+import { SessionIdBrand, BrandUtils } from "../../shared/core/Brand.js";
+import { randomUUID } from "crypto";
 
 /**
  * SessionId Value Object
- * Type-safe identifier for quiz sessions
+ *
+ * PRINCIPAL PATTERN: Type-safe identifier using branded types.
+ *
+ * The branded type ensures compile-time safety:
+ *   function findSession(id: SessionId) { ... }
+ *   findSession(wordId); // Compile ERROR - can't pass WordId as SessionId
  */
 interface SessionIdProps {
-  value: string;
+  value: SessionIdBrand;
 }
 
 export class SessionId extends ValueObject<SessionIdProps> {
-  private static readonly DEFAULT_SESSION = 'default';
+  private static readonly DEFAULT_SESSION = "default" as SessionIdBrand;
+  private static readonly MAX_LENGTH = 255;
+  private static readonly MIN_LENGTH = 1;
 
   private constructor(props: SessionIdProps) {
     super(props);
   }
 
   /**
-   * Get the string value
+   * Get the branded string value
    */
-  get value(): string {
+  get value(): SessionIdBrand {
     return this.props.value;
+  }
+
+  /**
+   * Get raw string value (for serialization)
+   */
+  get rawValue(): string {
+    return BrandUtils.unwrap(this.props.value);
   }
 
   /**
@@ -38,24 +53,38 @@ export class SessionId extends ValueObject<SessionIdProps> {
   static create(value: string): Result<SessionId, ValidationError> {
     const trimmed = value.trim();
 
-    if (trimmed.length === 0) {
-      return Result.fail(ValidationError.emptyField('sessionId'));
+    if (trimmed.length < SessionId.MIN_LENGTH) {
+      return Result.fail(ValidationError.emptyField("sessionId"));
     }
 
-    if (trimmed.length > 255) {
+    if (trimmed.length > SessionId.MAX_LENGTH) {
       return Result.fail(
-        new ValidationError('Session ID must be at most 255 characters', 'sessionId')
+        new ValidationError(
+          `Session ID must be at most ${SessionId.MAX_LENGTH} characters`,
+          "sessionId",
+        ),
       );
     }
 
-    return Result.ok(new SessionId({ value: trimmed }));
+    // Validate format (alphanumeric, hyphens, underscores)
+    if (!/^[a-zA-Z0-9_-]+$/.test(trimmed)) {
+      return Result.fail(
+        new ValidationError(
+          "Session ID must contain only alphanumeric characters, hyphens, and underscores",
+          "sessionId",
+        ),
+      );
+    }
+
+    return Result.ok(new SessionId({ value: trimmed as SessionIdBrand }));
   }
 
   /**
-   * Create from trusted source
+   * Create from trusted source (e.g., database)
+   * @internal Use only when value is known to be valid
    */
   static fromTrusted(value: string): SessionId {
-    return new SessionId({ value });
+    return new SessionId({ value: value as SessionIdBrand });
   }
 
   /**
@@ -69,13 +98,21 @@ export class SessionId extends ValueObject<SessionIdProps> {
    * Generate a new unique session ID
    */
   static generate(): SessionId {
-    return new SessionId({ value: randomUUID() });
+    const uuid = randomUUID();
+    return new SessionId({ value: `sess_${uuid}` as SessionIdBrand });
   }
 
   /**
-   * Convert to string
+   * Convert to string (for logging, serialization)
    */
   toString(): string {
-    return this.props.value;
+    return this.rawValue;
+  }
+
+  /**
+   * Check equality with another SessionId
+   */
+  equals(other: SessionId): boolean {
+    return BrandUtils.equals(this.props.value, other.props.value);
   }
 }

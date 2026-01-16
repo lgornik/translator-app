@@ -10,8 +10,8 @@ import { Difficulty } from "../../domain/value-objects/Difficulty.js";
 import { Category } from "../../domain/value-objects/Category.js";
 import { SessionId } from "../../domain/value-objects/SessionId.js";
 import { RandomWordPicker } from "../../domain/services/RandomWordPicker.js";
-import { ILogger } from "../interfaces/ILogger.js";
 import { ISessionMutex } from "../../infrastructure/persistence/SessionMutex.js";
+import { IUseCase } from "../interfaces/IUseCase.js";
 
 /**
  * Input DTO for GetRandomWords use case
@@ -45,24 +45,31 @@ export interface GetRandomWordsOutput {
 
 /**
  * Get Random Words Use Case
- * Fetches multiple random words for translation (batch loading for quiz pool)
- * Returns up to 'limit' words, may return fewer if not enough available
- * Uses mutex to prevent race conditions when accessing session data
+ *
+ * PRINCIPAL PATTERN: Pure business logic - no cross-cutting concerns.
+ *
+ * Fetches multiple random words for translation (batch loading for quiz pool).
+ * Returns up to 'limit' words, may return fewer if not enough available.
+ * Uses mutex to prevent race conditions when accessing session data.
+ * Logging and metrics are handled by decorators.
  */
-export class GetRandomWordsUseCase {
+export class GetRandomWordsUseCase implements IUseCase<
+  GetRandomWordsInput,
+  GetRandomWordsOutput
+> {
+  private static readonly MAX_LIMIT = 100;
+  private static readonly MIN_LIMIT = 1;
+
   constructor(
     private readonly wordRepository: IWordRepository,
     private readonly sessionRepository: ISessionRepository,
     private readonly randomPicker: RandomWordPicker,
-    private readonly logger: ILogger,
     private readonly sessionMutex?: ISessionMutex,
   ) {}
 
   async execute(
     input: GetRandomWordsInput,
   ): Promise<Result<GetRandomWordsOutput, DomainError>> {
-    const startTime = Date.now();
-
     // 1. Validate and parse input
     const modeResult = TranslationMode.create(input.mode);
     if (!modeResult.ok) {
@@ -76,8 +83,11 @@ export class GetRandomWordsUseCase {
     }
     const sessionId = sessionIdResult.value;
 
-    // Validate limit
-    const limit = Math.max(1, Math.min(input.limit, 100)); // Cap at 100
+    // Validate limit with bounds
+    const limit = Math.max(
+      GetRandomWordsUseCase.MIN_LIMIT,
+      Math.min(input.limit, GetRandomWordsUseCase.MAX_LIMIT),
+    );
 
     // Parse optional filters
     let difficulty: Difficulty | null = null;
@@ -104,10 +114,6 @@ export class GetRandomWordsUseCase {
 
     if (availableWords.length === 0) {
       // Return empty array instead of error - let frontend handle it
-      this.logger.debug("No words available for filters", {
-        category: category?.name,
-        difficulty: difficulty?.value,
-      });
       return Result.ok({ words: [] });
     }
 
@@ -125,17 +131,9 @@ export class GetRandomWordsUseCase {
 
       // If not enough unused words, reset session and use all
       if (unusedWords.length < limit && availableWords.length >= limit) {
-        this.logger.debug("Not enough unused words, resetting session", {
-          sessionId: sessionId.value,
-          unusedCount: unusedWords.length,
-          requestedLimit: limit,
-          totalAvailable: availableWords.length,
-        });
-
         // Reset only words matching current filters
         session.resetWords(availableWords.map((w) => w.id));
         await this.sessionRepository.save(session);
-
         unusedWords = availableWords;
       }
 
@@ -151,7 +149,7 @@ export class GetRandomWordsUseCase {
 
       // Transform to output format
       const words: RandomWordOutput[] = selectedWords.map((word) => ({
-        id: word.id.value,
+        id: word.id.toString(),
         wordToTranslate: word.getWordToTranslate(mode),
         correctTranslation: word.getCorrectTranslation(mode),
         mode: mode.toString(),
@@ -159,22 +157,15 @@ export class GetRandomWordsUseCase {
         difficulty: word.difficulty.value,
       }));
 
-      // Log and return
-      const duration = Date.now() - startTime;
-      this.logger.info("Random words selected", {
-        operation: "GetRandomWords",
-        sessionId: sessionId.value,
-        requestedLimit: limit,
-        returnedCount: words.length,
-        duration,
-      });
-
       return Result.ok({ words });
     };
 
     // Use mutex if available, otherwise execute directly
     if (this.sessionMutex) {
-      return this.sessionMutex.withLock(sessionId.value, executeWithSession);
+      return this.sessionMutex.withLock(
+        sessionId.toString(),
+        executeWithSession,
+      );
     }
 
     return executeWithSession();
