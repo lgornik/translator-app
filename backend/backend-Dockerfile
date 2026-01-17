@@ -7,7 +7,7 @@ COPY backend/package*.json ./backend/
 COPY shared/package*.json ./shared/
 
 # Install all workspace dependencies
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Copy source code
 COPY backend/ ./backend/
