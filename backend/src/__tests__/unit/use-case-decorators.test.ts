@@ -21,12 +21,15 @@ import { ILogger } from "../../application/interfaces/ILogger.js";
 // ============================================================================
 
 function createMockLogger(): ILogger {
-  return {
+  const mockLogger: ILogger = {
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
+    child: vi.fn(() => mockLogger),
+    getCorrelationId: vi.fn(() => undefined),
   };
+  return mockLogger;
 }
 
 function createMockMetrics(): MetricsCollector & {

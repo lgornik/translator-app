@@ -1,17 +1,44 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { resolvers } from '../../infrastructure/graphql/resolvers.js';
-import { createContext, GraphQLContext } from '../../infrastructure/graphql/context.js';
-import { InMemoryWordRepository } from '../../infrastructure/persistence/InMemoryWordRepository.js';
-import { InMemorySessionRepository } from '../../infrastructure/persistence/InMemorySessionRepository.js';
-import { NullLogger } from '../../infrastructure/logging/Logger.js';
-import { WordData } from '../../domain/entities/Word.js';
+import { describe, it, expect, beforeEach } from "vitest";
+import { resolvers } from "../../infrastructure/graphql/resolvers.js";
+import {
+  createContext,
+  GraphQLContext,
+} from "../../infrastructure/graphql/context.js";
+import { InMemoryWordRepository } from "../../infrastructure/persistence/InMemoryWordRepository.js";
+import { InMemorySessionRepository } from "../../infrastructure/persistence/InMemorySessionRepository.js";
+import { NullLogger } from "../../infrastructure/logging/Logger.js";
+import { WordData } from "../../domain/entities/Word.js";
 
-describe('GraphQL Resolvers', () => {
+describe("GraphQL Resolvers", () => {
   const testWords: WordData[] = [
-    { id: '1', polish: 'kot', english: 'cat', category: 'Animals', difficulty: 1 },
-    { id: '2', polish: 'pies', english: 'dog', category: 'Animals', difficulty: 1 },
-    { id: '3', polish: 'dom', english: 'house', category: 'Objects', difficulty: 2 },
-    { id: '4', polish: 'trudne słowo', english: 'difficult word', category: 'Objects', difficulty: 3 },
+    {
+      id: "1",
+      polish: "kot",
+      english: "cat",
+      category: "Animals",
+      difficulty: 1,
+    },
+    {
+      id: "2",
+      polish: "pies",
+      english: "dog",
+      category: "Animals",
+      difficulty: 1,
+    },
+    {
+      id: "3",
+      polish: "dom",
+      english: "house",
+      category: "Objects",
+      difficulty: 2,
+    },
+    {
+      id: "4",
+      polish: "trudne słowo",
+      english: "difficult word",
+      category: "Objects",
+      difficulty: 3,
+    },
   ];
 
   let ctx: GraphQLContext;
@@ -28,114 +55,110 @@ describe('GraphQL Resolvers', () => {
         logger: new NullLogger(),
         startTime: Date.now(),
       },
-      'test-request-id',
-      'test-session-id'
+      "test-request-id",
+      "test-session-id",
     );
   });
 
-  describe('Query.info', () => {
-    it('should return API info', async () => {
+  describe("Query.info", () => {
+    it("should return API info", async () => {
       const result = await resolvers.Query.info({}, {}, ctx);
 
-      expect(result).toHaveProperty('name');
-      expect(result).toHaveProperty('version');
-      expect(result.status).toBe('ok');
-      expect(typeof result.uptime).toBe('number');
+      expect(result).toHaveProperty("name");
+      expect(result).toHaveProperty("version");
+      expect(result.status).toBe("ok");
+      expect(typeof result.uptime).toBe("number");
     });
   });
 
-  describe('Query.health', () => {
-    it('should return health status', async () => {
+  describe("Query.health", () => {
+    it("should return health status", async () => {
       const result = await resolvers.Query.health({}, {}, ctx);
 
-      expect(result.status).toBe('ok');
-      expect(result).toHaveProperty('timestamp');
-      expect(typeof result.uptime).toBe('number');
+      expect(result.status).toBe("healthy");
+      expect(result).toHaveProperty("timestamp");
+      expect(typeof result.uptime).toBe("number");
       expect(result.sessionCount).toBe(0);
       expect(result.wordCount).toBe(testWords.length);
     });
   });
 
-  describe('Query.getRandomWord', () => {
-    it('should return a random word without correctTranslation', async () => {
+  describe("Query.getRandomWord", () => {
+    it("should return a random word without correctTranslation", async () => {
       const result = await resolvers.Query.getRandomWord(
         {},
-        { mode: 'EN_TO_PL' },
-        ctx
+        { mode: "EN_TO_PL" },
+        ctx,
       );
 
-      expect(result).toHaveProperty('id');
-      expect(result).toHaveProperty('wordToTranslate');
-      expect(result).not.toHaveProperty('correctTranslation');
-      expect(result.mode).toBe('EN_TO_PL');
+      expect(result).toHaveProperty("id");
+      expect(result).toHaveProperty("wordToTranslate");
+      expect(result).not.toHaveProperty("correctTranslation");
+      expect(result.mode).toBe("EN_TO_PL");
     });
 
-    it('should filter by category', async () => {
+    it("should filter by category", async () => {
       const result = await resolvers.Query.getRandomWord(
         {},
-        { mode: 'EN_TO_PL', category: 'Animals' },
-        ctx
+        { mode: "EN_TO_PL", category: "Animals" },
+        ctx,
       );
 
-      expect(result.category).toBe('Animals');
+      expect(result.category).toBe("Animals");
     });
 
-    it('should filter by difficulty', async () => {
+    it("should filter by difficulty", async () => {
       const result = await resolvers.Query.getRandomWord(
         {},
-        { mode: 'EN_TO_PL', difficulty: 3 },
-        ctx
+        { mode: "EN_TO_PL", difficulty: 3 },
+        ctx,
       );
 
       expect(result.difficulty).toBe(3);
     });
 
-    it('should throw error for invalid mode', async () => {
+    it("should throw error for invalid mode", async () => {
       await expect(
-        resolvers.Query.getRandomWord(
-          {},
-          { mode: 'INVALID' },
-          ctx
-        )
+        resolvers.Query.getRandomWord({}, { mode: "INVALID" }, ctx),
       ).rejects.toThrow();
     });
 
-    it('should throw error when no words available', async () => {
+    it("should throw error when no words available", async () => {
       await expect(
         resolvers.Query.getRandomWord(
           {},
-          { mode: 'EN_TO_PL', category: 'NonExistent' },
-          ctx
-        )
+          { mode: "EN_TO_PL", category: "NonExistent" },
+          ctx,
+        ),
       ).rejects.toThrow();
     });
   });
 
-  describe('Query.getAllWords', () => {
-    it('should return all words', async () => {
+  describe("Query.getAllWords", () => {
+    it("should return all words", async () => {
       const result = await resolvers.Query.getAllWords({}, {}, ctx);
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBe(testWords.length);
-      expect(result[0]).toHaveProperty('id');
-      expect(result[0]).toHaveProperty('polish');
-      expect(result[0]).toHaveProperty('english');
+      expect(result[0]).toHaveProperty("id");
+      expect(result[0]).toHaveProperty("polish");
+      expect(result[0]).toHaveProperty("english");
     });
   });
 
-  describe('Query.getCategories', () => {
-    it('should return unique categories', async () => {
+  describe("Query.getCategories", () => {
+    it("should return unique categories", async () => {
       const result = await resolvers.Query.getCategories({}, {}, ctx);
 
       expect(Array.isArray(result)).toBe(true);
-      expect(result).toContain('Animals');
-      expect(result).toContain('Objects');
+      expect(result).toContain("Animals");
+      expect(result).toContain("Objects");
       expect(result.length).toBe(2);
     });
   });
 
-  describe('Query.getDifficulties', () => {
-    it('should return available difficulties', async () => {
+  describe("Query.getDifficulties", () => {
+    it("should return available difficulties", async () => {
       const result = await resolvers.Query.getDifficulties({}, {}, ctx);
 
       expect(Array.isArray(result)).toBe(true);
@@ -145,101 +168,101 @@ describe('GraphQL Resolvers', () => {
     });
   });
 
-  describe('Query.getWordCount', () => {
-    it('should return total count without filters', async () => {
+  describe("Query.getWordCount", () => {
+    it("should return total count without filters", async () => {
       const result = await resolvers.Query.getWordCount({}, {}, ctx);
 
       expect(result.count).toBe(testWords.length);
     });
 
-    it('should return filtered count by category', async () => {
+    it("should return filtered count by category", async () => {
       const result = await resolvers.Query.getWordCount(
         {},
-        { category: 'Animals' },
-        ctx
+        { category: "Animals" },
+        ctx,
       );
 
       expect(result.count).toBe(2);
     });
 
-    it('should return filtered count by difficulty', async () => {
+    it("should return filtered count by difficulty", async () => {
       const result = await resolvers.Query.getWordCount(
         {},
         { difficulty: 1 },
-        ctx
+        ctx,
       );
 
       expect(result.count).toBe(2);
     });
 
-    it('should return filtered count with both filters', async () => {
+    it("should return filtered count with both filters", async () => {
       const result = await resolvers.Query.getWordCount(
         {},
-        { category: 'Animals', difficulty: 1 },
-        ctx
+        { category: "Animals", difficulty: 1 },
+        ctx,
       );
 
       expect(result.count).toBe(2);
     });
   });
 
-  describe('Mutation.checkTranslation', () => {
-    it('should return correct for right answer', async () => {
+  describe("Mutation.checkTranslation", () => {
+    it("should return correct for right answer", async () => {
       const result = await resolvers.Mutation.checkTranslation(
         {},
-        { wordId: '1', userTranslation: 'kot', mode: 'EN_TO_PL' },
-        ctx
+        { wordId: "1", userTranslation: "kot", mode: "EN_TO_PL" },
+        ctx,
       );
 
       expect(result.isCorrect).toBe(true);
-      expect(result.correctTranslation).toBe('kot');
-      expect(result.userTranslation).toBe('kot');
+      expect(result.correctTranslation).toBe("kot");
+      expect(result.userTranslation).toBe("kot");
     });
 
-    it('should return incorrect for wrong answer', async () => {
+    it("should return incorrect for wrong answer", async () => {
       const result = await resolvers.Mutation.checkTranslation(
         {},
-        { wordId: '1', userTranslation: 'pies', mode: 'EN_TO_PL' },
-        ctx
+        { wordId: "1", userTranslation: "pies", mode: "EN_TO_PL" },
+        ctx,
       );
 
       expect(result.isCorrect).toBe(false);
-      expect(result.correctTranslation).toBe('kot');
+      expect(result.correctTranslation).toBe("kot");
     });
 
-    it('should handle PL_TO_EN mode', async () => {
+    it("should handle PL_TO_EN mode", async () => {
       const result = await resolvers.Mutation.checkTranslation(
         {},
-        { wordId: '1', userTranslation: 'cat', mode: 'PL_TO_EN' },
-        ctx
+        { wordId: "1", userTranslation: "cat", mode: "PL_TO_EN" },
+        ctx,
       );
 
       expect(result.isCorrect).toBe(true);
-      expect(result.correctTranslation).toBe('cat');
+      expect(result.correctTranslation).toBe("cat");
     });
 
-    it('should throw error for non-existent word', async () => {
+    it("should throw error for non-existent word", async () => {
       await expect(
         resolvers.Mutation.checkTranslation(
           {},
-          { wordId: 'non-existent', userTranslation: 'test', mode: 'EN_TO_PL' },
-          ctx
-        )
+          { wordId: "non-existent", userTranslation: "test", mode: "EN_TO_PL" },
+          ctx,
+        ),
       ).rejects.toThrow();
     });
   });
 
-  describe('Mutation.resetSession', () => {
-    it('should reset session successfully', async () => {
+  describe("Mutation.resetSession", () => {
+    it("should reset session successfully", async () => {
       // First get a word to create session state
-      await resolvers.Query.getRandomWord({}, { mode: 'EN_TO_PL' }, ctx);
+      await resolvers.Query.getRandomWord({}, { mode: "EN_TO_PL" }, ctx);
 
       const result = await resolvers.Mutation.resetSession({}, {}, ctx);
 
       expect(result).toBe(true);
     });
 
-    it('should succeed even for non-existent session', async () => {
+    it("should succeed even for non-existent session", async () => {
       const result = await resolvers.Mutation.resetSession({}, {}, ctx);
 
       expect(result).toBe(true);

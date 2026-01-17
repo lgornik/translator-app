@@ -17,7 +17,6 @@ import { IWordRepository } from "../../domain/repositories/IWordRepository.js";
 import { ISessionRepository } from "../../domain/repositories/ISessionRepository.js";
 import { RandomWordPicker } from "../../domain/services/RandomWordPicker.js";
 import { TranslationChecker } from "../../domain/services/TranslationChecker.js";
-import { NullLogger } from "../../infrastructure/logging/Logger.js";
 import {
   ISessionMutex,
   LockResult,
@@ -150,8 +149,6 @@ function createMockMutex(): ISessionMutex {
   };
 }
 
-const logger = new NullLogger();
-
 // ============================================================================
 // GetRandomWordUseCase Tests
 // ============================================================================
@@ -196,7 +193,6 @@ describe("GetRandomWordUseCase", () => {
       wordRepo,
       sessionRepo,
       randomPicker,
-      logger,
       mutex,
     );
   });
@@ -319,7 +315,6 @@ describe("GetRandomWordUseCase", () => {
       wordRepo,
       sessionRepo,
       randomPicker,
-      logger,
       undefined,
     );
 
@@ -370,7 +365,6 @@ describe("GetRandomWordsUseCase", () => {
       wordRepo,
       sessionRepo,
       randomPicker,
-      logger,
       mutex,
     );
   });
@@ -473,7 +467,7 @@ describe("CheckTranslationUseCase", () => {
   beforeEach(() => {
     wordRepo = createMockWordRepository([testWord]);
     translationChecker = new TranslationChecker();
-    useCase = new CheckTranslationUseCase(wordRepo, translationChecker, logger);
+    useCase = new CheckTranslationUseCase(wordRepo, translationChecker);
   });
 
   it("should return correct for matching translation (EN_TO_PL)", async () => {
@@ -720,7 +714,7 @@ describe("ResetSessionUseCase", () => {
 
     const session = Session.create(sessionId.value);
     const sessionRepo = createMockSessionRepository(session);
-    const useCase = new ResetSessionUseCase(sessionRepo, logger);
+    const useCase = new ResetSessionUseCase(sessionRepo);
 
     const result = await useCase.execute({ sessionId: "session-123" });
 
@@ -733,7 +727,7 @@ describe("ResetSessionUseCase", () => {
 
   it("should succeed even if session does not exist", async () => {
     const sessionRepo = createMockSessionRepository();
-    const useCase = new ResetSessionUseCase(sessionRepo, logger);
+    const useCase = new ResetSessionUseCase(sessionRepo);
 
     const result = await useCase.execute({ sessionId: "non-existent" });
 
