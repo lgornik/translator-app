@@ -91,10 +91,10 @@ describe("GraphQL Resolvers", () => {
         ctx,
       );
 
+      expect(result).toMatchObject({ __typename: "WordChallenge" });
       expect(result).toHaveProperty("id");
       expect(result).toHaveProperty("wordToTranslate");
       expect(result).not.toHaveProperty("correctTranslation");
-      expect(result.mode).toBe("EN_TO_PL");
     });
 
     it("should filter by category", async () => {
@@ -104,6 +104,7 @@ describe("GraphQL Resolvers", () => {
         ctx,
       );
 
+      expect(result).toMatchObject({ __typename: "WordChallenge" });
       expect(result.category).toBe("Animals");
     });
 
@@ -114,23 +115,34 @@ describe("GraphQL Resolvers", () => {
         ctx,
       );
 
+      expect(result).toMatchObject({ __typename: "WordChallenge" });
       expect(result.difficulty).toBe(3);
     });
 
-    it("should throw error for invalid mode", async () => {
-      await expect(
-        resolvers.Query.getRandomWord({}, { mode: "INVALID" }, ctx),
-      ).rejects.toThrow();
+    it("should return ValidationError for invalid mode", async () => {
+      const result = await resolvers.Query.getRandomWord(
+        {},
+        { mode: "INVALID" },
+        ctx,
+      );
+
+      expect(result).toMatchObject({
+        __typename: "ValidationError",
+        code: "VALIDATION_ERROR",
+      });
     });
 
-    it("should throw error when no words available", async () => {
-      await expect(
-        resolvers.Query.getRandomWord(
-          {},
-          { mode: "EN_TO_PL", category: "NonExistent" },
-          ctx,
-        ),
-      ).rejects.toThrow();
+    it("should return error when no words available", async () => {
+      const result = await resolvers.Query.getRandomWord(
+        {},
+        { mode: "EN_TO_PL", category: "NonExistent" },
+        ctx,
+      );
+
+      expect(result).toMatchObject({
+        __typename: "ValidationError",
+        code: "NO_WORDS_AVAILABLE",
+      });
     });
   });
 
@@ -172,6 +184,7 @@ describe("GraphQL Resolvers", () => {
     it("should return total count without filters", async () => {
       const result = await resolvers.Query.getWordCount({}, {}, ctx);
 
+      expect(result).toMatchObject({ __typename: "WordCount" });
       expect(result.count).toBe(testWords.length);
     });
 
@@ -182,6 +195,7 @@ describe("GraphQL Resolvers", () => {
         ctx,
       );
 
+      expect(result).toMatchObject({ __typename: "WordCount" });
       expect(result.count).toBe(2);
     });
 
@@ -192,6 +206,7 @@ describe("GraphQL Resolvers", () => {
         ctx,
       );
 
+      expect(result).toMatchObject({ __typename: "WordCount" });
       expect(result.count).toBe(2);
     });
 
@@ -202,6 +217,7 @@ describe("GraphQL Resolvers", () => {
         ctx,
       );
 
+      expect(result).toMatchObject({ __typename: "WordCount" });
       expect(result.count).toBe(2);
     });
   });
@@ -214,6 +230,7 @@ describe("GraphQL Resolvers", () => {
         ctx,
       );
 
+      expect(result).toMatchObject({ __typename: "TranslationResult" });
       expect(result.isCorrect).toBe(true);
       expect(result.correctTranslation).toBe("kot");
       expect(result.userTranslation).toBe("kot");
@@ -226,6 +243,7 @@ describe("GraphQL Resolvers", () => {
         ctx,
       );
 
+      expect(result).toMatchObject({ __typename: "TranslationResult" });
       expect(result.isCorrect).toBe(false);
       expect(result.correctTranslation).toBe("kot");
     });
@@ -237,18 +255,22 @@ describe("GraphQL Resolvers", () => {
         ctx,
       );
 
+      expect(result).toMatchObject({ __typename: "TranslationResult" });
       expect(result.isCorrect).toBe(true);
       expect(result.correctTranslation).toBe("cat");
     });
 
-    it("should throw error for non-existent word", async () => {
-      await expect(
-        resolvers.Mutation.checkTranslation(
-          {},
-          { wordId: "non-existent", userTranslation: "test", mode: "EN_TO_PL" },
-          ctx,
-        ),
-      ).rejects.toThrow();
+    it("should return NotFoundError for non-existent word", async () => {
+      const result = await resolvers.Mutation.checkTranslation(
+        {},
+        { wordId: "non-existent", userTranslation: "test", mode: "EN_TO_PL" },
+        ctx,
+      );
+
+      expect(result).toMatchObject({
+        __typename: "NotFoundError",
+        code: "NOT_FOUND",
+      });
     });
   });
 
@@ -259,13 +281,19 @@ describe("GraphQL Resolvers", () => {
 
       const result = await resolvers.Mutation.resetSession({}, {}, ctx);
 
-      expect(result).toBe(true);
+      expect(result).toMatchObject({
+        __typename: "ResetSessionSuccess",
+        success: true,
+      });
     });
 
     it("should succeed even for non-existent session", async () => {
       const result = await resolvers.Mutation.resetSession({}, {}, ctx);
 
-      expect(result).toBe(true);
+      expect(result).toMatchObject({
+        __typename: "ResetSessionSuccess",
+        success: true,
+      });
     });
   });
 });

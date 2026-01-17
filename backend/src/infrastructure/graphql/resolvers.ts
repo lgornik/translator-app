@@ -61,12 +61,12 @@ function toGraphQLError(error: DomainError): Record<string, unknown> {
 /**
  * Helper to convert Result to union type response
  */
-function handleResultUnion<T extends Record<string, unknown>>(
+function handleResultUnion<T>(
   result: Result<T, DomainError>,
   successTypename: string,
 ): Record<string, unknown> {
   if (result.ok) {
-    return { __typename: successTypename, ...result.value };
+    return { __typename: successTypename, ...(result.value as object) };
   }
   return toGraphQLError(result.error);
 }

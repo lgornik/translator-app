@@ -429,11 +429,18 @@ describe("GraphQL Schema Contract Tests", () => {
       const query = `
         query GetRandomWord {
           getRandomWord(mode: EN_TO_PL) {
-            id
-            wordToTranslate
-            mode
-            category
-            difficulty
+            __typename
+            ... on WordChallenge {
+              id
+              wordToTranslate
+              mode
+              category
+              difficulty
+            }
+            ... on NotFoundError {
+              code
+              message
+            }
           }
         }
       `;
@@ -445,8 +452,11 @@ describe("GraphQL Schema Contract Tests", () => {
       const query = `
         query GetRandomWord {
           getRandomWord(mode: PL_TO_EN, category: "animals", difficulty: 1) {
-            id
-            wordToTranslate
+            __typename
+            ... on WordChallenge {
+              id
+              wordToTranslate
+            }
           }
         }
       `;
@@ -458,9 +468,15 @@ describe("GraphQL Schema Contract Tests", () => {
       const query = `
         query GetRandomWords {
           getRandomWords(mode: EN_TO_PL, limit: 10) {
-            id
-            wordToTranslate
-            category
+            __typename
+            ... on WordChallengeList {
+              words {
+                id
+                wordToTranslate
+                category
+              }
+              count
+            }
           }
         }
       `;
@@ -472,9 +488,16 @@ describe("GraphQL Schema Contract Tests", () => {
       const query = `
         mutation CheckTranslation {
           checkTranslation(wordId: "123", userTranslation: "kot", mode: EN_TO_PL) {
-            isCorrect
-            correctTranslation
-            userTranslation
+            __typename
+            ... on TranslationResult {
+              isCorrect
+              correctTranslation
+              userTranslation
+            }
+            ... on NotFoundError {
+              code
+              message
+            }
           }
         }
       `;
@@ -485,7 +508,17 @@ describe("GraphQL Schema Contract Tests", () => {
     it("should accept valid resetSession mutation", () => {
       const query = `
         mutation ResetSession {
-          resetSession
+          resetSession {
+            __typename
+            ... on ResetSessionSuccess {
+              success
+              message
+            }
+            ... on SessionError {
+              code
+              message
+            }
+          }
         }
       `;
       const errors = validate(schema, parse(query));
@@ -496,7 +529,10 @@ describe("GraphQL Schema Contract Tests", () => {
       const query = `
         query {
           getRandomWord(mode: EN_TO_PL) {
-            nonExistentField
+            __typename
+            ... on WordChallenge {
+              nonExistentField
+            }
           }
         }
       `;
@@ -508,7 +544,7 @@ describe("GraphQL Schema Contract Tests", () => {
       const query = `
         query {
           getRandomWord {
-            id
+            __typename
           }
         }
       `;
@@ -520,7 +556,10 @@ describe("GraphQL Schema Contract Tests", () => {
       const query = `
         mutation {
           checkTranslation(wordId: "123") {
-            isCorrect
+            __typename
+            ... on TranslationResult {
+              isCorrect
+            }
           }
         }
       `;
