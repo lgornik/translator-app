@@ -1,13 +1,14 @@
-import { useCallback } from 'react';
-import { useQuery } from '@apollo/client';
+import { useCallback } from "react";
+import { useQuery } from "@apollo/client";
 import {
   GET_CATEGORIES,
   GET_WORD_COUNT,
   type GetCategoriesData,
   type GetWordCountData,
   type GetWordCountVariables,
-} from '@/shared/api/operations';
-import type { Difficulty } from '@/shared/types';
+  isWordCount,
+} from "@/shared/api/operations";
+import type { Difficulty } from "@/shared/types";
 
 interface WordCountFilters {
   category: string | null;
@@ -27,12 +28,12 @@ interface UseQuizCategoriesReturn {
 
 /**
  * Manages quiz categories and available word count
- * 
+ *
  * Responsibilities:
  * - Fetch available categories on mount
  * - Track word count for current filter selection
  * - Provide refetch capability for filter changes
- * 
+ *
  * @example
  * const { categories, availableWordCount, updateWordCountFilters } = useQuizCategories({
  *   category: selectedCategory,
@@ -40,34 +41,38 @@ interface UseQuizCategoriesReturn {
  * });
  */
 export function useQuizCategories(
-  initialFilters: WordCountFilters
+  initialFilters: WordCountFilters,
 ): UseQuizCategoriesReturn {
-  
-  const { 
-    data: categoriesData, 
-    loading: isLoadingCategories 
-  } = useQuery<GetCategoriesData>(GET_CATEGORIES);
+  const { data: categoriesData, loading: isLoadingCategories } =
+    useQuery<GetCategoriesData>(GET_CATEGORIES);
 
-  const { 
-    data: wordCountData, 
-    refetch: refetchWordCount 
-  } = useQuery<GetWordCountData, GetWordCountVariables>(GET_WORD_COUNT, {
+  const { data: wordCountData, refetch: refetchWordCount } = useQuery<
+    GetWordCountData,
+    GetWordCountVariables
+  >(GET_WORD_COUNT, {
     variables: {
       category: initialFilters.category,
       difficulty: initialFilters.difficulty,
     },
   });
 
-  const updateWordCountFilters = useCallback((filters: WordCountFilters) => {
-    refetchWordCount({
-      category: filters.category,
-      difficulty: filters.difficulty,
-    });
-  }, [refetchWordCount]);
+  const updateWordCountFilters = useCallback(
+    (filters: WordCountFilters) => {
+      refetchWordCount({
+        category: filters.category,
+        difficulty: filters.difficulty,
+      });
+    },
+    [refetchWordCount],
+  );
+
+  const wordCountResult = wordCountData?.getWordCount;
+  const availableWordCount =
+    wordCountResult && isWordCount(wordCountResult) ? wordCountResult.count : 0;
 
   return {
     categories: categoriesData?.getCategories ?? [],
-    availableWordCount: wordCountData?.getWordCount?.count ?? 0,
+    availableWordCount,
     isLoadingCategories,
     updateWordCountFilters,
   };

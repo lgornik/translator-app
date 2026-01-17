@@ -1,5 +1,5 @@
-import { useCallback, useEffect } from 'react';
-import { useLazyQuery, useMutation } from '@apollo/client';
+import { useCallback, useEffect } from "react";
+import { useLazyQuery, useMutation } from "@apollo/client";
 import {
   GET_RANDOM_WORD,
   GET_RANDOM_WORDS,
@@ -10,18 +10,21 @@ import {
   type GetRandomWordsVariables,
   type CheckTranslationData,
   type CheckTranslationVariables,
-} from '@/shared/api/operations';
-import type { WordChallenge, TranslationResult } from '@/shared/types';
-import { logger } from '@/shared/utils/logger';
+  isWordChallenge,
+  isWordChallengeList,
+  isTranslationResult,
+} from "@/shared/api/operations";
+import type { WordChallenge, TranslationResult } from "@/shared/types";
+import { logger } from "@/shared/utils/logger";
 
 interface FetchWordParams {
-  mode: 'EN_TO_PL' | 'PL_TO_EN';
+  mode: "EN_TO_PL" | "PL_TO_EN";
   category: string | null;
   difficulty: number | null;
 }
 
 interface FetchWordsParams {
-  mode: 'EN_TO_PL' | 'PL_TO_EN';
+  mode: "EN_TO_PL" | "PL_TO_EN";
   limit: number;
   category: string | null;
   difficulty: number | null;
@@ -30,7 +33,7 @@ interface FetchWordsParams {
 interface CheckAnswerParams {
   wordId: string;
   userTranslation: string;
-  mode: 'EN_TO_PL' | 'PL_TO_EN';
+  mode: "EN_TO_PL" | "PL_TO_EN";
 }
 
 interface UseQuizGraphQLCallbacks {
@@ -60,40 +63,42 @@ export function useQuizGraphQL({
   onWordError,
   onResultReceived,
 }: UseQuizGraphQLCallbacks): UseQuizGraphQLReturn {
-
   // Pojedyncze słowo (dla trybu standardowego i czasowego)
-  const [fetchWordQuery, { loading: isLoadingWord, data: wordData, error: wordError }] = useLazyQuery<
-    GetRandomWordData,
-    GetRandomWordVariables
-  >(GET_RANDOM_WORD, {
-    fetchPolicy: 'network-only',
+  const [
+    fetchWordQuery,
+    { loading: isLoadingWord, data: wordData, error: wordError },
+  ] = useLazyQuery<GetRandomWordData, GetRandomWordVariables>(GET_RANDOM_WORD, {
+    fetchPolicy: "network-only",
   });
 
   // Handle word query completion and errors
   useEffect(() => {
     if (wordData) {
-      if (!wordData.getRandomWord) {
-        logger.debug('[useQuizGraphQL] No word returned');
+      const result = wordData.getRandomWord;
+      if (!result || !isWordChallenge(result)) {
+        logger.debug("[useQuizGraphQL] No word returned or error");
         onNoMoreWords();
         return;
       }
 
-      logger.debug('[useQuizGraphQL] Word loaded', {
-        wordId: wordData.getRandomWord.id
+      logger.debug("[useQuizGraphQL] Word loaded", {
+        wordId: result.id,
       });
-      onWordLoaded(wordData.getRandomWord as WordChallenge);
+      onWordLoaded(result as WordChallenge);
     }
   }, [wordData, onWordLoaded, onNoMoreWords]);
 
   useEffect(() => {
     if (wordError) {
-      logger.error('[useQuizGraphQL] Error fetching word', { error: wordError });
+      logger.error("[useQuizGraphQL] Error fetching word", {
+        error: wordError,
+      });
 
       const errorMsg = wordError.message.toLowerCase();
       const isNoWordsError =
-        errorMsg.includes('no words') ||
-        errorMsg.includes('brak słów') ||
-        errorMsg.includes('available');
+        errorMsg.includes("no words") ||
+        errorMsg.includes("brak słów") ||
+        errorMsg.includes("available");
 
       if (isNoWordsError) {
         onNoMoreWords();
@@ -104,71 +109,104 @@ export function useQuizGraphQL({
   }, [wordError, onNoMoreWords, onWordError]);
 
   // Wiele słów naraz (dla trybu utrwalania)
-  const [fetchWordsQuery, { loading: isLoadingWords, data: wordsData, error: wordsError }] = useLazyQuery<
-    GetRandomWordsData,
-    GetRandomWordsVariables
-  >(GET_RANDOM_WORDS, {
-    fetchPolicy: 'network-only',
-  });
+  const [
+    fetchWordsQuery,
+    { loading: isLoadingWords, data: wordsData, error: wordsError },
+  ] = useLazyQuery<GetRandomWordsData, GetRandomWordsVariables>(
+    GET_RANDOM_WORDS,
+    {
+      fetchPolicy: "network-only",
+    },
+  );
 
   // Handle words pool query completion and errors
   useEffect(() => {
     if (wordsData) {
-      const words = wordsData.getRandomWords || [];
+      const result = wordsData.getRandomWords;
 
-      logger.debug('[useQuizGraphQL] Pool loaded', {
-        count: words.length
+      if (!result || !isWordChallengeList(result)) {
+        logger.debug("[useQuizGraphQL] No words returned or error");
+        onPoolLoaded([]);
+        return;
+      }
+
+      logger.debug("[useQuizGraphQL] Pool loaded", {
+        count: result.words.length,
       });
 
-      onPoolLoaded(words as WordChallenge[]);
+      onPoolLoaded(result.words as WordChallenge[]);
     }
   }, [wordsData, onPoolLoaded]);
 
   useEffect(() => {
     if (wordsError) {
-      logger.error('[useQuizGraphQL] Error fetching words pool', { error: wordsError });
+      logger.error("[useQuizGraphQL] Error fetching words pool", {
+        error: wordsError,
+      });
       onWordError(wordsError.message);
     }
   }, [wordsError, onWordError]);
 
-  const [checkTranslationMutation, { loading: isCheckingAnswer, data: checkData, error: checkError }] = useMutation<
-    CheckTranslationData,
-    CheckTranslationVariables
-  >(CHECK_TRANSLATION);
+  const [
+    checkTranslationMutation,
+    { loading: isCheckingAnswer, data: checkData, error: checkError },
+  ] = useMutation<CheckTranslationData, CheckTranslationVariables>(
+    CHECK_TRANSLATION,
+  );
 
   // Handle translation check completion and errors
   useEffect(() => {
     if (checkData) {
-      logger.debug('[useQuizGraphQL] Translation checked', {
-        isCorrect: checkData.checkTranslation.isCorrect
+      const result = checkData.checkTranslation;
+
+      if (!isTranslationResult(result)) {
+        logger.error("[useQuizGraphQL] Translation check returned error", {
+          result,
+        });
+        return;
+      }
+
+      logger.debug("[useQuizGraphQL] Translation checked", {
+        isCorrect: result.isCorrect,
       });
-      onResultReceived(checkData.checkTranslation);
+      onResultReceived(result as TranslationResult);
     }
   }, [checkData, onResultReceived]);
 
   useEffect(() => {
     if (checkError) {
-      logger.error('[useQuizGraphQL] Error checking translation', { error: checkError });
+      logger.error("[useQuizGraphQL] Error checking translation", {
+        error: checkError,
+      });
     }
   }, [checkError]);
 
-  const fetchWord = useCallback((params: FetchWordParams) => {
-    logger.debug('[useQuizGraphQL] Fetching word', params);
-    fetchWordQuery({ variables: params });
-  }, [fetchWordQuery]);
+  const fetchWord = useCallback(
+    (params: FetchWordParams) => {
+      logger.debug("[useQuizGraphQL] Fetching word", params);
+      fetchWordQuery({ variables: params });
+    },
+    [fetchWordQuery],
+  );
 
-  const fetchWords = useCallback((params: FetchWordsParams) => {
-    logger.debug('[useQuizGraphQL] Fetching words pool', params);
-    fetchWordsQuery({ variables: params });
-  }, [fetchWordsQuery]);
+  const fetchWords = useCallback(
+    (params: FetchWordsParams) => {
+      logger.debug("[useQuizGraphQL] Fetching words pool", params);
+      fetchWordsQuery({ variables: params });
+    },
+    [fetchWordsQuery],
+  );
 
-  const checkAnswer = useCallback((params: CheckAnswerParams) => {
-    logger.debug('[useQuizGraphQL] Checking answer', {
-      wordId: params.wordId,
-      mode: params.mode,
-    });
-    checkTranslationMutation({ variables: params });
-  }, [checkTranslationMutation]);
+  const checkAnswer = useCallback(
+    (params: CheckAnswerParams) => {
+      logger.debug("[useQuizGraphQL] Checking answer", {
+        wordId: params.wordId,
+        mode: params.mode,
+      });
+      checkTranslationMutation({ variables: params });
+    },
+    [checkTranslationMutation],
+  );
 
   return {
     fetchWord,
