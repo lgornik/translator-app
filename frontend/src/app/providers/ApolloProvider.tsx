@@ -1,4 +1,4 @@
-import { ApolloClient, InMemoryCache, ApolloProvider as BaseApolloProvider } from '@apollo/client';
+import { ApolloClient, InMemoryCache, ApolloProvider as BaseApolloProvider, HttpLink } from '@apollo/client';
 import { ReactNode } from 'react';
 import { API_CONFIG } from '@/shared/constants';
 
@@ -6,7 +6,9 @@ import { API_CONFIG } from '@/shared/constants';
  * Apollo Client instance
  */
 const apolloClient = new ApolloClient({
-  uri: API_CONFIG.GRAPHQL_URL,
+  link: new HttpLink({
+    uri: API_CONFIG.GRAPHQL_URL,
+  }),
   cache: new InMemoryCache(),
   defaultOptions: {
     watchQuery: {
@@ -16,7 +18,9 @@ const apolloClient = new ApolloClient({
       fetchPolicy: 'network-only',
     },
   },
-  connectToDevTools: import.meta.env.DEV,
+  devtools: {
+    enabled: import.meta.env.DEV,
+  },
 });
 
 interface ApolloProviderProps {
