@@ -1,4 +1,8 @@
 export const typeDefs = `#graphql
+  # ============================================================================
+  # Enums
+  # ============================================================================
+
   """
   Direction of translation
   """
@@ -16,6 +20,57 @@ export const typeDefs = `#graphql
     HARD
   }
 
+  # ============================================================================
+  # Error Types (Union Type Pattern)
+  # ============================================================================
+
+  """
+  Base interface for all errors
+  """
+  interface Error {
+    code: String!
+    message: String!
+  }
+
+  """
+  Validation error - invalid input data
+  """
+  type ValidationError implements Error {
+    code: String!
+    message: String!
+    field: String
+  }
+
+  """
+  Resource not found error
+  """
+  type NotFoundError implements Error {
+    code: String!
+    message: String!
+    resourceType: String!
+  }
+
+  """
+  Rate limit exceeded error
+  """
+  type RateLimitError implements Error {
+    code: String!
+    message: String!
+    retryAfter: Int!
+  }
+
+  """
+  Session related error
+  """
+  type SessionError implements Error {
+    code: String!
+    message: String!
+  }
+
+  # ============================================================================
+  # Domain Types
+  # ============================================================================
+
   """
   A word challenge for the user to translate
   NOTE: correctTranslation is NOT exposed here for security
@@ -31,6 +86,14 @@ export const typeDefs = `#graphql
     category: String!
     "Difficulty level (1-3)"
     difficulty: Int!
+  }
+
+  """
+  List of word challenges (for batch loading)
+  """
+  type WordChallengeList {
+    words: [WordChallenge!]!
+    count: Int!
   }
 
   """
@@ -64,6 +127,14 @@ export const typeDefs = `#graphql
   }
 
   """
+  Session reset success response
+  """
+  type ResetSessionSuccess {
+    success: Boolean!
+    message: String!
+  }
+
+  """
   API information
   """
   type ApiInfo {
@@ -85,6 +156,35 @@ export const typeDefs = `#graphql
   }
 
   # ============================================================================
+  # Union Types (Principal Pattern: Type-safe error handling)
+  # ============================================================================
+
+  """
+  Result of getRandomWord query - either a word or an error
+  """
+  union GetRandomWordResult = WordChallenge | NotFoundError | ValidationError | RateLimitError | SessionError
+
+  """
+  Result of getRandomWords query - either a list or an error
+  """
+  union GetRandomWordsResult = WordChallengeList | NotFoundError | ValidationError | RateLimitError | SessionError
+
+  """
+  Result of checkTranslation mutation - either result or an error
+  """
+  union CheckTranslationResult = TranslationResult | NotFoundError | ValidationError | RateLimitError
+
+  """
+  Result of resetSession mutation - either success or an error
+  """
+  union ResetSessionResult = ResetSessionSuccess | SessionError | RateLimitError
+
+  """
+  Result of getWordCount query - either count or an error
+  """
+  union GetWordCountResult = WordCount | ValidationError
+
+  # ============================================================================
   # Queries
   # ============================================================================
 
@@ -101,12 +201,13 @@ export const typeDefs = `#graphql
 
     """
     Get a random word for translation with optional filters
+    Returns union type for type-safe error handling
     """
     getRandomWord(
       mode: TranslationMode!
       category: String
       difficulty: Int
-    ): WordChallenge!
+    ): GetRandomWordResult!
 
     """
     Get multiple random words for translation (for quiz pool)
@@ -117,7 +218,7 @@ export const typeDefs = `#graphql
       limit: Int!
       category: String
       difficulty: Int
-    ): [WordChallenge!]!
+    ): GetRandomWordsResult!
 
     """
     Get all words in the dictionary
@@ -140,7 +241,7 @@ export const typeDefs = `#graphql
     getWordCount(
       category: String
       difficulty: Int
-    ): WordCount!
+    ): GetWordCountResult!
   }
 
   # ============================================================================
@@ -155,11 +256,11 @@ export const typeDefs = `#graphql
       wordId: ID!
       userTranslation: String!
       mode: TranslationMode!
-    ): TranslationResult!
+    ): CheckTranslationResult!
 
     """
     Reset the current session (clear used words)
     """
-    resetSession: Boolean!
+    resetSession: ResetSessionResult!
   }
 `;

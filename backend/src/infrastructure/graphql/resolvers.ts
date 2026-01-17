@@ -1,25 +1,74 @@
 import { GraphQLContext } from "./context.js";
 import { Result } from "../../shared/core/Result.js";
 import { DomainError } from "../../shared/errors/DomainErrors.js";
-import { GraphQLError } from "graphql";
 import { config } from "../config/Config.js";
 import { toApiResponse } from "../../application/dtos/index.js";
 
 /**
- * Helper to convert Result to GraphQL response
+ * PRINCIPAL PATTERN: Union Type Error Handling
+ *
+ * Instead of throwing GraphQL errors, we return typed error objects.
+ * This enables:
+ * - Type-safe error handling on the client
+ * - Better error introspection in GraphQL tooling
+ * - Cleaner client code with discriminated unions
  */
-function handleResult<T>(result: Result<T, DomainError>): T {
-  if (result.ok) {
-    return result.value;
-  }
 
-  throw new GraphQLError(result.error.message, {
-    extensions: {
-      code: result.error.code,
-      http: { status: result.error.httpStatus },
-      details: result.error.details,
-    },
-  });
+/**
+ * Map domain error codes to GraphQL __typename
+ */
+function getErrorTypename(code: string): string {
+  switch (code) {
+    case "NOT_FOUND":
+      return "NotFoundError";
+    case "VALIDATION_ERROR":
+      return "ValidationError";
+    case "RATE_LIMIT_ERROR":
+      return "RateLimitError";
+    case "SESSION_ERROR":
+      return "SessionError";
+    default:
+      return "ValidationError";
+  }
+}
+
+/**
+ * Convert domain error to GraphQL error type
+ */
+function toGraphQLError(error: DomainError): Record<string, unknown> {
+  const base = {
+    __typename: getErrorTypename(error.code),
+    code: error.code,
+    message: error.message,
+  };
+
+  // Add type-specific fields
+  switch (error.code) {
+    case "NOT_FOUND":
+      return {
+        ...base,
+        resourceType: error.details?.resourceType ?? "unknown",
+      };
+    case "RATE_LIMIT_ERROR":
+      return { ...base, retryAfter: error.details?.retryAfter ?? 60 };
+    case "VALIDATION_ERROR":
+      return { ...base, field: error.details?.field ?? null };
+    default:
+      return base;
+  }
+}
+
+/**
+ * Helper to convert Result to union type response
+ */
+function handleResultUnion<T extends Record<string, unknown>>(
+  result: Result<T, DomainError>,
+  successTypename: string,
+): Record<string, unknown> {
+  if (result.ok) {
+    return { __typename: successTypename, ...result.value };
+  }
+  return toGraphQLError(result.error);
 }
 
 /**
@@ -50,15 +99,12 @@ const queryResolvers = {
 
   /**
    * PRINCIPAL PATTERN: Production-ready health check
-   *
-   * Checks actual dependencies, not just "status: ok".
-   * Returns degraded/unhealthy states for observability.
    */
   health: async (_: unknown, __: unknown, ctx: GraphQLContext) => {
     const dependencies: DependencyHealth[] = [];
     let overallStatus: HealthStatus = "healthy";
 
-    // Check word repository (database or in-memory)
+    // Check word repository
     const wordRepoStart = Date.now();
     try {
       const wordCount = await ctx.wordRepository.count();
@@ -98,7 +144,7 @@ const queryResolvers = {
       overallStatus = "unhealthy";
     }
 
-    // Check database if available (via checkDatabase function)
+    // Check database if available
     if (ctx.checkDatabase) {
       const dbHealth = await ctx.checkDatabase();
       dependencies.push({
@@ -123,6 +169,9 @@ const queryResolvers = {
     };
   },
 
+  /**
+   * Get random word - returns union type
+   */
   getRandomWord: async (
     _: unknown,
     args: { mode: string; category?: string; difficulty?: number },
@@ -135,13 +184,18 @@ const queryResolvers = {
       sessionId: ctx.sessionId,
     });
 
-    const output = handleResult(result);
-
-    // Use DTO function to strip correctTranslation
-    return toApiResponse(output);
+    if (result.ok) {
+      return {
+        __typename: "WordChallenge",
+        ...toApiResponse(result.value),
+      };
+    }
+    return toGraphQLError(result.error);
   },
 
-  // Batch loading - pobieranie wielu słów naraz
+  /**
+   * Get random words (batch) - returns union type
+   */
   getRandomWords: async (
     _: unknown,
     args: {
@@ -160,27 +214,43 @@ const queryResolvers = {
       sessionId: ctx.sessionId,
     });
 
-    const output = handleResult(result);
-
-    // Use DTO function to strip correctTranslation from each word
-    return output.words.map(toApiResponse);
+    if (result.ok) {
+      return {
+        __typename: "WordChallengeList",
+        words: result.value.words.map(toApiResponse),
+        count: result.value.words.length,
+      };
+    }
+    return toGraphQLError(result.error);
   },
 
   getAllWords: async (_: unknown, __: unknown, ctx: GraphQLContext) => {
     const result = await ctx.getAllWords.execute();
-    return handleResult(result).words;
+    if (result.ok) {
+      return result.value.words;
+    }
+    return [];
   },
 
   getCategories: async (_: unknown, __: unknown, ctx: GraphQLContext) => {
     const result = await ctx.getCategories.execute();
-    return handleResult(result).categories;
+    if (result.ok) {
+      return result.value.categories;
+    }
+    return [];
   },
 
   getDifficulties: async (_: unknown, __: unknown, ctx: GraphQLContext) => {
     const result = await ctx.getDifficulties.execute();
-    return handleResult(result).difficulties;
+    if (result.ok) {
+      return result.value.difficulties;
+    }
+    return [];
   },
 
+  /**
+   * Get word count - returns union type
+   */
   getWordCount: async (
     _: unknown,
     args: { category?: string; difficulty?: number },
@@ -191,7 +261,7 @@ const queryResolvers = {
       difficulty: args.difficulty ?? null,
     });
 
-    return handleResult(result);
+    return handleResultUnion(result, "WordCount");
   },
 };
 
@@ -199,6 +269,9 @@ const queryResolvers = {
  * Mutation Resolvers
  */
 const mutationResolvers = {
+  /**
+   * Check translation - returns union type
+   */
   checkTranslation: async (
     _: unknown,
     args: { wordId: string; userTranslation: string; mode: string },
@@ -211,15 +284,57 @@ const mutationResolvers = {
       sessionId: ctx.sessionId,
     });
 
-    return handleResult(result);
+    return handleResultUnion(result, "TranslationResult");
   },
 
+  /**
+   * Reset session - returns union type
+   */
   resetSession: async (_: unknown, __: unknown, ctx: GraphQLContext) => {
     const result = await ctx.resetSession.execute({
       sessionId: ctx.sessionId,
     });
 
-    return handleResult(result).success;
+    if (result.ok) {
+      return {
+        __typename: "ResetSessionSuccess",
+        success: true,
+        message: "Session reset successfully",
+      };
+    }
+    return toGraphQLError(result.error);
+  },
+};
+
+/**
+ * Union Type Resolvers
+ * GraphQL needs these to determine which type in a union was returned
+ */
+const unionResolvers = {
+  GetRandomWordResult: {
+    __resolveType(obj: { __typename?: string }) {
+      return obj.__typename ?? "WordChallenge";
+    },
+  },
+  GetRandomWordsResult: {
+    __resolveType(obj: { __typename?: string }) {
+      return obj.__typename ?? "WordChallengeList";
+    },
+  },
+  CheckTranslationResult: {
+    __resolveType(obj: { __typename?: string }) {
+      return obj.__typename ?? "TranslationResult";
+    },
+  },
+  ResetSessionResult: {
+    __resolveType(obj: { __typename?: string }) {
+      return obj.__typename ?? "ResetSessionSuccess";
+    },
+  },
+  GetWordCountResult: {
+    __resolveType(obj: { __typename?: string }) {
+      return obj.__typename ?? "WordCount";
+    },
   },
 };
 
@@ -229,4 +344,5 @@ const mutationResolvers = {
 export const resolvers = {
   Query: queryResolvers,
   Mutation: mutationResolvers,
+  ...unionResolvers,
 };

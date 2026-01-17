@@ -22,7 +22,7 @@ export const TRANSLATION_RESULT_FRAGMENT = gql`
 `;
 
 /**
- * Queries
+ * Queries with Union Types
  */
 export const GET_RANDOM_WORD = gql`
   ${WORD_CHALLENGE_FRAGMENT}
@@ -44,6 +44,7 @@ export const GET_RANDOM_WORD = gql`
       ... on ValidationError {
         code
         message
+        field
       }
       ... on RateLimitError {
         code
@@ -87,6 +88,7 @@ export const GET_RANDOM_WORDS = gql`
       ... on ValidationError {
         code
         message
+        field
       }
       ... on RateLimitError {
         code
@@ -123,6 +125,7 @@ export const GET_WORD_COUNT = gql`
       ... on ValidationError {
         code
         message
+        field
       }
     }
   }
@@ -141,7 +144,7 @@ export const GET_ALL_WORDS = gql`
 `;
 
 /**
- * Mutations
+ * Mutations with Union Types
  */
 export const CHECK_TRANSLATION = gql`
   ${TRANSLATION_RESULT_FRAGMENT}
@@ -166,6 +169,7 @@ export const CHECK_TRANSLATION = gql`
       ... on ValidationError {
         code
         message
+        field
       }
       ... on RateLimitError {
         code
@@ -204,13 +208,14 @@ export interface NotFoundError {
   __typename: "NotFoundError";
   code: string;
   message: string;
-  resourceType?: string;
+  resourceType: string;
 }
 
 export interface ValidationError {
   __typename: "ValidationError";
   code: string;
   message: string;
+  field?: string;
 }
 
 export interface RateLimitError {
@@ -257,6 +262,14 @@ export interface ResetSessionSuccess {
 export interface WordCount {
   __typename: "WordCount";
   count: number;
+}
+
+export interface DictionaryWord {
+  id: string;
+  polish: string;
+  english: string;
+  category: string;
+  difficulty: number;
 }
 
 // Union types
@@ -306,6 +319,10 @@ export interface GetDifficultiesData {
 
 export interface GetWordCountData {
   getWordCount: GetWordCountResult;
+}
+
+export interface GetAllWordsData {
+  getAllWords: DictionaryWord[];
 }
 
 export interface CheckTranslationData {

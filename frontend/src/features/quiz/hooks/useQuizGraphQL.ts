@@ -55,6 +55,7 @@ interface UseQuizGraphQLReturn {
 
 /**
  * Encapsulates all GraphQL operations for the quiz
+ * Uses union types with type guards for type-safe error handling
  */
 export function useQuizGraphQL({
   onWordLoaded,
@@ -63,7 +64,7 @@ export function useQuizGraphQL({
   onWordError,
   onResultReceived,
 }: UseQuizGraphQLCallbacks): UseQuizGraphQLReturn {
-  // Pojedyncze słowo (dla trybu standardowego i czasowego)
+  // Single word query (for standard and timed modes)
   const [
     fetchWordQuery,
     { loading: isLoadingWord, data: wordData, error: wordError },
@@ -71,44 +72,41 @@ export function useQuizGraphQL({
     fetchPolicy: "network-only",
   });
 
-  // Handle word query completion and errors
+  // Handle word query completion with type guard
   useEffect(() => {
-    if (wordData) {
+    if (wordData?.getRandomWord) {
       const result = wordData.getRandomWord;
-      if (!result || !isWordChallenge(result)) {
-        logger.debug("[useQuizGraphQL] No word returned or error");
-        onNoMoreWords();
-        return;
+
+      if (isWordChallenge(result)) {
+        logger.debug("[useQuizGraphQL] Word loaded", { wordId: result.id });
+        onWordLoaded(result as WordChallenge);
+      } else {
+        // It's an error type
+        logger.debug("[useQuizGraphQL] Word query returned error", {
+          type: result.__typename,
+          message: "message" in result ? result.message : "Unknown error",
+        });
+
+        if (result.__typename === "NotFoundError") {
+          onNoMoreWords();
+        } else {
+          onWordError("message" in result ? result.message : "Unknown error");
+        }
       }
-
-      logger.debug("[useQuizGraphQL] Word loaded", {
-        wordId: result.id,
-      });
-      onWordLoaded(result as WordChallenge);
     }
-  }, [wordData, onWordLoaded, onNoMoreWords]);
+  }, [wordData, onWordLoaded, onNoMoreWords, onWordError]);
 
+  // Handle network errors
   useEffect(() => {
     if (wordError) {
-      logger.error("[useQuizGraphQL] Error fetching word", {
+      logger.error("[useQuizGraphQL] Network error fetching word", {
         error: wordError,
       });
-
-      const errorMsg = wordError.message.toLowerCase();
-      const isNoWordsError =
-        errorMsg.includes("no words") ||
-        errorMsg.includes("brak słów") ||
-        errorMsg.includes("available");
-
-      if (isNoWordsError) {
-        onNoMoreWords();
-      } else {
-        onWordError(wordError.message);
-      }
+      onWordError(wordError.message);
     }
-  }, [wordError, onNoMoreWords, onWordError]);
+  }, [wordError, onWordError]);
 
-  // Wiele słów naraz (dla trybu utrwalania)
+  // Multiple words query (for reinforcement mode)
   const [
     fetchWordsQuery,
     { loading: isLoadingWords, data: wordsData, error: wordsError },
@@ -119,34 +117,35 @@ export function useQuizGraphQL({
     },
   );
 
-  // Handle words pool query completion and errors
+  // Handle words pool query with type guard
   useEffect(() => {
-    if (wordsData) {
+    if (wordsData?.getRandomWords) {
       const result = wordsData.getRandomWords;
 
-      if (!result || !isWordChallengeList(result)) {
-        logger.debug("[useQuizGraphQL] No words returned or error");
+      if (isWordChallengeList(result)) {
+        logger.debug("[useQuizGraphQL] Pool loaded", {
+          count: result.words.length,
+        });
+        onPoolLoaded(result.words as WordChallenge[]);
+      } else {
+        logger.debug("[useQuizGraphQL] Words query returned error", {
+          type: result.__typename,
+        });
         onPoolLoaded([]);
-        return;
       }
-
-      logger.debug("[useQuizGraphQL] Pool loaded", {
-        count: result.words.length,
-      });
-
-      onPoolLoaded(result.words as WordChallenge[]);
     }
   }, [wordsData, onPoolLoaded]);
 
   useEffect(() => {
     if (wordsError) {
-      logger.error("[useQuizGraphQL] Error fetching words pool", {
+      logger.error("[useQuizGraphQL] Network error fetching words pool", {
         error: wordsError,
       });
       onWordError(wordsError.message);
     }
   }, [wordsError, onWordError]);
 
+  // Check translation mutation
   const [
     checkTranslationMutation,
     { loading: isCheckingAnswer, data: checkData, error: checkError },
@@ -154,28 +153,27 @@ export function useQuizGraphQL({
     CHECK_TRANSLATION,
   );
 
-  // Handle translation check completion and errors
+  // Handle translation check with type guard
   useEffect(() => {
-    if (checkData) {
+    if (checkData?.checkTranslation) {
       const result = checkData.checkTranslation;
 
-      if (!isTranslationResult(result)) {
-        logger.error("[useQuizGraphQL] Translation check returned error", {
-          result,
+      if (isTranslationResult(result)) {
+        logger.debug("[useQuizGraphQL] Translation checked", {
+          isCorrect: result.isCorrect,
         });
-        return;
+        onResultReceived(result as TranslationResult);
+      } else {
+        logger.error("[useQuizGraphQL] Translation check returned error", {
+          type: result.__typename,
+        });
       }
-
-      logger.debug("[useQuizGraphQL] Translation checked", {
-        isCorrect: result.isCorrect,
-      });
-      onResultReceived(result as TranslationResult);
     }
   }, [checkData, onResultReceived]);
 
   useEffect(() => {
     if (checkError) {
-      logger.error("[useQuizGraphQL] Error checking translation", {
+      logger.error("[useQuizGraphQL] Network error checking translation", {
         error: checkError,
       });
     }

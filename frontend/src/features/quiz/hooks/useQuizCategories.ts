@@ -29,16 +29,7 @@ interface UseQuizCategoriesReturn {
 /**
  * Manages quiz categories and available word count
  *
- * Responsibilities:
- * - Fetch available categories on mount
- * - Track word count for current filter selection
- * - Provide refetch capability for filter changes
- *
- * @example
- * const { categories, availableWordCount, updateWordCountFilters } = useQuizCategories({
- *   category: selectedCategory,
- *   difficulty: selectedDifficulty,
- * });
+ * Uses union types with type guards for type-safe error handling
  */
 export function useQuizCategories(
   initialFilters: WordCountFilters,
@@ -66,6 +57,7 @@ export function useQuizCategories(
     [refetchWordCount],
   );
 
+  // Use type guard to safely extract count
   const wordCountResult = wordCountData?.getWordCount;
   const availableWordCount =
     wordCountResult && isWordCount(wordCountResult) ? wordCountResult.count : 0;
