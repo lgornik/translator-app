@@ -5,14 +5,6 @@ import { SessionId } from "../../domain/value-objects/SessionId.js";
 import { ResetSessionInput, ResetSessionOutput } from "../dtos/index.js";
 import { IUseCase } from "../interfaces/IUseCase.js";
 
-/**
- * Reset Session Use Case
- *
- * PRINCIPAL PATTERN: Pure business logic - no cross-cutting concerns.
- *
- * Clears all used words from a session.
- * Logging and metrics are handled by decorators.
- */
 export class ResetSessionUseCase implements IUseCase<
   ResetSessionInput,
   ResetSessionOutput

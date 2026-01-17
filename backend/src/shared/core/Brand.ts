@@ -1,22 +1,3 @@
-/**
- * Branded Types
- *
- * PRINCIPAL PATTERN: Compile-time type safety for primitive types.
- *
- * Problem:
- *   function getUser(userId: string, sessionId: string) { ... }
- *   getUser(sessionId, userId); // Compiles but WRONG!
- *
- * Solution:
- *   function getUser(userId: UserId, sessionId: SessionId) { ... }
- *   getUser(sessionId, userId); // Compile ERROR!
- *
- * This prevents entire classes of bugs at compile time.
- */
-
-/**
- * Brand symbol - unique per type
- */
 declare const __brand: unique symbol;
 
 /**

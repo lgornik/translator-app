@@ -1,19 +1,3 @@
-/**
- * Dependency Registration Module
- *
- * PRINCIPAL PATTERN: Clean separation of concerns.
- *
- * Use Cases contain ONLY business logic.
- * Cross-cutting concerns (logging, metrics, retry, circuit breaker)
- * are applied via decorators during registration.
- *
- * Benefits:
- * - Use Cases are testable without mocking infrastructure
- * - Easy to add/remove concerns without changing business code
- * - Consistent behavior across all use cases
- * - Configuration in one place
- */
-
 import { container, DI_TOKENS } from "./container.js";
 import { DependencyContainer } from "tsyringe";
 import { config } from "../config/Config.js";
@@ -37,13 +21,11 @@ import { GetAllWordsUseCase } from "../../application/use-cases/GetAllWordsUseCa
 import { GetWordCountUseCase } from "../../application/use-cases/GetWordCountUseCase.js";
 import { ResetSessionUseCase } from "../../application/use-cases/ResetSessionUseCase.js";
 
-// Repository factories
 import {
   createRepositories,
   RepositoryOptions,
 } from "../persistence/repositoryFactory.js";
 
-// Principal-level: Decorators for cross-cutting concerns
 import {
   withLogging,
   withMetrics,
@@ -53,7 +35,6 @@ import {
   MetricsCollector,
 } from "../../application/decorators/UseCaseDecorators.js";
 
-// Principal-level: Domain Events
 import {
   InMemoryEventBus,
   AnalyticsEventHandler,
@@ -233,10 +214,6 @@ export async function registerDependencies(
   container.registerInstance(DI_TOKENS.WordRepository, wordRepository);
   container.registerInstance(DI_TOKENS.SessionRepository, sessionRepository);
 
-  // ============================================================================
-  // PRINCIPAL-LEVEL: Initialize cross-cutting infrastructure
-  // ============================================================================
-
   // Metrics collector (in production: replace with Prometheus client)
   const metrics = createMetricsCollector(logger);
 
@@ -253,13 +230,6 @@ export async function registerDependencies(
     resilience: enableResilience,
     eventHandlers: ["AnalyticsEventHandler", "AuditLogEventHandler"],
   });
-
-  // ============================================================================
-  // PRINCIPAL-LEVEL: Register Use Cases with Decorators
-  //
-  // Use Cases are now PURE BUSINESS LOGIC.
-  // All cross-cutting concerns are applied here via decorators.
-  // ============================================================================
 
   // GetRandomWordUseCase - most critical, full decoration stack
   container.register(DI_TOKENS.GetRandomWordUseCase, {
@@ -460,7 +430,6 @@ export async function registerDependencies(
     getCacheStats,
     checkDatabase,
     getSessionCount,
-    // Principal-level observability
     getMetrics: () => metrics.getMetrics(),
     getEventLog: () => eventBus.getRecentEvents(100),
   };

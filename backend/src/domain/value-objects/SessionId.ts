@@ -4,15 +4,6 @@ import { ValidationError } from "../../shared/errors/DomainErrors.js";
 import { SessionIdBrand, BrandUtils } from "../../shared/core/Brand.js";
 import { randomUUID } from "crypto";
 
-/**
- * SessionId Value Object
- *
- * PRINCIPAL PATTERN: Type-safe identifier using branded types.
- *
- * The branded type ensures compile-time safety:
- *   function findSession(id: SessionId) { ... }
- *   findSession(wordId); // Compile ERROR - can't pass WordId as SessionId
- */
 interface SessionIdProps {
   value: SessionIdBrand;
 }

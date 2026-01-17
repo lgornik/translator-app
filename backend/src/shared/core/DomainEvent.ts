@@ -1,13 +1,3 @@
-/**
- * Domain Events - Foundation for Event-Driven Architecture
- *
- * WHY THIS MATTERS:
- * - Decouples "what happened" from "what to do about it"
- * - Enables audit trails, analytics, cache invalidation without polluting domain
- * - Makes the system observable and extensible
- * - Principal-level: thinking about the system, not just the code
- */
-
 import { randomUUID } from "crypto";
 
 /**

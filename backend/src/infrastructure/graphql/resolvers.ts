@@ -4,19 +4,6 @@ import { DomainError } from "../../shared/errors/DomainErrors.js";
 import { config } from "../config/Config.js";
 import { toApiResponse } from "../../application/dtos/index.js";
 
-/**
- * PRINCIPAL PATTERN: Union Type Error Handling
- *
- * Instead of throwing GraphQL errors, we return typed error objects.
- * This enables:
- * - Type-safe error handling on the client
- * - Better error introspection in GraphQL tooling
- * - Cleaner client code with discriminated unions
- */
-
-/**
- * Map domain error codes to GraphQL __typename
- */
 function getErrorTypename(code: string): string {
   switch (code) {
     case "NOT_FOUND":
@@ -97,9 +84,6 @@ const queryResolvers = {
     uptime: (Date.now() - ctx.startTime) / 1000,
   }),
 
-  /**
-   * PRINCIPAL PATTERN: Production-ready health check
-   */
   health: async (_: unknown, __: unknown, ctx: GraphQLContext) => {
     const dependencies: DependencyHealth[] = [];
     let overallStatus: HealthStatus = "healthy";

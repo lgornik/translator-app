@@ -1,10 +1,4 @@
-# 🎯 Principal-Level Refactoring - COMPLETED
-
-## ✅ Wykonane zmiany (v3.0.0)
-
-### 1. Branded Types dla ID ✅
-
-Wszystkie identyfikatory używają teraz branded types:
+Wszystkie identyfikatory używają branded types:
 
 - `SessionIdBrand` - compile-time safety dla session ID
 - `WordIdBrand` - compile-time safety dla word ID
@@ -91,8 +85,3 @@ Dodano wykluczenia dla:
 5. **Chaos engineering** - kontrolowane awarie w testach
 
 ---
-
-## 💡 Pro tip
-
-Każda z tych zmian powinna być **osobnym PR-em** z code review.
-To pokazuje principal-level thinking: **incremental improvement > big bang**.

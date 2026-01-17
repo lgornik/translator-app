@@ -17,15 +17,6 @@ import { GetRandomWordInput, GetRandomWordOutput } from "../dtos/index.js";
 import { ISessionMutex } from "../../infrastructure/persistence/SessionMutex.js";
 import { IUseCase } from "../interfaces/IUseCase.js";
 
-/**
- * Get Random Word Use Case
- *
- * PRINCIPAL PATTERN: Pure business logic - no cross-cutting concerns.
- *
- * Fetches a random word for translation, tracking used words per session.
- * Uses mutex to prevent race conditions when accessing session data.
- * Logging and metrics are handled by decorators.
- */
 export class GetRandomWordUseCase implements IUseCase<
   GetRandomWordInput,
   GetRandomWordOutput

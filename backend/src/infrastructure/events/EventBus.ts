@@ -1,14 +1,3 @@
-/**
- * Event Bus Implementation
- *
- * In-memory implementation with hooks for:
- * - Persistent event store (Event Sourcing ready)
- * - External message brokers (Kafka, RabbitMQ)
- * - Outbox pattern for reliability
- *
- * Principal-level thinking: build for today, design for tomorrow
- */
-
 import {
   IDomainEvent,
   IEventBus,
@@ -224,9 +213,6 @@ export class CacheInvalidationHandler implements IEventHandler {
   ) {}
 
   async handle(event: IDomainEvent): Promise<void> {
-    // Smart invalidation based on event type
-    // For now: simple full invalidation
-    // Principal would implement: targeted invalidation based on event data
     this.invalidateCache();
 
     this.logger.debug("Cache invalidated due to event", {

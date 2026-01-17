@@ -155,10 +155,6 @@ export const typeDefs = `#graphql
     wordCount: Int!
   }
 
-  # ============================================================================
-  # Union Types (Principal Pattern: Type-safe error handling)
-  # ============================================================================
-
   """
   Result of getRandomWord query - either a word or an error
   """

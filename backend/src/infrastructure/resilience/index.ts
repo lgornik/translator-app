@@ -1,17 +1,3 @@
-/**
- * Resilience Patterns
- *
- * PRINCIPAL MINDSET: "What happens when things go wrong?"
- *
- * Production systems WILL experience:
- * - Network timeouts
- * - Database connection drops
- * - Memory pressure
- * - Cascading failures
- *
- * This module provides building blocks for graceful degradation.
- */
-
 import { InfrastructureError } from "../../shared/errors/DomainErrors.js";
 
 // ============================================================================

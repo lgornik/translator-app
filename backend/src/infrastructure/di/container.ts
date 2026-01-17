@@ -34,14 +34,11 @@ export const DI_TOKENS = {
   GetWordCountUseCase: Symbol.for("GetWordCountUseCase"),
   ResetSessionUseCase: Symbol.for("ResetSessionUseCase"),
 
-  // Config
   Config: Symbol.for("Config"),
 
-  // Infrastructure
   DatabaseHealthCheck: Symbol.for("DatabaseHealthCheck"),
   CacheManager: Symbol.for("CacheManager"),
 
-  // Principal-level: Event-driven architecture
   EventBus: Symbol.for("IEventBus"),
 } as const;
 

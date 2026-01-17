@@ -43,16 +43,6 @@ export interface GetRandomWordsOutput {
   words: RandomWordOutput[];
 }
 
-/**
- * Get Random Words Use Case
- *
- * PRINCIPAL PATTERN: Pure business logic - no cross-cutting concerns.
- *
- * Fetches multiple random words for translation (batch loading for quiz pool).
- * Returns up to 'limit' words, may return fewer if not enough available.
- * Uses mutex to prevent race conditions when accessing session data.
- * Logging and metrics are handled by decorators.
- */
 export class GetRandomWordsUseCase implements IUseCase<
   GetRandomWordsInput,
   GetRandomWordsOutput

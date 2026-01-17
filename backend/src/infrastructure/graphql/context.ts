@@ -64,13 +64,6 @@ export interface ContextDependencies {
   }>;
 }
 
-/**
- * Create GraphQL context for a request
- *
- * PRINCIPAL PATTERN: Use Cases are created without logger.
- * Logging is handled by decorators when Use Cases are resolved from DI container.
- * For direct instantiation (like here), we create clean Use Cases.
- */
 export function createContext(
   deps: ContextDependencies,
   requestId: string,

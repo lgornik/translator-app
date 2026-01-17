@@ -1,33 +1,3 @@
-/**
- * Use Case Decorators
- *
- * PRINCIPAL PATTERN: Cross-cutting concerns don't belong in business logic.
- *
- * Instead of:
- *   class MyUseCase {
- *     constructor(private logger: ILogger) {}
- *     execute() {
- *       this.logger.info('Starting...');
- *       // business logic
- *       this.logger.info('Done');
- *     }
- *   }
- *
- * We do:
- *   const useCase = withLogging(
- *     withMetrics(
- *       withRetry(
- *         new MyUseCase()
- *       )
- *     )
- *   );
- *
- * Benefits:
- * - Single Responsibility: Use Case only does business logic
- * - Open/Closed: Add new concerns without changing Use Cases
- * - Testable: Test business logic without mocking logger
- */
-
 import { Result } from "../../shared/core/Result.js";
 import {
   DomainError,

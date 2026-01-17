@@ -4,16 +4,6 @@ import { ValidationError } from "../../shared/errors/DomainErrors.js";
 import { WordIdBrand, BrandUtils } from "../../shared/core/Brand.js";
 import { randomUUID } from "crypto";
 
-/**
- * WordId Value Object
- *
- * PRINCIPAL PATTERN: Type-safe identifier using branded types.
- *
- * Compile-time safety ensures you can't accidentally:
- *   - Pass WordId where SessionId is expected
- *   - Compare WordId with SessionId
- *   - Store wrong ID type
- */
 interface WordIdProps {
   value: WordIdBrand;
 }

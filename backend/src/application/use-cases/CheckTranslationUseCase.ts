@@ -13,14 +13,6 @@ import {
 } from "../dtos/index.js";
 import { IUseCase } from "../interfaces/IUseCase.js";
 
-/**
- * Check Translation Use Case
- *
- * PRINCIPAL PATTERN: Pure business logic - no cross-cutting concerns.
- *
- * Logging, metrics, retry logic are handled by decorators.
- * This keeps the use case focused, testable, and reusable.
- */
 export class CheckTranslationUseCase implements IUseCase<
   CheckTranslationInput,
   CheckTranslationOutput
