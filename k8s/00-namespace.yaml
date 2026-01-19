@@ -1,0 +1,8 @@
+# Namespace - izoluje zasoby aplikacji
+# Jak folder na pliki - wszystko w jednym miejscu
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: translator
+  labels:
+    app: translator

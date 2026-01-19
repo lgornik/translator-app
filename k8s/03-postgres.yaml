@@ -1,0 +1,98 @@
+# =============================================================================
+# PostgreSQL - Baza danych
+# =============================================================================
+
+# PersistentVolumeClaim - miejsce na dane (przetrwa restart poda)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: translator
+spec:
+  accessModes:
+    - ReadWriteOnce # Jeden pod może pisać
+  resources:
+    requests:
+      storage: 1Gi # 1 GB na dane
+
+---
+# Deployment - definiuje JAK uruchomić PostgreSQL
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: translator
+  labels:
+    app: postgres
+spec:
+  replicas: 1 # Baza danych = 1 instancja (dla prostoty)
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: translator-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: translator-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: translator-secrets
+                  key: POSTGRES_DB
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+          # Health checks - K8s sprawdza czy baza żyje
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "app", "-d", "translator"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "app", "-d", "translator"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgres-pvc
+
+---
+# Service - pozwala innym podom połączyć się z bazą
+# Inne pody łączą się przez: postgres:5432
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: translator
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP # Dostępne tylko wewnątrz klastra

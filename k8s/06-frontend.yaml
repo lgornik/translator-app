@@ -1,0 +1,51 @@
+# =============================================================================
+# Frontend - React aplikacja
+# =============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: translator
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: translator-frontend:latest
+          imagePullPolicy: Never # Użyj lokalnego obrazu
+          ports:
+            - containerPort: 3000
+          env:
+            - name: VITE_GRAPHQL_URL
+              value: "http://localhost:4000/graphql"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: translator
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 3000
+      targetPort: 3000
+  type: LoadBalancer # Dostępne na localhost:3000

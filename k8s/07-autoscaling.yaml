@@ -1,0 +1,31 @@
+# =============================================================================
+# HorizontalPodAutoscaler - automatyczne skalowanie
+# =============================================================================
+# Gdy CPU > 70% → dodaj więcej podów (max 10)
+# Gdy CPU < 70% → usuń pody (min 2)
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend-hpa
+  namespace: translator
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend
+  minReplicas: 2 # Minimum 2 pody (dla niezawodności)
+  maxReplicas: 10 # Maximum 10 podów
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70 # Skaluj gdy CPU > 70%
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80 # Skaluj gdy RAM > 80%
