@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-daily-backup
+  namespace: translator
+spec:
+  schedule: "0 2 * * *" # Codziennie o 02:00 w nocy
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: postgres-backup
+              image: postgres:16-alpine
+              env:
+                - name: PGPASSWORD
+                  value: "secret" # Musi być takie samo jak w Twojej bazie
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  DATE=$(date +%Y-%m-%d_%H-%M)
+                  echo "Starting backup to /backups/backup_$DATE.sql"
+                  pg_dump -h postgres -U app -d translator > /backups/backup_$DATE.sql
+                  echo "Backup completed."
+                  # Opcjonalnie: usuń backupy starsze niż 7 dni, żeby nie zapchać dysku
+                  find /backups -type f -mtime +7 -name "*.sql" -delete
+              volumeMounts:
+                - name: backup-storage
+                  mountPath: /backups
+          restartPolicy: OnFailure
+          volumes:
+            - name: backup-storage
+              persistentVolumeClaim:
+                claimName: postgres-pvc # Używamy tego samego PVC co baza, dane będą w osobnym folderze
