@@ -34,12 +34,15 @@ export const DI_TOKENS = {
   GetWordCountUseCase: Symbol.for("GetWordCountUseCase"),
   ResetSessionUseCase: Symbol.for("ResetSessionUseCase"),
 
+  EventBus: Symbol("IEventBus"),
+  AnalyticsService: Symbol("IAnalyticsService"),
+  SessionStatsHandler: Symbol("SessionStatsHandler"),
+  AnalyticsEventHandler: Symbol("AnalyticsEventHandler"),
+
   Config: Symbol.for("Config"),
 
   DatabaseHealthCheck: Symbol.for("DatabaseHealthCheck"),
   CacheManager: Symbol.for("CacheManager"),
-
-  EventBus: Symbol.for("IEventBus"),
 } as const;
 
 export type DITokens = typeof DI_TOKENS;

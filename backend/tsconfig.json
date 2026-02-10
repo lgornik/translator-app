@@ -28,6 +28,11 @@
     },
     "baseUrl": "."
   },
-  "include": ["src/**/*", "vitest.config.ts"],
+  "include": [
+    "src/**/*",
+    "backend/src/**/*",
+    "backend/backend/src/**/*",
+    "vitest.config.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }

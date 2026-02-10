@@ -20,6 +20,7 @@ import { GetDifficultiesUseCase } from "../../application/use-cases/GetDifficult
 import { GetAllWordsUseCase } from "../../application/use-cases/GetAllWordsUseCase.js";
 import { GetWordCountUseCase } from "../../application/use-cases/GetWordCountUseCase.js";
 import { ResetSessionUseCase } from "../../application/use-cases/ResetSessionUseCase.js";
+import { IEventBus } from "../../shared/events/EventBus.js";
 
 import {
   createRepositories,
@@ -35,11 +36,13 @@ import {
   MetricsCollector,
 } from "../../application/decorators/UseCaseDecorators.js";
 
+import { InMemoryEventBus } from "../../shared/events/EventBus.js";
+import { createLoggingHandlers } from "../../application/event-handlers/LoggingEventHandler.js";
+import { SessionStatsHandler } from "../../application/event-handlers/SessionStatsHandler.js";
 import {
-  InMemoryEventBus,
   AnalyticsEventHandler,
-  AuditLogEventHandler,
-} from "../events/EventBus.js";
+  ConsoleAnalyticsService,
+} from "../../application/event-handlers/AnalyticsEventHandler.js";
 
 /**
  * Registration options
@@ -87,6 +90,7 @@ export interface RegistrationResult {
   getMetrics: () => Record<string, unknown>;
   /** Get recent domain events (for debugging/monitoring) */
   getEventLog: () => unknown[];
+  eventBus: IEventBus;
 }
 
 /**
@@ -218,12 +222,48 @@ export async function registerDependencies(
   const metrics = createMetricsCollector(logger);
 
   // Event Bus for domain events
-  const eventBus = new InMemoryEventBus(logger);
+  const eventBus = new InMemoryEventBus({
+    info: (msg, meta) => logger.info(msg, meta as any),
+    error: (msg, meta) => logger.error(msg as any, meta as any),
+  });
 
   // Register event handlers
-  eventBus.subscribe(new AnalyticsEventHandler(logger));
-  eventBus.subscribe(new AuditLogEventHandler(logger));
+  const eventTypes = [
+    "AnswerSubmitted",
+    "SessionStarted",
+    "SessionCompleted",
+    "WordMarkedAsUsed",
+    "SessionReset",
+  ];
 
+  // Logging handlers (priority 1 - first)
+  const loggingHandlers = createLoggingHandlers(
+    {
+      info: (msg, meta) => logger.info(msg, meta as any),
+      debug: (msg, meta) => logger.debug?.(msg, meta as any),
+    },
+    eventTypes,
+  );
+  loggingHandlers.forEach((handler) => eventBus.subscribe(handler));
+
+  // Session stats handler (priority 50)
+  const sessionStatsHandler = new SessionStatsHandler({
+    info: (msg, meta) => logger.info(msg, meta as any),
+  });
+  sessionStatsHandler
+    .getHandlers()
+    .forEach((handler) => eventBus.subscribe(handler));
+
+  // Analytics handler (priority 1000 - last)
+  const analyticsService = new ConsoleAnalyticsService();
+  const analyticsHandler = new AnalyticsEventHandler(analyticsService, {
+    error: (msg, meta) => logger.error(msg as any, meta as any),
+  });
+  analyticsHandler
+    .getHandlers()
+    .forEach((handler) => eventBus.subscribe(handler));
+
+  // Register EventBus in container
   container.registerInstance(DI_TOKENS.EventBus, eventBus);
 
   logger.info("Principal-level infrastructure initialized", {
@@ -309,7 +349,9 @@ export async function registerDependencies(
     useFactory: (c: DependencyContainer) => {
       const baseUseCase = new CheckTranslationUseCase(
         c.resolve(DI_TOKENS.WordRepository),
+        c.resolve(DI_TOKENS.SessionRepository),
         c.resolve(DI_TOKENS.TranslationChecker),
+        c.resolve(DI_TOKENS.EventBus),
       );
 
       if (!enableResilience) {
@@ -431,7 +473,8 @@ export async function registerDependencies(
     checkDatabase,
     getSessionCount,
     getMetrics: () => metrics.getMetrics(),
-    getEventLog: () => eventBus.getRecentEvents(100),
+    getEventLog: () => [],
+    eventBus,
   };
 }
 

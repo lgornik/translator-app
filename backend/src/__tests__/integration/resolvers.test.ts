@@ -8,6 +8,7 @@ import { InMemoryWordRepository } from "../../infrastructure/persistence/InMemor
 import { InMemorySessionRepository } from "../../infrastructure/persistence/InMemorySessionRepository.js";
 import { NullLogger } from "../../infrastructure/logging/Logger.js";
 import { WordData } from "../../domain/entities/Word.js";
+import { vi } from "vitest";
 
 describe("GraphQL Resolvers", () => {
   const testWords: WordData[] = [
@@ -48,12 +49,21 @@ describe("GraphQL Resolvers", () => {
   beforeEach(() => {
     wordRepository = new InMemoryWordRepository(testWords);
     sessionRepository = new InMemorySessionRepository();
+
+    // Tworzymy prosty mock dla eventBus
+    const mockEventBus = {
+      publish: vi.fn(),
+      subscribe: vi.fn(),
+      unsubscribe: vi.fn(),
+    };
+
     ctx = createContext(
       {
         wordRepository,
         sessionRepository,
         logger: new NullLogger(),
         startTime: Date.now(),
+        eventBus: mockEventBus as any,
       },
       "test-request-id",
       "test-session-id",

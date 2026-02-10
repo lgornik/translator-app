@@ -7,6 +7,7 @@ import { GetDifficultiesUseCase } from "../../application/use-cases/GetDifficult
 import { GetWordCountUseCase } from "../../application/use-cases/GetWordCountUseCase.js";
 import { GetAllWordsUseCase } from "../../application/use-cases/GetAllWordsUseCase.js";
 import { ResetSessionUseCase } from "../../application/use-cases/ResetSessionUseCase.js";
+import { NullEventBus } from "../../shared/events/EventBus.js";
 import { Word } from "../../domain/entities/Word.js";
 import { Session } from "../../domain/entities/Session.js";
 import { WordId } from "../../domain/value-objects/WordId.js";
@@ -467,7 +468,22 @@ describe("CheckTranslationUseCase", () => {
   beforeEach(() => {
     wordRepo = createMockWordRepository([testWord]);
     translationChecker = new TranslationChecker();
-    useCase = new CheckTranslationUseCase(wordRepo, translationChecker);
+    const mockSessionRepo = {
+      findById: vi.fn().mockResolvedValue(null),
+      save: vi.fn(),
+      delete: vi.fn(),
+      findOrCreate: vi.fn(),
+      deleteExpired: vi.fn(),
+      exists: vi.fn(),
+      count: vi.fn(),
+    };
+
+    useCase = new CheckTranslationUseCase(
+      wordRepo,
+      mockSessionRepo,
+      translationChecker,
+      new NullEventBus(),
+    );
   });
 
   it("should return correct for matching translation (EN_TO_PL)", async () => {

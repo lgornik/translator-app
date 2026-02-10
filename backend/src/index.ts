@@ -36,6 +36,7 @@ async function bootstrap(): Promise<void> {
       getCacheStats,
       checkDatabase,
       getSessionCount,
+      eventBus,
     } = await registerDependencies({
       databaseUrl: config.database.url,
       redisUrl: config.redis.url,
@@ -90,11 +91,11 @@ async function bootstrap(): Promise<void> {
       ),
     });
 
-    // Create server dependencies
     const serverDeps: ServerDependencies = {
       wordRepository,
       sessionRepository,
       logger,
+      eventBus,
       checkDatabase,
       getSessionCount,
     };
@@ -107,6 +108,13 @@ async function bootstrap(): Promise<void> {
     }
 
     // Create and start server
+    if (getCacheStats) {
+      serverDeps.getCacheStats = getCacheStats;
+    }
+    if (invalidateCaches) {
+      serverDeps.invalidateCaches = invalidateCaches;
+    }
+
     const server = new HttpServer(serverDeps);
     await server.start();
 

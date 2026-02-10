@@ -11,6 +11,7 @@ import { ISessionRepository } from "../../domain/repositories/ISessionRepository
 import { ILogger } from "../../application/interfaces/ILogger.js";
 import { RandomWordPicker } from "../../domain/services/RandomWordPicker.js";
 import { TranslationChecker } from "../../domain/services/TranslationChecker.js";
+import { IEventBus } from "../../shared/events/EventBus.js";
 
 /**
  * GraphQL Context
@@ -57,6 +58,7 @@ export interface ContextDependencies {
   sessionRepository: ISessionRepository;
   logger: ILogger;
   startTime: number;
+  eventBus: IEventBus;
   checkDatabase?: () => Promise<{
     ok: boolean;
     latency?: number;
@@ -103,7 +105,9 @@ export function createContext(
     ),
     checkTranslation: new CheckTranslationUseCase(
       wordRepository,
+      sessionRepository,
       translationChecker,
+      deps.eventBus,
     ),
     getWordCount: new GetWordCountUseCase(wordRepository),
     getCategories: new GetCategoriesUseCase(wordRepository),

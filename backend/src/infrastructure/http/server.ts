@@ -1,15 +1,20 @@
-import express, { Express } from 'express';
-import cors from 'cors';
-import http from 'http';
-import { ApolloServer } from '@apollo/server';
-import { expressMiddleware } from '@apollo/server/express4';
-import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
+import express, { Express } from "express";
+import cors from "cors";
+import http from "http";
+import { ApolloServer } from "@apollo/server";
+import { expressMiddleware } from "@apollo/server/express4";
+import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
+import { ApolloServerPluginLandingPageLocalDefault } from "@apollo/server/plugin/landingPage/default";
 
-import { config } from '../config/Config.js';
-import { typeDefs } from '../graphql/schema.js';
-import { resolvers } from '../graphql/resolvers.js';
-import { GraphQLContext, ContextDependencies, createContext } from '../graphql/context.js';
-import { formatGraphQLError } from '../graphql/errorFormatter.js';
+import { config } from "../config/Config.js";
+import { typeDefs } from "../graphql/schema.js";
+import { resolvers } from "../graphql/resolvers.js";
+import {
+  GraphQLContext,
+  ContextDependencies,
+  createContext,
+} from "../graphql/context.js";
+import { formatGraphQLError } from "../graphql/errorFormatter.js";
 import {
   requestIdMiddleware,
   createRequestLogger,
@@ -22,12 +27,17 @@ import {
   createCacheInvalidateHandler,
   CacheStats,
   HealthCheckDependencies,
-} from './middleware.js';
-import { createRateLimiter, createGraphQLRateLimiter, RateLimitPresets } from './rateLimiter.js';
-import { ILogger } from '../../application/interfaces/ILogger.js';
-import { IWordRepository } from '../../domain/repositories/IWordRepository.js';
-import { ISessionRepository } from '../../domain/repositories/ISessionRepository.js';
-import { DatabaseHealthCheck } from '../persistence/repositoryFactory.js';
+} from "./middleware.js";
+import {
+  createRateLimiter,
+  createGraphQLRateLimiter,
+  RateLimitPresets,
+} from "./rateLimiter.js";
+import { ILogger } from "../../application/interfaces/ILogger.js";
+import { IWordRepository } from "../../domain/repositories/IWordRepository.js";
+import { ISessionRepository } from "../../domain/repositories/ISessionRepository.js";
+import { DatabaseHealthCheck } from "../persistence/repositoryFactory.js";
+import { IEventBus } from "../../shared/events/EventBus.js";
 
 /**
  * Server dependencies
@@ -36,6 +46,7 @@ export interface ServerDependencies {
   wordRepository: IWordRepository;
   sessionRepository: ISessionRepository;
   logger: ILogger;
+  eventBus: IEventBus;
   /** Check database connectivity */
   checkDatabase: () => Promise<DatabaseHealthCheck>;
   /** Get session count */
@@ -76,6 +87,7 @@ export class HttpServer {
       sessionRepository: deps.sessionRepository,
       logger: deps.logger,
       startTime: this.startTime,
+      eventBus: deps.eventBus,
     };
 
     // Create Express app
@@ -87,9 +99,10 @@ export class HttpServer {
       typeDefs,
       resolvers,
       formatError: formatGraphQLError,
-      introspection: config.graphql.introspection,
+      introspection: true, // ← Zmień na true (zamiast config.graphql.introspection)
       plugins: [
         ApolloServerPluginDrainHttpServer({ httpServer: this.httpServer }),
+        ApolloServerPluginLandingPageLocalDefault({ embed: true }), // ← DODAJ
         this.createLoggingPlugin(),
       ],
     });
@@ -117,7 +130,7 @@ export class HttpServer {
     // Start listening
     return new Promise((resolve) => {
       this.httpServer.listen(config.server.port, () => {
-        this.logger.info('Server started', {
+        this.logger.info("Server started", {
           port: config.server.port,
           environment: config.nodeEnv,
           graphqlPath: config.graphql.path,
@@ -138,7 +151,7 @@ export class HttpServer {
     }
 
     this.isShuttingDown = true;
-    this.logger.info('Shutting down server...');
+    this.logger.info("Shutting down server...");
 
     // Stop accepting new connections
     await this.apollo.stop();
@@ -151,7 +164,7 @@ export class HttpServer {
       });
     });
 
-    this.logger.info('Server stopped');
+    this.logger.info("Server stopped");
   }
 
   private setupMiddleware(): void {
@@ -169,8 +182,8 @@ export class HttpServer {
       cors({
         origin: config.server.corsOrigin,
         credentials: true,
-        exposedHeaders: ['x-correlation-id', 'x-request-id'],
-      })
+        exposedHeaders: ["x-correlation-id", "x-request-id"],
+      }),
     );
 
     // JSON parsing
@@ -179,10 +192,10 @@ export class HttpServer {
 
   private setupRoutes(): void {
     // Liveness probe (for Kubernetes) - fast, simple
-    this.app.get('/livez', createLivenessHandler());
+    this.app.get("/livez", createLivenessHandler());
 
     // Readiness probe (for Kubernetes) - checks DB
-    this.app.get('/readyz', createReadinessHandler(this.checkDatabase));
+    this.app.get("/readyz", createReadinessHandler(this.checkDatabase));
 
     // Full health check with details
     const healthDeps: HealthCheckDependencies = {
@@ -192,37 +205,34 @@ export class HttpServer {
       checkDatabase: this.checkDatabase,
       getSessionCount: this.getSessionCount,
     };
-    
+
     if (this.getCacheStats) {
       healthDeps.getCacheStats = this.getCacheStats;
     }
 
-    this.app.get('/health', createHealthHandler(healthDeps));
+    this.app.get("/health", createHealthHandler(healthDeps));
 
     // Cache statistics endpoint
-    this.app.get(
-      '/cache/stats',
-      createCacheStatsHandler(this.getCacheStats)
-    );
+    this.app.get("/cache/stats", createCacheStatsHandler(this.getCacheStats));
 
     // Cache invalidation endpoint (POST, requires admin key)
     this.app.post(
-      '/cache/invalidate',
-      createCacheInvalidateHandler(this.invalidateCaches, this.logger)
+      "/cache/invalidate",
+      createCacheInvalidateHandler(this.invalidateCaches, this.logger),
     );
 
     // API info
-    this.app.get('/', (_req, res) => {
+    this.app.get("/", (_req, res) => {
       res.json({
         name: config.api.name,
         version: config.api.version,
         endpoints: {
           graphql: config.graphql.path,
-          health: '/health',
-          liveness: '/livez',
-          readiness: '/readyz',
-          cacheStats: '/cache/stats',
-          cacheInvalidate: '/cache/invalidate (POST)',
+          health: "/health",
+          liveness: "/livez",
+          readiness: "/readyz",
+          cacheStats: "/cache/stats",
+          cacheInvalidate: "/cache/invalidate (POST)",
         },
       });
     });
@@ -233,12 +243,13 @@ export class HttpServer {
       createGraphQLRateLimiter({}, this.logger),
       expressMiddleware(this.apollo, {
         context: async ({ req }) => {
-          const correlationId = req.headers['x-correlation-id'] as string;
-          const sessionId = (req.headers['x-session-id'] as string) || 'default';
+          const correlationId = req.headers["x-correlation-id"] as string;
+          const sessionId =
+            (req.headers["x-session-id"] as string) || "default";
 
           return createContext(this.contextDeps, correlationId, sessionId);
         },
-      })
+      }),
     );
   }
 
@@ -256,7 +267,7 @@ export class HttpServer {
 
       // Set timeout for forced shutdown
       const forceShutdownTimeout = setTimeout(() => {
-        this.logger.error('Forced shutdown due to timeout');
+        this.logger.error("Forced shutdown due to timeout");
         process.exit(1);
       }, config.server.shutdownTimeoutMs);
 
@@ -265,27 +276,31 @@ export class HttpServer {
         clearTimeout(forceShutdownTimeout);
         process.exit(0);
       } catch (error) {
-        this.logger.error('Error during shutdown', error as Error);
+        this.logger.error("Error during shutdown", error as Error);
         clearTimeout(forceShutdownTimeout);
         process.exit(1);
       }
     };
 
-    process.on('SIGTERM', () => shutdown('SIGTERM'));
-    process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    process.on("SIGINT", () => shutdown("SIGINT"));
   }
 
   private createLoggingPlugin() {
     const logger = this.logger;
 
     return {
-      async requestDidStart({ contextValue }: { contextValue: GraphQLContext }) {
+      async requestDidStart({
+        contextValue,
+      }: {
+        contextValue: GraphQLContext;
+      }) {
         const correlationId = contextValue.requestId;
-        
+
         return {
           async didEncounterErrors({ errors }: { errors: readonly Error[] }) {
             for (const error of errors) {
-              logger.error('GraphQL error', error as Error, { correlationId });
+              logger.error("GraphQL error", error as Error, { correlationId });
             }
           },
         };

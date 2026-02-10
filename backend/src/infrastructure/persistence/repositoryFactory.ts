@@ -7,7 +7,7 @@ import { ILogger } from "../../application/interfaces/ILogger.js";
 import { InMemoryWordRepository } from "./InMemoryWordRepository.js";
 import { InMemorySessionRepository } from "./InMemorySessionRepository.js";
 import { PostgresWordRepository } from "./postgres/PostgresWordRepository.js";
-import { PostgresSessionRepository } from "./postgres/PostgresSessionRepository.js";
+// import { PostgresSessionRepository } from "./postgres/PostgresSessionRepository.js";
 import { CachedWordRepository, CacheConfig } from "./CachedWordRepository.js";
 import { RedisSessionRepository } from "./RedisSessionRepository.js";
 import { dictionaryData } from "../data/dictionary.js";
@@ -104,8 +104,11 @@ export function createRepositories(
       sessionRepository = redisSessionRepo;
       logger.info("Using Redis for session storage");
     } else {
-      sessionRepository = new PostgresSessionRepository(db);
-      logger.info("Using PostgreSQL for session storage");
+      // PostgresSessionRepository not yet migrated to Domain Events
+      sessionRepository = new InMemorySessionRepository();
+      logger.info(
+        "Using InMemory for session storage (Postgres migration pending)",
+      );
     }
 
     cleanup = async () => {

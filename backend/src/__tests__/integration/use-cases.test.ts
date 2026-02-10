@@ -8,6 +8,7 @@ import { InMemorySessionRepository } from "../../infrastructure/persistence/InMe
 import { RandomWordPicker } from "../../domain/services/RandomWordPicker.js";
 import { TranslationChecker } from "../../domain/services/TranslationChecker.js";
 import { WordData } from "../../domain/entities/Word.js";
+import { NullEventBus } from "@/shared/events/index.js";
 
 describe("Use Cases Integration", () => {
   const testWords: WordData[] = [
@@ -175,9 +176,13 @@ describe("Use Cases Integration", () => {
 
   describe("CheckTranslationUseCase", () => {
     it("should return correct for right answer", async () => {
+      const sessionRepo = new InMemorySessionRepository();
+
       const useCase = new CheckTranslationUseCase(
         wordRepository,
+        sessionRepo,
         new TranslationChecker(),
+        new NullEventBus(),
       );
 
       const result = await useCase.execute({
@@ -195,9 +200,13 @@ describe("Use Cases Integration", () => {
     });
 
     it("should return incorrect for wrong answer", async () => {
+      const sessionRepo = new InMemorySessionRepository();
+
       const useCase = new CheckTranslationUseCase(
         wordRepository,
+        sessionRepo,
         new TranslationChecker(),
+        new NullEventBus(),
       );
 
       const result = await useCase.execute({
@@ -214,9 +223,13 @@ describe("Use Cases Integration", () => {
     });
 
     it("should return error for non-existent word", async () => {
+      const sessionRepo = new InMemorySessionRepository();
+
       const useCase = new CheckTranslationUseCase(
         wordRepository,
+        sessionRepo,
         new TranslationChecker(),
+        new NullEventBus(),
       );
 
       const result = await useCase.execute({
