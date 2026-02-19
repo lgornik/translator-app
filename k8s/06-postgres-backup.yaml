@@ -4,7 +4,7 @@ metadata:
   name: postgres-daily-backup
   namespace: translator
 spec:
-  schedule: "0 2 * * *" # Codziennie o 02:00 w nocy
+  schedule: "0 */3 * * *" # Codziennie o północy (co 3 godziny dla testów)
   jobTemplate:
     spec:
       template:
